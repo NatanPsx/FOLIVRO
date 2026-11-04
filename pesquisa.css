@@ -1,0 +1,429 @@
+/* ==========================================================================
+   FOLIVRO — Estilos específicos da página de Busca e Categorias (pesquisa.php)
+   Complementa o sistema visual compartilhado em layout.css
+   ========================================================================== */
+
+/* ==========================================================================
+   BARRA DE PESQUISA PRINCIPAL ELEVADA
+   ========================================================================== */
+.embrulho-pesquisa-completa {
+    width: min(100%, 820px);
+    margin: 0 0 34px;
+}
+
+.barra-pesquisa {
+    width: 100%;
+    height: 62px;
+    margin: 0;
+    padding: 0 8px 0 18px;
+    background: var(--fundo-superficie, #ffffff);
+    border: 2px solid var(--borda-suave, #e2d6cb);
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 18px rgba(45, 22, 12, 0.08);
+    transition: border-color 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+    position: relative;
+}
+
+.tema-escuro .barra-pesquisa {
+    background: var(--fundo-superficie-suave, #282220);
+    border-color: var(--borda-suave, #433834);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.barra-pesquisa:hover {
+    border-color: var(--borda-forte, #c9b7a8);
+    box-shadow: 0 6px 22px rgba(45, 22, 12, 0.11);
+}
+
+.tema-escuro .barra-pesquisa:hover {
+    border-color: var(--borda-forte, #5c4c46);
+    box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+}
+
+.barra-pesquisa:focus-within {
+    border-color: var(--cor-vinho, #5c0000);
+    box-shadow: 0 0 0 4px rgba(92, 0, 0, 0.12), 0 8px 24px rgba(45, 22, 12, 0.14);
+}
+
+.tema-escuro .barra-pesquisa:focus-within {
+    border-color: var(--cor-dourado-foco, #f0be72);
+    box-shadow: 0 0 0 4px rgba(240, 190, 114, 0.18), 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+
+/* Foco de teclado visível elegante em toda a pílula */
+.barra-pesquisa:has(input:focus-visible),
+.barra-pesquisa:has(button:focus-visible) {
+    outline: 3px solid var(--cor-dourado-foco, #e7ae5c) !important;
+    outline-offset: 3px !important;
+}
+
+.icone-busca-decorativa {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.55;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+
+.icone-decorativo-png {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    filter: invert(15%) sepia(20%) saturate(1200%) hue-rotate(345deg);
+}
+
+.tema-escuro .icone-decorativo-png {
+    filter: brightness(0) invert(0.85);
+}
+
+.barra-pesquisa:focus-within .icone-busca-decorativa {
+    opacity: 0.95;
+    transform: scale(1.06);
+}
+
+.barra-pesquisa input {
+    flex: 1;
+    height: 100%;
+    min-width: 0;
+    border: 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    color: var(--texto-principal, #231b18);
+    font-family: inherit;
+    font-size: 16.5px;
+    font-weight: 500;
+    padding: 0 4px;
+}
+
+.tema-escuro .barra-pesquisa input {
+    color: var(--texto-principal, #f5efe9);
+}
+
+.barra-pesquisa input::placeholder {
+    color: var(--texto-apoio, #6e5d54);
+    font-weight: 400;
+    opacity: 0.85;
+}
+
+.tema-escuro .barra-pesquisa input::placeholder {
+    color: var(--texto-apoio, #b5a499);
+}
+
+/* Remove botão cancel nativo do WebKit para usar o botão dedicado estilizado */
+.barra-pesquisa input::-webkit-search-cancel-button,
+.barra-pesquisa input::-webkit-search-decoration,
+.barra-pesquisa input::-webkit-search-results-button,
+.barra-pesquisa input::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+}
+
+/* Botão Limpar Busca */
+.btn-limpar-pesquisa {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(84, 70, 63, 0.10);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    padding: 0;
+    transition: background-color 0.18s ease, transform 0.15s ease, opacity 0.18s ease;
+}
+
+.tema-escuro .btn-limpar-pesquisa {
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.btn-limpar-pesquisa:hover {
+    background: rgba(84, 70, 63, 0.20);
+    transform: scale(1.1);
+}
+
+.tema-escuro .btn-limpar-pesquisa:hover {
+    background: rgba(255, 255, 255, 0.24);
+}
+
+.btn-limpar-pesquisa:active {
+    transform: scale(0.94);
+}
+
+.btn-limpar-pesquisa .icone-btn-png {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    opacity: 0.75;
+    filter: invert(15%);
+}
+
+.tema-escuro .btn-limpar-pesquisa .icone-btn-png {
+    filter: brightness(0) invert(1);
+    opacity: 0.9;
+}
+
+/* Botão Submeter Pesquisa */
+.btn-submeter-pesquisa {
+    width: 46px;
+    height: 46px;
+    border: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--cor-vermelho-acao, #6b130d) 0%, var(--cor-vinho, #5c0000) 100%);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(107, 19, 13, 0.28);
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.tema-escuro .btn-submeter-pesquisa {
+    background: linear-gradient(135deg, #8d281e 0%, #6e1c14 100%);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+}
+
+.btn-submeter-pesquisa:hover {
+    transform: scale(1.06);
+    box-shadow: 0 6px 16px rgba(107, 19, 13, 0.38);
+    filter: brightness(1.08);
+}
+
+.btn-submeter-pesquisa:active {
+    transform: scale(0.95);
+}
+
+.btn-submeter-pesquisa .icone-btn-png {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+}
+
+/* Animação de rotação para feedback de carregamento */
+.icone-girando {
+    animation: folivroGirar 0.9s linear infinite;
+}
+
+@keyframes folivroGirar {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Dicas e sugestões rápidas abaixo da barra */
+.sugestoes-rapidas-pesquisa {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 0 6px;
+}
+
+.rotulo-sugestoes {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texto-apoio, #6e5d54);
+    margin-right: 4px;
+}
+
+.chip-sugestao {
+    background: var(--fundo-superficie-suave, #faf6f2);
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--texto-secundario, #54463f);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.12s ease;
+}
+
+.tema-escuro .chip-sugestao {
+    background: var(--fundo-superficie-suave, #322a27);
+    border-color: var(--borda-suave, #433834);
+    color: var(--texto-secundario, #d5c7be);
+}
+
+.chip-sugestao:hover {
+    background: var(--fundo-superficie, #ffffff);
+    border-color: var(--cor-marrom, #8a542c);
+    color: var(--cor-vinho, #5c0000);
+    transform: translateY(-1px);
+}
+
+.tema-escuro .chip-sugestao:hover {
+    background: #3c322f;
+    border-color: var(--cor-dourado-foco, #f0be72);
+    color: var(--cor-dourado-foco, #f0be72);
+}
+
+.chip-sugestao:active {
+    transform: translateY(0);
+}
+
+/* RESULTADOS */
+.resultados {
+    margin-bottom: 42px;
+}
+
+.titulo-resultados {
+    margin: 0 0 18px;
+    color: var(--texto-principal, #231b18);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: clamp(21px, 2.4vw, 26px);
+}
+
+.area-resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+    align-items: stretch;
+    gap: 20px;
+    min-height: 64px;
+}
+
+.area-resultados > .estado-vazio {
+    grid-column: 1 / -1;
+}
+
+/* CATEGORIAS */
+.categorias {
+    margin-top: 12px;
+}
+
+.categorias h2 {
+    margin: 0 0 18px;
+    color: var(--texto-principal, #231b18);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: clamp(20px, 2.3vw, 25px);
+}
+
+.lista-categorias {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    width: 100%;
+}
+
+.lista-categorias a {
+    min-height: 74px;
+    padding: 14px 18px;
+    border-radius: var(--raio-card, 12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    text-align: center;
+    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.lista-categorias a:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-elevada, 0 8px 24px rgba(45, 22, 12, 0.14));
+    filter: brightness(1.05);
+}
+
+/* Paleta harmônica das categorias literárias com contraste verificado */
+.lista-categorias a:nth-child(1) {
+    background: #e7b96e;
+    color: #231608;
+}
+.lista-categorias a:nth-child(2) {
+    background: #d39545;
+    color: #1f1204;
+}
+.lista-categorias a:nth-child(3) {
+    background: #b85d19;
+    color: #ffffff;
+}
+.lista-categorias a:nth-child(4) {
+    background: #9e3b14;
+    color: #ffffff;
+}
+.lista-categorias a:nth-child(5) {
+    background: #8a2c1e;
+    color: #ffffff;
+}
+.lista-categorias a:nth-child(6) {
+    background: #6b130d;
+    color: #ffffff;
+}
+.lista-categorias a:nth-child(7) {
+    background: #52111a;
+    color: #ffffff;
+}
+.lista-categorias a:nth-child(8) {
+    background: #380719;
+    color: #ffffff;
+}
+
+@media (max-width: 600px) {
+    .embrulho-pesquisa-completa {
+        margin-bottom: 24px;
+    }
+
+    .barra-pesquisa {
+        height: 54px;
+        padding: 0 6px 0 14px;
+        gap: 6px;
+    }
+
+    .barra-pesquisa input {
+        font-size: 15px;
+    }
+
+    .btn-submeter-pesquisa {
+        width: 42px;
+        height: 42px;
+    }
+
+    .icone-busca-decorativa {
+        width: 20px;
+        height: 20px;
+    }
+
+    .icone-decorativo-png {
+        width: 17px;
+        height: 17px;
+    }
+
+    .sugestoes-rapidas-pesquisa {
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .chip-sugestao {
+        font-size: 12px;
+        padding: 4px 10px;
+    }
+
+    .lista-categorias {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .lista-categorias a {
+        min-height: 64px;
+        font-size: 16px;
+    }
+}

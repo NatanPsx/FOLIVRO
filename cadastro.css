@@ -1,0 +1,365 @@
+/* ==========================================================================
+   FOLIVRO — Estilos da tela de Cadastro (cadastro.php)
+   Identidade literária coerente com login.css e layout.css
+   ========================================================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    padding: 48px 16px 32px;
+    background: radial-gradient(circle at top, #f9f5f0 0%, #ebe2d8 100%);
+    color: #231b18;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    position: relative;
+    width: min(460px, 100%);
+    padding: 68px 36px 34px;
+    background: #ffffff;
+    border: 1px solid #e2d6cb;
+    border-top: 5px solid #6b130d;
+    border-radius: 14px;
+    box-shadow: 0 12px 32px rgba(45, 22, 12, 0.12);
+    text-align: center;
+}
+
+.logo {
+    position: absolute;
+    top: -52px;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 3px solid #6b130d;
+    box-shadow: 0 6px 18px rgba(45, 22, 12, 0.16);
+}
+
+h1 {
+    margin-bottom: 8px;
+    color: #4a0805;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 30px;
+}
+
+p {
+    margin-bottom: 24px;
+    color: #54463f;
+    font-size: 15.5px;
+    line-height: 1.5;
+}
+
+.campo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.campo span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 8px 0 0 8px;
+    background: #6b130d;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.campo span img,
+.icone-input-png {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
+    filter: brightness(0) invert(1);
+}
+
+.campo input {
+    width: 100%;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #c9b7a8;
+    border-left: 0;
+    border-radius: 0 8px 8px 0;
+    background: #faf6f2;
+    color: #231b18;
+    font-size: 15.5px;
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.campo input:focus {
+    outline: none;
+    border-color: #6b130d;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(107, 19, 13, 0.14);
+}
+
+.campo input:focus-visible,
+button:focus-visible,
+a:focus-visible,
+.aceite-termos input:focus-visible {
+    outline: 3px solid #e7ae5c;
+    outline-offset: 2px;
+}
+
+.aceite-termos {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 8px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #e2d6cb;
+    border-radius: 8px;
+    background: #faf6f2;
+    color: #231b18;
+    font-size: 13px;
+    text-align: left;
+    line-height: 1.48;
+    cursor: pointer;
+}
+
+.aceite-termos input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: #6b130d;
+}
+
+.aceite-termos a {
+    color: #6b130d;
+    font-weight: 700;
+}
+
+.botoes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 20px;
+}
+
+.botoes button,
+.voltar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 10px 22px;
+    border: 0;
+    border-radius: 8px;
+    background: #6b130d;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.voltar {
+    background: #faf6f2;
+    border: 1px solid #c9b7a8;
+    color: #4a0805;
+}
+
+.voltar:hover {
+    background: #efe6dc;
+}
+
+.botoes button:hover {
+    background: #861a11;
+    box-shadow: 0 4px 12px rgba(107, 19, 13, 0.25);
+}
+
+.mensagem-erro {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-left: 4px solid #9b2c22;
+    border-radius: 8px;
+    background: #fbe9e7;
+    color: #6e160e;
+    font-size: 14.5px;
+    text-align: left;
+}
+
+.mensagem-sucesso {
+    margin-bottom: 16px;
+    padding: 12px 14px;
+    border-left: 4px solid #2f5222;
+    border-radius: 8px;
+    background: #e6f2e1;
+    color: #2f5222;
+    font-size: 14.5px;
+    text-align: left;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 520px) {
+    .container {
+        padding: 62px 22px 28px;
+    }
+
+    h1 {
+        font-size: 26px;
+    }
+
+    .logo {
+        width: 88px;
+        height: 88px;
+        top: -44px;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: radial-gradient(circle at top, #241c19 0%, #151110 100%);
+        color: #f5efe9;
+    }
+
+    .container {
+        background: #231c19;
+        border-color: #433834;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .logo {
+        background: #231c19;
+    }
+
+    h1 {
+        color: #f0a399;
+    }
+
+    p {
+        color: #d5c7be;
+    }
+
+    .campo input {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #f5efe9;
+    }
+
+    .campo input:focus {
+        background: #362c27;
+        border-color: #e7ae5c;
+    }
+
+    .voltar {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #f5efe9;
+    }
+
+    .voltar:hover {
+        background: #3b2f2a;
+    }
+
+    .aceite-termos {
+        color: #d5c7be;
+    }
+
+    .aceite-termos a {
+        color: #f0a399;
+    }
+
+    .rotulo-data-nascimento {
+        color: #e5d6cb;
+    }
+
+    .dica-idade-cadastro {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #d5c7be;
+    }
+
+    .dica-idade-cadastro.dica-idade-menor {
+        background: rgba(184, 98, 27, 0.22);
+        border-color: #d48236;
+        color: #ffd5ab;
+    }
+
+    .dica-idade-cadastro.dica-idade-maior {
+        background: rgba(47, 82, 34, 0.28);
+        border-color: #6ca659;
+        color: #c2f0b1;
+    }
+}
+
+.bloco-data-nascimento {
+    margin-bottom: 14px;
+    text-align: left;
+}
+
+.bloco-data-nascimento .campo {
+    margin-bottom: 6px;
+}
+
+.rotulo-data-nascimento {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a0805;
+}
+
+.dica-idade-cadastro {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 6px;
+    background: #f7f0e8;
+    border: 1px solid #e2d6cb;
+    color: #54463f;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.dica-idade-cadastro.dica-idade-menor {
+    background: #fff3e6;
+    border-color: #e09b56;
+    color: #7a3e08;
+    font-weight: 600;
+}
+
+.dica-idade-cadastro.dica-idade-maior {
+    background: #e6f2e1;
+    border-color: #77ab65;
+    color: #26471b;
+    font-weight: 600;
+}
+
+.dica-idade-cadastro.dica-idade-alerta {
+    background: #fbe9e7;
+    border-color: #c96157;
+    color: #6e160e;
+    font-weight: 600;
+}

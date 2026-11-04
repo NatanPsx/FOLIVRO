@@ -1,0 +1,385 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/config/auth.php';
+
+$pdo = folivro_database();
+folivro_require_login();
+$uid = (int) $_SESSION['id_usuario'];
+
+$msgPerfilErro = '';
+$msgPerfilSucesso = '';
+
+// Edição de perfil (RF03) e validação segura de upload de foto (RNF07).
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
+    if (!folivro_verify_csrf()) {
+        $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
+    } else {
+        $novoNome = trim((string) ($_POST['nome_usuario'] ?? ''));
+        $novaBio  = trim((string) ($_POST['biografia_usuario'] ?? ''));
+        $novaDataNasc = trim((string) ($_POST['data_nascimento_usuario'] ?? ''));
+        $tamNome  = mb_strlen($novoNome, 'UTF-8');
+        $idadeValida = $novaDataNasc === '' ? true : (($idCalc = folivro_calcular_idade($novaDataNasc)) !== null && $idCalc >= 5 && $idCalc <= 120);
+
+        if ($tamNome < 2 || $tamNome > 120 || mb_strlen($novaBio, 'UTF-8') > 1000) {
+            $msgPerfilErro = 'Informe um nome entre 2 e 120 caracteres e biografia de até 1.000 caracteres.';
+        } elseif (!$idadeValida) {
+            $msgPerfilErro = 'Informe uma data de nascimento válida.';
+        } else {
+            $caminhoFoto = null;
+
+            if (!empty($_FILES['foto_usuario']['name'])) {
+                $arq = $_FILES['foto_usuario'];
+                $tiposPermitidos = [
+                    'image/jpeg' => 'jpg',
+                    'image/png'  => 'png',
+                    'image/webp' => 'webp',
+                ];
+
+                if (($arq['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    $msgPerfilErro = 'Falha no envio da imagem. Tente um arquivo menor.';
+                } elseif (($arq['size'] ?? 0) > 2 * 1024 * 1024) {
+                    $msgPerfilErro = 'A foto deve ter no máximo 2 MB.';
+                } else {
+                    $infoImg = @getimagesize($arq['tmp_name']);
+                    $mimeReal = is_array($infoImg) ? ($infoImg['mime'] ?? '') : '';
+                    if (!isset($tiposPermitidos[$mimeReal])) {
+                        $msgPerfilErro = 'Formato de imagem inválido. Envie apenas JPG, PNG ou WebP.';
+                    } else {
+                        $dirUpload = __DIR__ . '/uploads/perfis';
+                        if (!is_dir($dirUpload)) {
+                            mkdir($dirUpload, 0755, true);
+                            file_put_contents($dirUpload . '/.htaccess', "Options -Indexes\nphp_flag engine off\n");
+                        }
+                        $nomeSeguro = 'perfil_' . $uid . '_' . bin2hex(random_bytes(8)) . '.' . $tiposPermitidos[$mimeReal];
+                        $destino = $dirUpload . '/' . $nomeSeguro;
+                        if (move_uploaded_file($arq['tmp_name'], $destino)) {
+                            $caminhoFoto = 'uploads/perfis/' . $nomeSeguro;
+                        } else {
+                            $msgPerfilErro = 'Não foi possível salvar a foto enviada.';
+                        }
+                    }
+                }
+            }
+
+            if ($msgPerfilErro === '') {
+                $dtNascFinal = $novaDataNasc !== '' ? $novaDataNasc : null;
+                if ($caminhoFoto !== null) {
+                    $upd = $pdo->prepare('UPDATE usuario SET nome_usuario = ?, data_nascimento_usuario = COALESCE(?, data_nascimento_usuario), biografia_usuario = ?, foto_usuario = ? WHERE id_usuario = ?');
+                    $upd->execute([$novoNome, $dtNascFinal, $novaBio !== '' ? $novaBio : null, $caminhoFoto, $uid]);
+                } else {
+                    $upd = $pdo->prepare('UPDATE usuario SET nome_usuario = ?, data_nascimento_usuario = COALESCE(?, data_nascimento_usuario), biografia_usuario = ? WHERE id_usuario = ?');
+                    $upd->execute([$novoNome, $dtNascFinal, $novaBio !== '' ? $novaBio : null, $uid]);
+                }
+                $_SESSION['nome_usuario'] = $novoNome;
+                if ($dtNascFinal !== null) {
+                    $_SESSION['data_nascimento_usuario'] = $dtNascFinal;
+                }
+                $msgPerfilSucesso = 'Perfil atualizado com sucesso.';
+            }
+        }
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'alterar_senha') {
+    if (!folivro_verify_csrf()) {
+        $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
+    } else {
+        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+        $novaSenha = (string) ($_POST['nova_senha'] ?? '');
+        $confNovaSenha = (string) ($_POST['confirmacao_nova_senha'] ?? '');
+
+        $pwdStmt = $pdo->prepare('SELECT senha_usuario FROM usuario WHERE id_usuario = ? LIMIT 1');
+        $pwdStmt->execute([$uid]);
+        $senhaHash = (string) $pwdStmt->fetchColumn();
+
+        if (!password_verify($senhaAtual, $senhaHash)) {
+            $msgPerfilErro = 'A senha atual informada está incorreta.';
+        } elseif (strlen($novaSenha) < 8 || strlen($novaSenha) > 255) {
+            $msgPerfilErro = 'A nova senha deve ter no mínimo 8 caracteres.';
+        } elseif ($novaSenha !== $confNovaSenha) {
+            $msgPerfilErro = 'A confirmação da nova senha não confere.';
+        } else {
+            $updPwd = $pdo->prepare('UPDATE usuario SET senha_usuario = ? WHERE id_usuario = ?');
+            $updPwd->execute([password_hash($novaSenha, PASSWORD_DEFAULT), $uid]);
+            $msgPerfilSucesso = 'Senha alterada com sucesso.';
+        }
+    }
+}
+
+$stmt = $pdo->prepare('SELECT nome_usuario, email_usuario, data_nascimento_usuario, biografia_usuario, foto_usuario, nivel_usuario, data_cadastro_usuario FROM usuario WHERE id_usuario = ?');
+$stmt->execute([$uid]);
+$user = $stmt->fetch();
+$idadeUsuarioPerfil = folivro_calcular_idade($user['data_nascimento_usuario'] ?? null);
+$maiorDeIdadePerfil = folivro_usuario_maior_de_idade($pdo, $uid);
+
+// Contadores reais do perfil (alinhados ao protótipo usuario.html e ao Figma).
+$contStmt = $pdo->prepare(
+    'SELECT
+        (SELECT COUNT(*) FROM livraria WHERE id_usuario = ?) +
+        (SELECT COUNT(*) FROM livraria_digital WHERE id_usuario = ?) AS livros_salvos,
+        (SELECT COUNT(*) FROM resenha WHERE id_usuario = ?) AS livros_avaliados,
+        (SELECT COUNT(*) FROM curtidas WHERE id_usuario = ?) AS favoritos'
+);
+$contStmt->execute([$uid, $uid, $uid, $uid]);
+$contadores = $contStmt->fetch() ?: ['livros_salvos' => 0, 'livros_avaliados' => 0, 'favoritos' => 0];
+
+// Prévia visual de livros salvos e obras compradas para a estante do perfil (como no Figma).
+$prevLivrosStmt = $pdo->prepare(
+    'SELECT b.id_livro, b.titulo_livro, b.autor_livro, b.capa_livro, b.classificacao_livro, l.status_livraria, COALESCE(p.porcentagem_progressao, 0) AS porcentagem
+       FROM livraria l
+       JOIN livro b ON b.id_livro = l.id_livro
+  LEFT JOIN progressao_leitura p ON p.id_usuario = l.id_usuario AND p.id_livro = l.id_livro
+      WHERE l.id_usuario = ?
+   ORDER BY l.data_solicitacao_livraria DESC, l.id_livraria DESC
+      LIMIT 6'
+);
+$prevLivrosStmt->execute([$uid]);
+$prevLivros = $prevLivrosStmt->fetchAll();
+
+$csrf = folivro_escape(folivro_csrf_token());
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Meu perfil | FOLIVRO</title>
+    <link rel="stylesheet" href="usuario.css?v=20261022_9">
+    <link rel="stylesheet" href="layout.css?v=20261022_11">
+</head>
+
+<body>
+
+    <?php $menuAtivo = 'perfil'; require __DIR__ . '/includes/menu-lateral.php'; ?>
+
+    <?php require __DIR__ . '/includes/menu-autor.php'; ?>
+
+    <main class="conteudo" id="conteudo-principal">
+        <section class="perfil">
+            <div class="cabecalho-perfil">
+                <div class="avatar" aria-hidden="true">
+                    <?php if (!empty($user['foto_usuario'])): ?>
+                        <img src="<?= folivro_escape($user['foto_usuario']) ?>" alt="Foto de perfil" style="width:100%;height:100%;border-radius:50%;object-fit:cover">
+                    <?php else: ?>
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="50" fill="#555" />
+                            <circle cx="50" cy="35" r="19" fill="#ccc" />
+                            <path d="M15 88 Q18 57 50 57 Q82 57 85 88 Q68 100 50 100 Q32 100 15 88" fill="#ccc" />
+                        </svg>
+                    <?php endif; ?>
+                </div>
+
+                <div class="dados-usuario">
+                    <h1><?= folivro_escape($user['nome_usuario'] ?? 'Meu Perfil') ?></h1>
+                    <p class="email"><?= folivro_escape($user['email_usuario'] ?? '') ?></p>
+                    <?php if (!empty($user['biografia_usuario'])): ?>
+                        <p class="biografia"><?= folivro_escape($user['biografia_usuario']) ?></p>
+                    <?php endif; ?>
+                    <p class="membro">
+                        Membro desde: <?= isset($user['data_cadastro_usuario']) ? date('d/m/Y', strtotime($user['data_cadastro_usuario'])) : '' ?>
+                        <?php if ($idadeUsuarioPerfil !== null): ?>
+                            · Nascimento: <?= date('d/m/Y', strtotime((string) $user['data_nascimento_usuario'])) ?> (<?= $idadeUsuarioPerfil ?> anos — <?= $maiorDeIdadePerfil ? 'Maior de 18 anos' : 'Menor de 18 anos · Obras +18 ocultas' ?>)
+                        <?php else: ?>
+                            · Data de nascimento não informada (Obras +18 ocultas por proteção etária)
+                        <?php endif; ?>
+                    </p>
+                </div>
+            </div>
+
+            <?php if ($msgPerfilErro): ?>
+                <p class="estado-vazio estado-erro" role="alert"><?= folivro_escape($msgPerfilErro) ?></p>
+            <?php endif; ?>
+            <?php if ($msgPerfilSucesso): ?>
+                <p class="estado-vazio estado-sucesso" role="status"><?= folivro_escape($msgPerfilSucesso) ?></p>
+            <?php endif; ?>
+
+            <details class="configurar-meta">
+                <summary>Editar perfil, data de nascimento e foto</summary>
+                <form method="post" enctype="multipart/form-data" class="progresso-form">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                    <input type="hidden" name="acao" value="editar_perfil">
+                    <label for="nome_usuario">Nome de exibição
+                        <input id="nome_usuario" name="nome_usuario" maxlength="120" required value="<?= folivro_escape($user['nome_usuario'] ?? '') ?>">
+                    </label>
+                    <label for="data_nascimento_usuario">Data de nascimento (define a exibição de obras +18)
+                        <input id="data_nascimento_usuario" name="data_nascimento_usuario" type="date" min="1905-01-01" max="<?= date('Y-m-d') ?>" value="<?= folivro_escape((string) ($user['data_nascimento_usuario'] ?? '')) ?>">
+                    </label>
+                    <label for="biografia_usuario">Biografia (opcional)
+                        <textarea id="biografia_usuario" name="biografia_usuario" rows="3" maxlength="1000"><?= folivro_escape((string) ($user['biografia_usuario'] ?? '')) ?></textarea>
+                    </label>
+                    <label for="foto_usuario">Foto de perfil (JPG, PNG ou WebP, máx. 2 MB)
+                        <input id="foto_usuario" type="file" name="foto_usuario" accept="image/jpeg,image/png,image/webp">
+                    </label>
+                    <button class="botao-adicionar-livro" type="submit">Salvar alterações</button>
+                </form>
+            </details>
+
+            <section class="estatisticas" aria-label="Resumo do perfil">
+                <div class="estatistica">
+                    <strong><?= (int) $contadores['livros_salvos'] ?></strong>
+                    <span>Livros salvos</span>
+                </div>
+                <div class="estatistica">
+                    <strong><?= (int) $contadores['livros_avaliados'] ?></strong>
+                    <span>Livros avaliados</span>
+                </div>
+                <div class="estatistica">
+                    <strong><?= (int) $contadores['favoritos'] ?></strong>
+                    <span>Favoritos</span>
+                </div>
+            </section>
+
+            <section class="area-livros">
+                <h2>Minha biblioteca digital</h2>
+                <p>Consulte os livros salvos e as obras independentes que você comprou.</p>
+                <p class="atalhos-perfil-biblioteca">
+                    <a class="botao-adicionar-livro" href="minha-biblioteca.php">Abrir minha biblioteca</a>
+                    <a class="botao-adicionar-livro" href="biblioteca-autor.php">Painel do autor</a>
+                    <a class="botao-adicionar-livro" href="loja.php">Visitar loja</a>
+                </p>
+
+                <?php if ($prevLivros): ?>
+                    <div class="biblioteca-lista estante-perfil">
+                        <?php foreach ($prevLivros as $pl): ?>
+                            <?php
+                            $pctPrev = max(0, min(100, (int) round((float) $pl['porcentagem'])));
+                            $classifPl = folivro_normalizar_classificacao($pl['classificacao_livro'] ?? 'livre');
+                            $bloqueadoPl = (!$maiorDeIdadePerfil && folivro_classificacao_eh_maior18($classifPl));
+                            ?>
+                            <article class="livro-card <?= $bloqueadoPl ? 'livro-card-bloqueado-idade' : '' ?>">
+                                <div class="livro-capa <?= $bloqueadoPl ? 'capa-bloqueada-18' : '' ?>">
+                                    <?php if (!empty($pl['capa_livro'])): ?>
+                                        <img src="<?= folivro_escape($pl['capa_livro']) ?>" alt="<?= $bloqueadoPl ? 'Capa bloqueada (+18)' : 'Capa de ' . folivro_escape($pl['titulo_livro']) ?>" loading="lazy">
+                                    <?php else: ?>
+                                        <div class="capa-fallback"><?= $bloqueadoPl ? 'Conteúdo +18' : folivro_escape($pl['titulo_livro']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($bloqueadoPl): ?>
+                                        <div class="capa-bloqueio-idade-overlay" role="img" aria-label="Conteúdo bloqueado para menores de 18 anos">
+                                            <div class="icone-olho-bloqueado-circulo">
+                                                <?= folivro_icone_olho_bloqueado_svg(30) ?>
+                                            </div>
+                                            <strong class="titulo-bloqueio-capa">Classificação +18</strong>
+                                            <span class="motivo-bloqueio-capa">Bloqueado: conteúdo exclusivo para maiores de 18 anos</span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="livro-info">
+                                    <div class="linha-selos-card">
+                                        <span class="selo-status"><?= folivro_escape(folivro_status_label((string) $pl['status_livraria'])) ?></span>
+                                        <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifPl) ?>" title="<?= folivro_escape(folivro_aviso_conteudo_label($classifPl)) ?>">
+                                            <?= folivro_escape(folivro_classificacao_sigla($classifPl)) ?>
+                                        </span>
+                                    </div>
+                                    <?php if ($bloqueadoPl): ?>
+                                        <h3><span class="titulo-oculto-idade" title="Título oculto para menores de 18 anos">Título oculto (+18)</span></h3>
+                                        <p class="autor-card-livro"><?= folivro_escape($pl['autor_livro']) ?></p>
+                                        <div class="rodape-card-leitura">
+                                            <p class="texto-motivo-bloqueio-card">Obra restrita para maiores de 18 anos conforme sua data de nascimento.</p>
+                                            <button class="botao-adicionar-livro botao-bloqueado-idade btn-card-principal" type="button" disabled>Bloqueado (+18)</button>
+                                        </div>
+                                    <?php else: ?>
+                                        <h3><a href="livro.php?id=<?= (int) $pl['id_livro'] ?>" class="link-titulo-livro"><?= folivro_escape($pl['titulo_livro']) ?></a></h3>
+                                        <p class="autor-card-livro"><?= folivro_escape($pl['autor_livro']) ?></p>
+                                        <div class="rodape-card-leitura">
+                                            <div class="bloco-progresso-card">
+                                                <div class="topo-progresso-card">
+                                                    <span>Progresso</span>
+                                                    <strong><?= $pctPrev ?>%</strong>
+                                                </div>
+                                                <div class="mini-progresso" title="<?= $pctPrev ?>% concluído">
+                                                    <span style="width: <?= $pctPrev ?>%"></span>
+                                                </div>
+                                            </div>
+                                            <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $pl['id_livro'] ?>">Continuar leitura</a>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </section>
+
+            <section class="privacidade-conta" aria-labelledby="titulo-privacidade">
+                <h2 id="titulo-privacidade">Privacidade e conta</h2>
+                <p>Veja os <a href="termos.php">termos de uso e a política de privacidade</a>.</p>
+                <?php $conta = $_GET['conta'] ?? ''; ?>
+                <?php if ($conta === 'senha'): ?>
+                    <p class="estado-vazio estado-erro" role="alert">Senha incorreta ou confirmação não marcada. A conta não foi excluída.</p>
+                <?php elseif ($conta === 'erro'): ?>
+                    <p class="estado-vazio estado-erro" role="alert">Não foi possível excluir a conta agora. Tente novamente.</p>
+                <?php endif; ?>
+                <details class="configurar-meta" style="margin-bottom:14px;">
+                    <summary>Alterar senha de acesso</summary>
+                    <form class="progresso-form" method="post">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                        <input type="hidden" name="acao" value="alterar_senha">
+                        <label for="senha_atual">Senha atual
+                            <input id="senha_atual" type="password" name="senha_atual" autocomplete="current-password" required>
+                        </label>
+                        <label for="nova_senha">Nova senha (mínimo 8 caracteres)
+                            <input id="nova_senha" type="password" name="nova_senha" autocomplete="new-password" minlength="8" required>
+                        </label>
+                        <label for="confirmacao_nova_senha">Confirmar nova senha
+                            <input id="confirmacao_nova_senha" type="password" name="confirmacao_nova_senha" autocomplete="new-password" minlength="8" required>
+                        </label>
+                        <button class="botao-adicionar-livro" type="submit">Salvar nova senha</button>
+                    </form>
+                </details>
+
+                <details>
+                    <summary>Excluir minha conta</summary>
+                    <form class="progresso-form" method="post" action="excluir-conta.php">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                        <p>Seus dados pessoais serão anonimizados, a biblioteca e o progresso serão apagados e suas obras sairão da loja. Esta ação não pode ser desfeita.</p>
+                        <label for="senha_confirmacao">Confirme sua senha
+                            <input id="senha_confirmacao" type="password" name="senha_confirmacao" autocomplete="current-password" required>
+                        </label>
+                        <label><input type="checkbox" name="confirmo_exclusao" value="1" required> Entendo que a exclusão é definitiva.</label>
+                        <button class="botao-adicionar-livro botao-perigo" type="submit">Excluir conta</button>
+                    </form>
+                </details>
+            </section>
+        </section>
+
+        <footer class="rodape">
+            <button type="button" class="botao-sair" id="abrirModalSair">Sair</button>
+        </footer>
+    </main>
+
+    <!-- Modal de confirmação de saída conforme o Figma -->
+    <div class="modal-sair-fundo" id="modalSair" hidden role="dialog" aria-modal="true" aria-labelledby="tituloModalSair">
+        <div class="modal-sair-caixa">
+            <p id="tituloModalSair">Tem certeza que deseja sair?</p>
+            <div class="modal-sair-botoes">
+                <button type="button" class="botao-cancelar-sair" id="cancelarSair">cancelar</button>
+                <form method="post" action="logout.php">
+                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                    <button type="submit" class="botao-sair">sair</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modalSair = document.getElementById('modalSair');
+        const fecharModalSair = () => {
+            modalSair.hidden = true;
+            document.getElementById('abrirModalSair').focus();
+        };
+        document.getElementById('abrirModalSair').addEventListener('click', () => {
+            modalSair.hidden = false;
+            document.getElementById('cancelarSair').focus();
+        });
+        document.getElementById('cancelarSair').addEventListener('click', fecharModalSair);
+        modalSair.addEventListener('click', (ev) => {
+            if (ev.target === modalSair) fecharModalSair();
+        });
+        document.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Escape' && !modalSair.hidden) fecharModalSair();
+        });
+    </script>
+
+</body>
+
+</html>

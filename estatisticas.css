@@ -1,0 +1,148 @@
+/* ==========================================================================
+   FOLIVRO — Estilos específicos de Metas e Estatísticas (estatisticas.php)
+   Complementa o sistema visual compartilhado em layout.css
+   ========================================================================== */
+
+.cabecalho {
+    margin-bottom: 24px;
+}
+
+/* Grade de indicadores estatísticos em cartões */
+.grade-estatisticas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    max-width: 920px;
+}
+
+.grade-estatisticas .estatistica {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 22px 24px;
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-top: 4px solid var(--cor-marrom, #8a542c);
+    border-radius: var(--raio-card, 12px);
+    background: var(--fundo-superficie, #ffffff);
+    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+}
+
+.grade-estatisticas .estatistica h2 {
+    margin: 0 0 12px;
+    color: var(--texto-secundario, #54463f);
+    font-family: var(--fonte-interface, sans-serif);
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.grade-estatisticas .estatistica p {
+    margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.grade-estatisticas .estatistica .numero {
+    color: var(--cor-vinho, #5c0000);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.tema-escuro .grade-estatisticas .estatistica .numero {
+    color: #f3c879;
+}
+
+.grade-estatisticas .estatistica span {
+    color: var(--texto-apoio, #6e5d54);
+    font-size: 15px;
+}
+
+/* Bloco da Meta Anual */
+.meta-anual {
+    max-width: 920px;
+    margin-top: 32px;
+    padding: 24px 26px;
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: var(--raio-card, 12px);
+    background: var(--fundo-superficie, #ffffff);
+    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+}
+
+.meta-anual h2 {
+    margin: 0 0 14px;
+    font-size: 21px;
+}
+
+.informacoes-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.informacoes-meta p {
+    margin: 0;
+    color: var(--texto-secundario, #54463f);
+    font-size: 16px;
+}
+
+.informacoes-meta strong {
+    color: var(--cor-vinho, #5c0000);
+    font-size: 16px;
+}
+
+.tema-escuro .informacoes-meta strong {
+    color: #f3c879;
+}
+
+.linha-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.barra {
+    flex: 1;
+    height: 22px;
+    border-radius: 999px;
+    background: #e4d8ce;
+    overflow: hidden;
+}
+
+.tema-escuro .barra {
+    background: #463b37;
+}
+
+.progresso {
+    width: 0%;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #5c0000, #9b5b28);
+    transition: width 0.4s ease;
+}
+
+.porcentagem {
+    min-width: 52px;
+    color: var(--texto-principal, #231b18);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 20px;
+    font-weight: 700;
+    text-align: right;
+}
+
+.nota-estatisticas {
+    max-width: 920px;
+    margin-top: 24px;
+    color: var(--texto-apoio, #6e5d54);
+    font-size: 14px;
+}
+
+.marcadores {
+    display: none;
+}

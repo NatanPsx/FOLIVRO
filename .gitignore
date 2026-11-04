@@ -1,0 +1,15 @@
+# Ignora apenas a pasta de backups locais pesados (.zip) e documentos do TCC
+/backups/
+TCC_ESCRITO_FOLIVRO-v22.docx
+*.docx
+
+# Arquivos temporários de sistema operacional
+Thumbs.db
+.DS_Store
+
+# Mantém livros em cache, capas enviadas e banco de dados completo no repositório
+!/uploads/
+!/uploads/capas/
+!/uploads/perfis/
+!/cache/
+!/database/

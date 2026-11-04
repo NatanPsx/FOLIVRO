@@ -1,0 +1,213 @@
+/* ==========================================================================
+   FOLIVRO — Estilos específicos do Perfil do Usuário (usuario.php)
+   Complementa o sistema visual compartilhado em layout.css
+   ========================================================================== */
+
+/* Cabeçalho do perfil em cartão elevado */
+.cabecalho-perfil {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 24px;
+    padding: clamp(20px, 3vw, 30px);
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: var(--raio-card, 12px);
+    background: var(--fundo-superficie, #ffffff);
+    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+}
+
+.avatar {
+    width: 96px;
+    height: 96px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    box-shadow: 0 3px 10px rgba(92, 0, 0, 0.16);
+}
+
+.avatar svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.dados-usuario {
+    flex: 1;
+    min-width: 200px;
+}
+
+.dados-usuario h1 {
+    margin: 0 0 4px;
+    color: var(--texto-principal, #231b18);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: clamp(24px, 2.8vw, 32px);
+    font-weight: 700;
+}
+
+.email {
+    margin: 0;
+    color: var(--texto-secundario, #54463f);
+    font-size: 15.5px;
+    overflow-wrap: anywhere;
+}
+
+.membro {
+    margin: 10px 0 0;
+    color: var(--cor-marrom, #8a542c);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.tema-escuro .membro {
+    color: #f3c879;
+}
+
+/* Botão seletor de tema claro/escuro */
+.alternar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 60px;
+    height: 30px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.alternar input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.controle {
+    position: absolute;
+    inset: 0;
+    background: #b9aba1;
+    border-radius: 999px;
+    transition: background 0.25s ease;
+}
+
+.controle::before {
+    content: "";
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    left: 4px;
+    top: 4px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+    transition: transform 0.25s ease;
+}
+
+.alternar input:checked + .controle {
+    background: var(--cor-vermelho-acao, #6b130d);
+}
+
+.alternar input:checked + .controle::before {
+    transform: translateX(30px);
+}
+
+.alternar input:focus-visible + .controle {
+    outline: 3px solid var(--cor-dourado-foco, #e7ae5c);
+    outline-offset: 2px;
+}
+
+/* Cartões de resumo rápido do perfil */
+.estatisticas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 18px;
+    margin-top: 24px;
+    text-align: center;
+}
+
+.estatisticas .estatistica {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 20px 16px;
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: var(--raio-card, 12px);
+    background: var(--fundo-superficie, #ffffff);
+    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+}
+
+.estatisticas .estatistica strong {
+    color: var(--cor-vinho, #5c0000);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.tema-escuro .estatisticas .estatistica strong {
+    color: #f3c879;
+}
+
+.estatisticas .estatistica span {
+    color: var(--texto-secundario, #54463f);
+    font-size: 14.5px;
+    font-weight: 600;
+}
+
+/* Seção de leituras e ações da conta */
+.area-livros {
+    margin-top: 34px;
+}
+
+.area-livros h2 {
+    margin: 0 0 12px;
+    color: var(--texto-principal, #231b18);
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 23px;
+}
+
+.area-livros > p {
+    color: var(--texto-secundario, #54463f);
+    font-size: 15.5px;
+}
+
+.botao-sair {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 137px;
+    height: 46px;
+    padding: 0 22px;
+    border: 0;
+    border-radius: var(--raio-botao, 8px);
+    background: var(--cor-vinho, #5c0000);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.botao-sair:hover {
+    background: var(--cor-vermelho-hover, #861a11);
+}
+
+@media (max-width: 600px) {
+    .avatar {
+        width: 74px;
+        height: 74px;
+    }
+
+    .estatisticas {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .estatisticas .estatistica {
+        padding: 14px 8px;
+    }
+
+    .estatisticas .estatistica strong {
+        font-size: 24px;
+    }
+
+    .estatisticas .estatistica span {
+        font-size: 12.5px;
+    }
+}

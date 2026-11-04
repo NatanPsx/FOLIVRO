@@ -1,0 +1,13 @@
+Options -Indexes
+RewriteEngine On
+
+# Bloqueia acesso HTTP direto a pastas internas e scripts SQL/arquivos sensíveis
+RewriteRule ^(config|database|includes|cache)/ - [F,L]
+
+<FilesMatch "\.(sql|ini|log|docx)$">
+    Require all denied
+</FilesMatch>
+
+RewriteRule ^cadastro\.html$ cadastro.php [R=302,L]
+RewriteRule ^minha-biblioteca\.html$ minha-biblioteca.php [R=302,L]
+RewriteRule ^(home|pesquisa|usuario|estatisticas|login|biblioteca)\.html$ $1.php [R=302,L]
