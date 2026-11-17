@@ -212,6 +212,32 @@ try {
         exit;
     }
 
+    if ($acao === 'buscar_usuarios') {
+        $termo = trim((string) ($_GET['q'] ?? ''));
+        if (mb_strlen($termo, 'UTF-8') < 2 || mb_strlen($termo, 'UTF-8') > 80) {
+            echo json_encode(['ok' => true, 'usuarios' => []], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $like = '%' . addcslashes($termo, '\\%_') . '%';
+        $stUsers = $pdo->prepare(
+            "SELECT u.id_usuario, u.nome_usuario, u.nivel_usuario
+               FROM usuario u
+              WHERE u.status_usuario = 'ativo'
+                AND u.id_usuario <> :eu
+                AND u.nome_usuario LIKE :q
+                AND NOT EXISTS (
+                    SELECT 1 FROM bloqueios_usuario b
+                     WHERE (b.id_bloqueador = :eu_b1 AND b.id_bloqueado = u.id_usuario)
+                        OR (b.id_bloqueador = u.id_usuario AND b.id_bloqueado = :eu_b2)
+                )
+           ORDER BY u.nome_usuario ASC
+              LIMIT 12"
+        );
+        $stUsers->execute(['eu' => $idUsuario, 'q' => $like, 'eu_b1' => $idUsuario, 'eu_b2' => $idUsuario]);
+        echo json_encode(['ok' => true, 'usuarios' => $stUsers->fetchAll(PDO::FETCH_ASSOC)], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($acao === 'ler_mensagens') {
         $idConversa = (int) ($entradaJson['id_conversa'] ?? $_GET['id_conversa'] ?? $_POST['id_conversa'] ?? 0);
         $aposId = max(0, (int) ($entradaJson['apos_id'] ?? $_GET['apos_id'] ?? $_POST['apos_id'] ?? 0));
@@ -309,11 +335,12 @@ try {
         $maior = max($idUsuario, $idDestinatario);
 
         $stmtBusca = $pdo->prepare(
-            'SELECT id_conversa FROM chat_conversas
+            'SELECT id_conversa, status_conversa FROM chat_conversas
              WHERE id_usuario_menor = :menor AND id_usuario_maior = :maior LIMIT 1'
         );
         $stmtBusca->execute(['menor' => $menor, 'maior' => $maior]);
-        $idConversaExistente = (int) ($stmtBusca->fetchColumn() ?: 0);
+        $rowConv = $stmtBusca->fetch(PDO::FETCH_ASSOC);
+        $idConversaExistente = (int) ($rowConv['id_conversa'] ?? 0);
 
         if ($idConversaExistente <= 0) {
             $stmtTaxaConv = $pdo->prepare(
@@ -332,10 +359,14 @@ try {
             }
 
             $stmtIns = $pdo->prepare(
-                'INSERT INTO chat_conversas (id_usuario_menor, id_usuario_maior) VALUES (:menor, :maior)'
+                "INSERT INTO chat_conversas (id_usuario_menor, id_usuario_maior, status_conversa, id_solicitante)
+                 VALUES (:menor, :maior, 'pendente', :sol)"
             );
-            $stmtIns->execute(['menor' => $menor, 'maior' => $maior]);
+            $stmtIns->execute(['menor' => $menor, 'maior' => $maior, 'sol' => $idUsuario]);
             $idConversaExistente = (int) $pdo->lastInsertId();
+        } elseif (($rowConv['status_conversa'] ?? '') === 'recusada') {
+            $pdo->prepare("UPDATE chat_conversas SET status_conversa = 'pendente', id_solicitante = :sol WHERE id_conversa = :idc")
+                ->execute(['sol' => $idUsuario, 'idc' => $idConversaExistente]);
         }
 
         echo json_encode([
@@ -357,6 +388,15 @@ try {
             echo json_encode([
                 'ok' => false,
                 'mensagem' => 'Acesso negado: você não faz parte desta conversa.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (($conversa['status_conversa'] ?? 'aceita') !== 'aceita') {
+            http_response_code(403);
+            echo json_encode([
+                'ok' => false,
+                'mensagem' => 'Solicitação de mensagem pendente: aguarde o aceite antes de enviar mensagens.',
             ], JSON_UNESCAPED_UNICODE);
             exit;
         }

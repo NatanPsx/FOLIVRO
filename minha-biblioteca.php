@@ -61,6 +61,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <title>Minha biblioteca digital | FOLIVRO</title>
     <link rel="stylesheet" href="layout.css?v=20261104_20">
     <link rel="stylesheet" href="home.css?v=20261104_20">
+    <link rel="stylesheet" href="estante.css?v=20261117_1">
 </head>
 
 <body>
@@ -87,7 +88,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             </div>
         <?php endif; ?>
 
-        <div class="biblioteca-lista" id="grade-biblioteca">
+        <div class="biblioteca-lista estante-biblioteca" id="grade-biblioteca">
             <?php if (!$books): ?>
                 <p class="estado-vazio">Sua biblioteca está vazia. Explore a loja ou adicione livros da Open Library.</p>
             <?php else: ?>

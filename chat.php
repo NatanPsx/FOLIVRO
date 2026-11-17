@@ -146,10 +146,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $menor = min($idUsuario, $idDestinatario);
                             $maior = max($idUsuario, $idDestinatario);
                             $stmtBusca = $pdo->prepare(
-                                'SELECT id_conversa FROM chat_conversas WHERE id_usuario_menor = :menor AND id_usuario_maior = :maior LIMIT 1'
+                                'SELECT id_conversa, status_conversa FROM chat_conversas WHERE id_usuario_menor = :menor AND id_usuario_maior = :maior LIMIT 1'
                             );
                             $stmtBusca->execute(['menor' => $menor, 'maior' => $maior]);
-                            $idConv = (int) ($stmtBusca->fetchColumn() ?: 0);
+                            $rowConv = $stmtBusca->fetch(PDO::FETCH_ASSOC);
+                            $idConv = (int) ($rowConv['id_conversa'] ?? 0);
 
                             if ($idConv <= 0) {
                                 $stmtTaxaConv = $pdo->prepare(
@@ -163,11 +164,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $tipoFeedback = 'erro';
                                 } else {
                                     $stmtIns = $pdo->prepare(
-                                        'INSERT INTO chat_conversas (id_usuario_menor, id_usuario_maior) VALUES (:menor, :maior)'
+                                        "INSERT INTO chat_conversas (id_usuario_menor, id_usuario_maior, status_conversa, id_solicitante)
+                                         VALUES (:menor, :maior, 'pendente', :sol)"
                                     );
-                                    $stmtIns->execute(['menor' => $menor, 'maior' => $maior]);
+                                    $stmtIns->execute(['menor' => $menor, 'maior' => $maior, 'sol' => $idUsuario]);
                                     $idConv = (int) $pdo->lastInsertId();
                                 }
+                            } elseif (($rowConv['status_conversa'] ?? '') === 'recusada') {
+                                $pdo->prepare("UPDATE chat_conversas SET status_conversa = 'pendente', id_solicitante = :sol WHERE id_conversa = :idc")
+                                    ->execute(['sol' => $idUsuario, 'idc' => $idConv]);
                             }
                             if ($idConv > 0) {
                                 header('Location: chat.php?conversa=' . $idConv);
@@ -175,6 +180,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             }
                         }
                     }
+                }
+            } elseif ($acaoPost === 'aceitar_conversa' || $acaoPost === 'recusar_conversa') {
+                $idConvPost = (int) ($_POST['id_conversa'] ?? 0);
+                $idConversaAtiva = $idConvPost;
+                $conv = folivro_pagina_chat_conversa($pdo, $idConvPost, $idUsuario);
+                if (!$conv) {
+                    $mensagemFeedback = 'Conversa não encontrada.';
+                    $tipoFeedback = 'erro';
+                } elseif (($conv['status_conversa'] ?? 'aceita') !== 'pendente' || (int) ($conv['id_solicitante'] ?? 0) === $idUsuario) {
+                    $mensagemFeedback = 'Apenas o destinatário pode responder a uma solicitação pendente.';
+                    $tipoFeedback = 'erro';
+                } else {
+                    $novoStatusConv = ($acaoPost === 'aceitar_conversa') ? 'aceita' : 'recusada';
+                    $pdo->prepare('UPDATE chat_conversas SET status_conversa = ? WHERE id_conversa = ?')
+                        ->execute([$novoStatusConv, $idConvPost]);
+                    $mensagemFeedback = ($novoStatusConv === 'aceita')
+                        ? 'Solicitação aceita! Agora vocês podem trocar mensagens normalmente.'
+                        : 'Solicitação de conversa recusada.';
+                    $tipoFeedback = 'sucesso';
                 }
             } elseif ($acaoPost === 'enviar_mensagem') {
                 $idConvPost = (int) ($_POST['id_conversa'] ?? 0);
@@ -185,6 +209,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $conv = folivro_pagina_chat_conversa($pdo, $idConvPost, $idUsuario);
                 if (!$conv) {
                     $mensagemFeedback = 'Acesso negado: você não participa desta conversa.';
+                    $tipoFeedback = 'erro';
+                } elseif (($conv['status_conversa'] ?? 'aceita') !== 'aceita') {
+                    $mensagemFeedback = 'Solicitação de mensagem pendente: aguarde o aceite antes de enviar mensagens.';
                     $tipoFeedback = 'erro';
                 } elseif (!empty($contaAtual['restricao_chat_ate']) && strtotime((string) $contaAtual['restricao_chat_ate']) > time()) {
                     $ateFmt = date('d/m/Y \à\s H:i', strtotime((string) $contaAtual['restricao_chat_ate']));
@@ -465,7 +492,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Carrega lista de conversas do usuário logado
 $stmtConversas = $pdo->prepare(
-    'SELECT c.id_conversa, c.id_usuario_menor, c.id_usuario_maior, c.data_ultima_mensagem,
+    'SELECT c.id_conversa, c.id_usuario_menor, c.id_usuario_maior, c.status_conversa, c.id_solicitante, c.data_ultima_mensagem,
             u_outro.id_usuario AS outro_id,
             u_outro.nome_usuario AS outro_nome,
             u_outro.nivel_usuario AS outro_nivel,
@@ -588,28 +615,31 @@ $statusDenunciaLabels = [
         </header>
 
         <!-- Diretrizes obrigatórias de Direitos Autorais e Privacidade no Chat -->
-        <section class="aviso-direitos-chat" aria-label="Regras de direitos autorais e privacidade do chat">
-            <div class="aviso-direitos-chat-coluna">
-                <h2>Proteção de Direitos Autorais no Chat</h2>
-                <p>
-                    <strong>Não envie nem solicite cópias não autorizadas</strong> de livros, capítulos, arquivos PDF/EPUB, traduções, capas, ilustrações ou outros materiais protegidos.
-                    O envio de arquivos ou anexos é bloqueado nesta etapa.
-                </p>
-                <p class="texto-apoio-pequeno">
-                    <strong>Regra fundamental:</strong> nem a declaração de um usuário, nem o caráter privado da conversa, nem a finalidade acadêmica autorizam reproduzir ou distribuir obras protegidas sem permissão documentada do(a) titular ou base legal verificada. Links de download de livros são bloqueados e mensagens denunciadas por violação autoral são ocultadas preventivamente até revisão humana.
-                </p>
-            </div>
-            <div class="aviso-direitos-chat-coluna">
-                <h2>Privacidade, Acesso Restrito e Retenção (LGPD)</h2>
-                <p>
-                    Suas mensagens são privadas e acessíveis apenas aos dois participantes da conversa.
-                    <strong>Quem pode acessar mensagens denunciadas:</strong> exclusivamente moderadores/administradores autenticados do FOLIVRO.
-                </p>
-                <p class="texto-apoio-pequeno">
-                    <strong>Finalidade e retenção:</strong> o acesso ocorre estritamente para analisar denúncias de segurança (assédio, ameaça, spam) ou violação de direitos autorais. Registros e evidências vinculados a denúncias são retidos sob sigilo pelo prazo de <strong>180 dias (6 meses)</strong> para auditoria e cumprimento legal (Marco Civil da Internet e LGPD).
-                </p>
-            </div>
-        </section>
+        <details class="configurar-meta" style="margin-bottom:16px;">
+            <summary>Regras de Direitos Autorais e Privacidade (LGPD) no Chat</summary>
+            <section class="aviso-direitos-chat" style="margin-top:12px;" aria-label="Regras de direitos autorais e privacidade do chat">
+                <div class="aviso-direitos-chat-coluna">
+                    <h2>Proteção de Direitos Autorais no Chat</h2>
+                    <p>
+                        <strong>Não envie nem solicite cópias não autorizadas</strong> de livros, capítulos, arquivos PDF/EPUB, traduções, capas, ilustrações ou outros materiais protegidos.
+                        O envio de arquivos ou anexos é bloqueado nesta etapa.
+                    </p>
+                    <p class="texto-apoio-pequeno">
+                        <strong>Regra fundamental:</strong> nem a declaração de um usuário, nem o caráter privado da conversa, nem a finalidade acadêmica autorizam reproduzir ou distribuir obras protegidas sem permissão documentada do(a) titular ou base legal verificada. Links de download de livros são bloqueados e mensagens denunciadas por violação autoral são ocultadas preventivamente até revisão humana.
+                    </p>
+                </div>
+                <div class="aviso-direitos-chat-coluna">
+                    <h2>Privacidade, Acesso Restrito e Retenção (LGPD)</h2>
+                    <p>
+                        Suas mensagens são privadas e acessíveis apenas aos dois participantes da conversa.
+                        <strong>Quem pode acessar mensagens denunciadas:</strong> exclusivamente moderadores/administradores autenticados do FOLIVRO.
+                    </p>
+                    <p class="texto-apoio-pequeno">
+                        <strong>Finalidade e retenção:</strong> o acesso ocorre estritamente para analisar denúncias de segurança (assédio, ameaça, spam) ou violação de direitos autorais. Registros e evidências vinculados a denúncias são retidos sob sigilo pelo prazo de <strong>180 dias (6 meses)</strong> para auditoria e cumprimento legal (Marco Civil da Internet e LGPD).
+                    </p>
+                </div>
+            </section>
+        </details>
 
         <?php if (!empty($contaAtual['restricao_chat_ate']) && strtotime((string) $contaAtual['restricao_chat_ate']) > time()): ?>
             <p class="estado-vazio estado-erro" role="alert">
@@ -636,25 +666,37 @@ $statusDenunciaLabels = [
             <aside class="painel-conversas-chat" aria-label="Suas conversas">
                 <div class="bloco-iniciar-conversa">
                     <h2>Nova Conversa</h2>
-                    <form method="post" action="chat.php" class="form-iniciar-conversa">
-                        <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
-                        <input type="hidden" name="acao" value="iniciar_conversa">
-                        <label for="select-destinatario">Escolher leitor(a) ou autor(a) da comunidade</label>
-                        <select id="select-destinatario" name="id_destinatario" required>
-                            <option value="">Selecione um(a) participante...</option>
-                            <?php foreach ($usuariosComunidade as $uCom): ?>
-                                <option value="<?= (int) $uCom['id_usuario'] ?>" <?= $idUsuarioPreSelecionado === (int) $uCom['id_usuario'] ? 'selected' : '' ?>>
-                                    <?= folivro_escape($uCom['nome_usuario']) ?> (<?= folivro_escape(ucfirst((string) $uCom['nivel_usuario'])) ?>)
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <button type="submit" class="botao-adicionar-livro">Abrir conversa</button>
-                    </form>
+                    <label for="busca-usuario-chat">Pesquisar leitor(a) ou autor(a) pelo nome</label>
+                    <input type="search"
+                           id="busca-usuario-chat"
+                           placeholder="Digite pelo menos 2 letras do nome..."
+                           autocomplete="off"
+                           style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--borda-forte); background:var(--fundo-superficie); color:var(--texto-principal); font:inherit; margin-top:6px;">
+                    <div id="resultados-busca-usuario" style="margin-top:8px; display:flex; flex-direction:column; gap:6px;" aria-live="polite"></div>
+                    <?php if ($idUsuarioPreSelecionado > 0): ?>
+                        <?php foreach ($usuariosComunidade as $uCom): ?>
+                            <?php if ((int) $uCom['id_usuario'] === $idUsuarioPreSelecionado): ?>
+                                <form method="post" action="chat.php" style="margin-top:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                    <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
+                                    <input type="hidden" name="acao" value="iniciar_conversa">
+                                    <input type="hidden" name="id_destinatario" value="<?= (int) $uCom['id_usuario'] ?>">
+                                    <span><strong><?= folivro_escape($uCom['nome_usuario']) ?></strong> (<?= folivro_escape(ucfirst((string) $uCom['nivel_usuario'])) ?>)</span>
+                                    <button type="submit" class="botao-adicionar-livro" style="padding:6px 12px; font-size:0.85rem;">Solicitar conversa</button>
+                                </form>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
 
                 <div class="cabecalho-lista-conversas">
                     <h2>Conversas Participantes (<?= count($listaConversas) ?>)</h2>
                 </div>
+
+                <?php if (!empty($listaConversas)): ?>
+                    <div style="margin-bottom:10px;">
+                        <input type="search" id="filtro-conversas-chat" placeholder="Filtrar conversas por nome..." aria-label="Filtrar conversas por nome" style="width:100%; padding:8px 11px; border-radius:8px; border:1px solid var(--borda-forte); background:var(--fundo-superficie); color:var(--texto-principal); font:inherit; font-size:0.9rem;">
+                    </div>
+                <?php endif; ?>
 
                 <?php if (empty($listaConversas)): ?>
                     <p class="estado-vazio">Você ainda não iniciou nenhuma conversa literária. Escolha um(a) leitor(a) ou autor(a) acima para começar.</p>
@@ -681,8 +723,16 @@ $statusDenunciaLabels = [
                                             <small><?= folivro_escape(date('d/m H:i', strtotime((string) $convItem['data_ultima_mensagem']))) ?></small>
                                         </div>
                                         <p class="item-conversa-previa">
+                                            <?php
+                                            $statusConvItem = (string) ($convItem['status_conversa'] ?? 'aceita');
+                                            $solItem = (int) ($convItem['id_solicitante'] ?? 0);
+                                            ?>
                                             <?php if ($bloqItem['bloqueado']): ?>
                                                 <span class="selo-bloqueio-chat">Bloqueio ativo</span>
+                                            <?php elseif ($statusConvItem === 'pendente'): ?>
+                                                <span class="selo-bloqueio-chat"><?= $solItem === $idUsuario ? 'Solicitação pendente' : 'Nova solicitação!' ?></span>
+                                            <?php elseif ($statusConvItem === 'recusada'): ?>
+                                                <span class="selo-bloqueio-chat">Solicitação recusada</span>
                                             <?php else: ?>
                                                 <?= folivro_escape($resumoUltima) ?>
                                             <?php endif; ?>
@@ -713,9 +763,14 @@ $statusDenunciaLabels = [
                         <div class="participante-conversa-dados">
                             <span class="avatar-chat-letra"><?= folivro_escape(mb_strtoupper(mb_substr($nomeOutroUsuario, 0, 1))) ?></span>
                             <div>
-                                <h2><?= folivro_escape($nomeOutroUsuario) ?></h2>
+                                <h2>
+                                    <a href="usuario.php?id=<?= $idOutroUsuario ?>" style="color:inherit; text-decoration:none;" title="Abrir perfil de <?= folivro_escape($nomeOutroUsuario) ?>">
+                                        <?= folivro_escape($nomeOutroUsuario) ?>
+                                    </a>
+                                </h2>
                                 <span class="subtitulo-participante">
                                     Perfil: <?= folivro_escape($nivelOutroUsuario) ?>
+                                    · <a href="usuario.php?id=<?= $idOutroUsuario ?>">Ver perfil</a>
                                     <?php if ($estadoBloqueioAtivo['eu_bloqueei']): ?>
                                         · <strong class="texto-perigo">Bloqueado por você</strong>
                                     <?php elseif ($estadoBloqueioAtivo['outro_bloqueou']): ?>
@@ -808,8 +863,12 @@ $statusDenunciaLabels = [
                         <?php endif; ?>
                     </div>
 
-                    <!-- Caixa de Envio ou Aviso de Bloqueio -->
+                    <!-- Caixa de Envio ou Aviso de Bloqueio / Solicitação -->
                     <footer class="rodape-envio-chat">
+                        <?php
+                        $statusConvAtual = (string) ($conversaSelecionada['status_conversa'] ?? 'aceita');
+                        $idSolicitanteAtual = (int) ($conversaSelecionada['id_solicitante'] ?? 0);
+                        ?>
                         <?php if ($estadoBloqueioAtivo['bloqueado']): ?>
                             <div class="aviso-conversa-bloqueada">
                                 <strong>Envio bloqueado:</strong>
@@ -817,7 +876,43 @@ $statusDenunciaLabels = [
                                     ? 'Você bloqueou este usuário. Enquanto o bloqueio estiver ativo, novas mensagens não podem ser enviadas entre vocês.'
                                     : 'O envio de novas mensagens nesta conversa não está disponível.' ?>
                             </div>
+                        <?php elseif ($statusConvAtual === 'pendente'): ?>
+                            <?php if ($idSolicitanteAtual === $idUsuario): ?>
+                                <div class="aviso-conversa-bloqueada" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;">
+                                    <span><strong>Solicitação de mensagem pendente:</strong> aguarde <strong><?= folivro_escape($nomeOutroUsuario) ?></strong> aceitar sua solicitação para liberar o envio de mensagens.</span>
+                                    <a class="filtro-pilula" href="usuario.php?id=<?= $idOutroUsuario ?>">Ver perfil de <?= folivro_escape($nomeOutroUsuario) ?></a>
+                                </div>
+                            <?php else: ?>
+                                <div class="aviso-conversa-bloqueada" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px;">
+                                    <span><strong><?= folivro_escape($nomeOutroUsuario) ?></strong> enviou uma solicitação de conversa para você. Aceite para liberar o envio de mensagens.</span>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                        <form method="post" action="chat.php?conversa=<?= $idConvAtual ?>" class="form-inline-chat">
+                                            <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
+                                            <input type="hidden" name="acao" value="aceitar_conversa">
+                                            <input type="hidden" name="id_conversa" value="<?= $idConvAtual ?>">
+                                            <button type="submit" class="botao-adicionar-livro">Aceitar conversa</button>
+                                        </form>
+                                        <form method="post" action="chat.php?conversa=<?= $idConvAtual ?>" class="form-inline-chat">
+                                            <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
+                                            <input type="hidden" name="acao" value="recusar_conversa">
+                                            <input type="hidden" name="id_conversa" value="<?= $idConvAtual ?>">
+                                            <button type="submit" class="filtro-pilula botao-perigo-suave">Recusar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php elseif ($statusConvAtual === 'recusada'): ?>
+                            <div class="aviso-conversa-bloqueada" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px;">
+                                <span><strong>Solicitação recusada:</strong> esta conversa não foi aceita pelo participante.</span>
+                                <form method="post" action="chat.php?conversa=<?= $idConvAtual ?>" class="form-inline-chat">
+                                    <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
+                                    <input type="hidden" name="acao" value="iniciar_conversa">
+                                    <input type="hidden" name="id_destinatario" value="<?= $idOutroUsuario ?>">
+                                    <button type="submit" class="filtro-pilula">Solicitar novamente</button>
+                                </form>
+                            </div>
                         <?php else: ?>
+                            <div id="feedback-chat-ajax" class="estado-vazio" style="display:none; margin-bottom:10px; padding:9px 12px; font-size:0.9rem;" role="status"></div>
                             <form method="post" action="chat.php?conversa=<?= $idConvAtual ?>" id="form-enviar-mensagem-chat" class="form-enviar-chat">
                                 <input type="hidden" name="csrf_token" value="<?= folivro_escape(folivro_csrf_token()) ?>">
                                 <input type="hidden" name="acao" value="enviar_mensagem">
@@ -972,10 +1067,255 @@ $statusDenunciaLabels = [
             if (campoTexto && contador) {
                 const atualizarContador = function () {
                     const len = Array.from(campoTexto.value).length;
-                    contador.textContent = len + ' / 800 caracteres · Sem anexos';
+                    contador.textContent = len + ' / 800 caracteres · Enter envia · Shift+Enter quebra linha';
                 };
                 campoTexto.addEventListener('input', atualizarContador);
                 atualizarContador();
+            }
+
+            // Pesquisa de usuários para solicitar nova conversa (substitui o antigo <select>)
+            const inputBuscaUsuario = document.getElementById('busca-usuario-chat');
+            const boxResUsuario = document.getElementById('resultados-busca-usuario');
+            const csrfTokenBusca = <?= json_encode(folivro_csrf_token()) ?>;
+            let timerBuscaUser = null;
+
+            if (inputBuscaUsuario && boxResUsuario) {
+                inputBuscaUsuario.addEventListener('input', () => {
+                    clearTimeout(timerBuscaUser);
+                    const q = inputBuscaUsuario.value.trim();
+                    if (q.length < 2) {
+                        boxResUsuario.innerHTML = '';
+                        return;
+                    }
+                    timerBuscaUser = setTimeout(async () => {
+                        try {
+                            const r = await fetch(`api/chat.php?acao=buscar_usuarios&q=${encodeURIComponent(q)}`, {
+                                headers: { Accept: 'application/json' }
+                            });
+                            if (!r.ok) return;
+                            const data = await r.json();
+                            boxResUsuario.innerHTML = '';
+                            const lista = Array.isArray(data.usuarios) ? data.usuarios : [];
+                            if (lista.length === 0) {
+                                const vazio = document.createElement('small');
+                                vazio.textContent = 'Nenhum usuário encontrado com esse nome.';
+                                vazio.style.color = 'var(--texto-apoio)';
+                                boxResUsuario.appendChild(vazio);
+                                return;
+                            }
+                            lista.forEach((u) => {
+                                const form = document.createElement('form');
+                                form.method = 'post';
+                                form.action = 'chat.php';
+                                form.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:8px; padding:7px 10px; border-radius:8px; background:var(--fundo-superficie); border:1px solid var(--borda-suave);';
+
+                                const hidCsrf = document.createElement('input');
+                                hidCsrf.type = 'hidden';
+                                hidCsrf.name = 'csrf_token';
+                                hidCsrf.value = csrfTokenBusca;
+
+                                const hidAcao = document.createElement('input');
+                                hidAcao.type = 'hidden';
+                                hidAcao.name = 'acao';
+                                hidAcao.value = 'iniciar_conversa';
+
+                                const hidId = document.createElement('input');
+                                hidId.type = 'hidden';
+                                hidId.name = 'id_destinatario';
+                                hidId.value = String(u.id_usuario);
+
+                                const info = document.createElement('span');
+                                info.style.fontSize = '0.9rem';
+                                const strong = document.createElement('strong');
+                                strong.textContent = u.nome_usuario || '';
+                                const nivel = document.createElement('small');
+                                nivel.textContent = ' · ' + ((u.nivel_usuario || 'leitor').charAt(0).toUpperCase() + (u.nivel_usuario || 'leitor').slice(1));
+                                nivel.style.color = 'var(--texto-apoio)';
+                                info.append(strong, nivel);
+
+                                const linkPerfil = document.createElement('a');
+                                linkPerfil.href = 'usuario.php?id=' + encodeURIComponent(String(u.id_usuario));
+                                linkPerfil.className = 'filtro-pilula';
+                                linkPerfil.style.cssText = 'padding:5px 9px; font-size:0.8rem;';
+                                linkPerfil.textContent = 'Perfil';
+
+                                const btn = document.createElement('button');
+                                btn.type = 'submit';
+                                btn.className = 'botao-adicionar-livro';
+                                btn.style.cssText = 'padding:5px 10px; font-size:0.82rem; white-space:nowrap;';
+                                btn.textContent = 'Solicitar conversa';
+
+                                const acoesWrap = document.createElement('span');
+                                acoesWrap.style.cssText = 'display:inline-flex; gap:6px; align-items:center;';
+                                acoesWrap.append(linkPerfil, btn);
+
+                                form.append(hidCsrf, hidAcao, hidId, info, acoesWrap);
+                                boxResUsuario.appendChild(form);
+                            });
+                        } catch (e) {}
+                    }, 260);
+                });
+            }
+
+            // Filtro rápido de conversas por nome na barra lateral
+            const filtroConv = document.getElementById('filtro-conversas-chat');
+            const listaConvUl = document.getElementById('lista-conversas-ul');
+            if (filtroConv && listaConvUl) {
+                filtroConv.addEventListener('input', () => {
+                    const termo = filtroConv.value.trim().toLowerCase();
+                    listaConvUl.querySelectorAll('li').forEach((li) => {
+                        const nome = (li.querySelector('strong')?.textContent || '').toLowerCase();
+                        li.hidden = termo !== '' && !nome.includes(termo);
+                    });
+                });
+            }
+
+            // Envio instantâneo (AJAX via api/chat.php) + Polling incremental em tempo real
+            const formEnvio = document.getElementById('form-enviar-mensagem-chat');
+            const btnEnviar = document.getElementById('botao-enviar-chat');
+            const feedbackAjax = document.getElementById('feedback-chat-ajax');
+            const csrfToken = <?= json_encode(folivro_csrf_token()) ?>;
+            const idConversaAtual = historico ? Number(historico.dataset.idConversa || 0) : 0;
+
+            function mostrarFeedbackChat(msg, ehErro) {
+                if (!feedbackAjax) return;
+                if (!msg) {
+                    feedbackAjax.style.display = 'none';
+                    return;
+                }
+                feedbackAjax.textContent = msg;
+                feedbackAjax.className = 'estado-vazio ' + (ehErro ? 'estado-erro' : 'estado-sucesso');
+                feedbackAjax.style.display = 'block';
+            }
+
+            function formatarDataHora(iso) {
+                if (!iso) return '';
+                const d = new Date(iso.replace(' ', 'T'));
+                if (Number.isNaN(d.getTime())) return iso;
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            }
+
+            function criarElementoMensagem(item) {
+                const art = document.createElement('article');
+                const souEu = !!item.sou_eu;
+                const status = item.status || 'ativa';
+                art.className = `balao-mensagem ${souEu ? 'minha-mensagem' : 'outra-mensagem'}` + (status !== 'ativa' ? ' mensagem-sistema-status' : '');
+                art.dataset.idMensagem = String(item.id_mensagem);
+
+                const header = document.createElement('header');
+                header.className = 'balao-cabecalho';
+                const strong = document.createElement('strong');
+                strong.textContent = souEu ? 'Você' : (item.nome_remetente || 'Participante');
+                const time = document.createElement('time');
+                time.dateTime = item.data_envio || '';
+                time.textContent = formatarDataHora(item.data_envio || '');
+                header.append(strong, time);
+
+                const corpo = document.createElement('div');
+                corpo.className = 'balao-corpo';
+                const p = document.createElement('p');
+                p.className = status === 'ativa' ? 'texto-mensagem-ativa' : 'texto-mensagem-removida';
+                p.textContent = item.conteudo || '';
+                if (status === 'ativa') {
+                    p.style.whiteSpace = 'pre-line';
+                }
+                corpo.appendChild(p);
+                art.append(header, corpo);
+                return art;
+            }
+
+            function ultimoIdMensagem() {
+                if (!historico) return 0;
+                let maxId = 0;
+                historico.querySelectorAll('[data-id-mensagem]').forEach((el) => {
+                    const id = Number(el.dataset.idMensagem || 0);
+                    if (id > maxId) maxId = id;
+                });
+                return maxId;
+            }
+
+            function anexarMensagensNovas(itens, forcarScroll) {
+                if (!historico || !Array.isArray(itens) || itens.length === 0) return;
+                const pertoDoFim = (historico.scrollHeight - historico.scrollTop - historico.clientHeight) < 80;
+                const avisoVazio = document.getElementById('aviso-sem-mensagens');
+                let adicionou = false;
+
+                itens.forEach((item) => {
+                    if (!item || !item.id_mensagem) return;
+                    if (historico.querySelector(`[data-id-mensagem="${CSS.escape(String(item.id_mensagem))}"]`)) return;
+                    if (avisoVazio) avisoVazio.remove();
+                    historico.appendChild(criarElementoMensagem(item));
+                    adicionou = true;
+                });
+
+                if (adicionou && (forcarScroll || pertoDoFim)) {
+                    historico.scrollTop = historico.scrollHeight;
+                }
+            }
+
+            if (formEnvio && campoTexto && idConversaAtual > 0) {
+                campoTexto.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter' && !ev.shiftKey) {
+                        ev.preventDefault();
+                        formEnvio.requestSubmit ? formEnvio.requestSubmit() : formEnvio.dispatchEvent(new Event('submit', { cancelable: true }));
+                    }
+                });
+
+                formEnvio.addEventListener('submit', async (ev) => {
+                    ev.preventDefault();
+                    const texto = campoTexto.value.trim();
+                    if (!texto) return;
+
+                    mostrarFeedbackChat('', false);
+                    if (btnEnviar) btnEnviar.disabled = true;
+                    try {
+                        const resp = await fetch('api/chat.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfToken
+                            },
+                            body: JSON.stringify({
+                                acao: 'enviar_mensagem',
+                                id_conversa: idConversaAtual,
+                                conteudo: texto
+                            })
+                        });
+                        const data = await resp.json();
+                        if (!resp.ok || !data.ok) {
+                            throw new Error(data.mensagem || 'Não foi possível enviar a mensagem.');
+                        }
+                        if (data.item) {
+                            anexarMensagensNovas([data.item], true);
+                        }
+                        campoTexto.value = '';
+                        if (contador) contador.textContent = '0 / 800 caracteres · Enter envia · Shift+Enter quebra linha';
+                        if (data.retida_moderacao && data.mensagem) {
+                            mostrarFeedbackChat(data.mensagem, true);
+                        }
+                    } catch (err) {
+                        mostrarFeedbackChat(err.message, true);
+                    } finally {
+                        if (btnEnviar) btnEnviar.disabled = false;
+                        campoTexto.focus();
+                    }
+                });
+
+                setInterval(async () => {
+                    if (document.hidden) return;
+                    const aposId = ultimoIdMensagem();
+                    try {
+                        const resp = await fetch(`api/chat.php?acao=ler_mensagens&id_conversa=${idConversaAtual}&apos_id=${aposId}`, {
+                            headers: { Accept: 'application/json' }
+                        });
+                        if (!resp.ok) return;
+                        const data = await resp.json();
+                        if (data.ok && Array.isArray(data.mensagens)) {
+                            anexarMensagensNovas(data.mensagens, false);
+                        }
+                    } catch (e) {}
+                }, 3500);
             }
         })();
 

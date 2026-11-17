@@ -6,12 +6,15 @@ require_once __DIR__ . '/config/auth.php';
 $pdo = folivro_database();
 folivro_require_login();
 $uid = (int) $_SESSION['id_usuario'];
+$idPerfilParam = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
+$idAlvo = ($idPerfilParam > 0) ? $idPerfilParam : $uid;
+$ehMeuPerfil = ($idAlvo === $uid);
 
 $msgPerfilErro = '';
 $msgPerfilSucesso = '';
 
-// Edição de perfil (RF03) e validação segura de upload de foto (RNF07).
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
+// Edição de perfil (RF03) e validação segura de upload de foto (RNF07) — somente o próprio dono.
+if ($ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
     if (!folivro_verify_csrf()) {
         $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
     } else {
@@ -79,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_
             }
         }
     }
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'alterar_senha') {
+} elseif ($ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'alterar_senha') {
     if (!folivro_verify_csrf()) {
         $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
     } else {
@@ -105,11 +108,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_
     }
 }
 
-$stmt = $pdo->prepare('SELECT nome_usuario, email_usuario, data_nascimento_usuario, biografia_usuario, foto_usuario, nivel_usuario, data_cadastro_usuario FROM usuario WHERE id_usuario = ?');
-$stmt->execute([$uid]);
+$stmt = $pdo->prepare('SELECT id_usuario, nome_usuario, email_usuario, data_nascimento_usuario, biografia_usuario, foto_usuario, nivel_usuario, status_usuario, data_cadastro_usuario FROM usuario WHERE id_usuario = ?');
+$stmt->execute([$idAlvo]);
 $user = $stmt->fetch();
-$idadeUsuarioPerfil = folivro_calcular_idade($user['data_nascimento_usuario'] ?? null);
-$maiorDeIdadePerfil = folivro_usuario_maior_de_idade($pdo, $uid);
+if (!$user || (!$ehMeuPerfil && ($user['status_usuario'] ?? '') !== 'ativo')) {
+    http_response_code(404);
+    $user = null;
+}
+$idadeUsuarioPerfil = $ehMeuPerfil && $user ? folivro_calcular_idade($user['data_nascimento_usuario'] ?? null) : null;
+$maiorDeIdadePerfil = $ehMeuPerfil ? folivro_usuario_maior_de_idade($pdo, $uid) : false;
+
+// Estado da conversa no chat quando visualizando o perfil de outro usuário
+$estadoChatPerfil = null;
+if (!$ehMeuPerfil && $user) {
+    $menorP = min($uid, $idAlvo);
+    $maiorP = max($uid, $idAlvo);
+    $stChatP = $pdo->prepare('SELECT id_conversa, status_conversa, id_solicitante FROM chat_conversas WHERE id_usuario_menor = ? AND id_usuario_maior = ? LIMIT 1');
+    $stChatP->execute([$menorP, $maiorP]);
+    $estadoChatPerfil = $stChatP->fetch(PDO::FETCH_ASSOC) ?: null;
+}
 
 // Contadores reais do perfil (alinhados ao protótipo usuario.html e ao Figma).
 $contStmt = $pdo->prepare(
@@ -119,7 +136,7 @@ $contStmt = $pdo->prepare(
         (SELECT COUNT(*) FROM resenha WHERE id_usuario = ?) AS livros_avaliados,
         (SELECT COUNT(*) FROM curtidas WHERE id_usuario = ?) AS favoritos'
 );
-$contStmt->execute([$uid, $uid, $uid, $uid]);
+$contStmt->execute([$idAlvo, $idAlvo, $idAlvo, $idAlvo]);
 $contadores = $contStmt->fetch() ?: ['livros_salvos' => 0, 'livros_avaliados' => 0, 'favoritos' => 0];
 
 // Prévia visual de livros salvos e obras compradas para a estante do perfil (como no Figma).
@@ -132,7 +149,7 @@ $prevLivrosStmt = $pdo->prepare(
    ORDER BY l.data_solicitacao_livraria DESC, l.id_livraria DESC
       LIMIT 6'
 );
-$prevLivrosStmt->execute([$uid]);
+$prevLivrosStmt->execute([$idAlvo]);
 $prevLivros = $prevLivrosStmt->fetchAll();
 
 $csrf = folivro_escape(folivro_csrf_token());
@@ -170,22 +187,56 @@ $csrf = folivro_escape(folivro_csrf_token());
                 </div>
 
                 <div class="dados-usuario">
-                    <h1><?= folivro_escape($user['nome_usuario'] ?? 'Meu Perfil') ?></h1>
-                    <p class="email"><?= folivro_escape($user['email_usuario'] ?? '') ?></p>
-                    <?php if (!empty($user['biografia_usuario'])): ?>
-                        <p class="biografia"><?= folivro_escape($user['biografia_usuario']) ?></p>
-                    <?php endif; ?>
-                    <p class="membro">
-                        Membro desde: <?= isset($user['data_cadastro_usuario']) ? date('d/m/Y', strtotime($user['data_cadastro_usuario'])) : '' ?>
-                        <?php if ($idadeUsuarioPerfil !== null): ?>
-                            · Nascimento: <?= date('d/m/Y', strtotime((string) $user['data_nascimento_usuario'])) ?> (<?= $idadeUsuarioPerfil ?> anos — <?= $maiorDeIdadePerfil ? 'Maior de 18 anos' : 'Menor de 18 anos · Obras +18 ocultas' ?>)
+                    <h1><?= folivro_escape($user['nome_usuario'] ?? 'Perfil não encontrado') ?></h1>
+                    <?php if ($user): ?>
+                        <?php if ($ehMeuPerfil): ?>
+                            <p class="email"><?= folivro_escape($user['email_usuario'] ?? '') ?></p>
                         <?php else: ?>
-                            · Data de nascimento não informada (Obras +18 ocultas por proteção etária)
+                            <p class="email">Perfil da comunidade · <?= folivro_escape(ucfirst((string) ($user['nivel_usuario'] ?? 'leitor'))) ?></p>
                         <?php endif; ?>
-                    </p>
+                        <?php if (!empty($user['biografia_usuario'])): ?>
+                            <p class="biografia"><?= folivro_escape($user['biografia_usuario']) ?></p>
+                        <?php endif; ?>
+                        <p class="membro">
+                            Membro desde: <?= isset($user['data_cadastro_usuario']) ? date('d/m/Y', strtotime($user['data_cadastro_usuario'])) : '' ?>
+                            <?php if ($ehMeuPerfil): ?>
+                                <?php if ($idadeUsuarioPerfil !== null): ?>
+                                    · Nascimento: <?= date('d/m/Y', strtotime((string) $user['data_nascimento_usuario'])) ?> (<?= $idadeUsuarioPerfil ?> anos — <?= $maiorDeIdadePerfil ? 'Maior de 18 anos' : 'Menor de 18 anos · Obras +18 ocultas' ?>)
+                                <?php else: ?>
+                                    · Data de nascimento não informada (Obras +18 ocultas por proteção etária)
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </p>
+                    <?php endif; ?>
                 </div>
             </div>
 
+            <?php if (!$user): ?>
+                <p class="estado-vazio estado-erro">Usuário não encontrado ou inativo.</p>
+            <?php elseif (!$ehMeuPerfil): ?>
+                <div style="margin:14px 0 22px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
+                    <?php if ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'pendente'): ?>
+                        <?php if ((int) ($estadoChatPerfil['id_solicitante'] ?? 0) === $uid): ?>
+                            <span class="selo-status selo-comprado">Solicitação de mensagem pendente</span>
+                            <a class="filtro-pilula" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Ver no chat</a>
+                        <?php else: ?>
+                            <span class="selo-status selo-comprado">Este usuário enviou uma solicitação de mensagem para você</span>
+                            <a class="botao-adicionar-livro" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Responder solicitação no chat</a>
+                        <?php endif; ?>
+                    <?php elseif ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'aceita'): ?>
+                        <a class="botao-adicionar-livro" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Abrir conversa no chat</a>
+                    <?php else: ?>
+                        <form method="post" action="chat.php">
+                            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                            <input type="hidden" name="acao" value="iniciar_conversa">
+                            <input type="hidden" name="id_destinatario" value="<?= (int) $idAlvo ?>">
+                            <button type="submit" class="botao-adicionar-livro">Solicitar conversa</button>
+                        </form>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($user && $ehMeuPerfil): ?>
             <?php if ($msgPerfilErro): ?>
                 <p class="estado-vazio estado-erro" role="alert"><?= folivro_escape($msgPerfilErro) ?></p>
             <?php endif; ?>
@@ -213,6 +264,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <button class="botao-adicionar-livro" type="submit">Salvar alterações</button>
                 </form>
             </details>
+            <?php endif; ?>
 
             <section class="estatisticas" aria-label="Resumo do perfil">
                 <div class="estatistica">
@@ -300,6 +352,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <?php endif; ?>
             </section>
 
+            <?php if ($user && $ehMeuPerfil): ?>
             <section class="privacidade-conta" aria-labelledby="titulo-privacidade">
                 <h2 id="titulo-privacidade">Privacidade e conta</h2>
                 <p>Veja os <a href="termos.php">termos de uso e a política de privacidade</a>.</p>
@@ -340,6 +393,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </form>
                 </details>
             </section>
+            <?php endif; ?>
         </section>
 
         <footer class="rodape">

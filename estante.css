@@ -1,0 +1,153 @@
+/* =====================================================================
+ * FOLIVRO — Estante de Livros Adaptativa ao Tema (minha-biblioteca.php)
+ * Usa exclusivamente as variáveis CSS do tema ativo em layout.css
+ * (Vinho & Marfim, Café Noturno, Sépia, Floresta, Oceano, Ametista).
+ * ===================================================================== */
+
+.estante-biblioteca {
+    position: relative;
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--fundo-superficie-suave, #faf6f2) 86%, var(--cor-vinho-escuro, #4a0805) 14%) 0%,
+        color-mix(in srgb, var(--fundo-pagina, #f3eee8) 80%, var(--cor-vinho-escuro, #4a0805) 20%) 100%
+    );
+    border: 2px solid color-mix(in srgb, var(--borda-forte, #c9b7a8) 65%, var(--cor-vinho-escuro, #4a0805) 35%);
+    border-radius: 16px;
+    padding: 26px 24px 34px;
+    box-shadow:
+        inset 0 10px 26px rgba(0, 0, 0, 0.16),
+        inset 0 -8px 20px rgba(0, 0, 0, 0.12),
+        var(--sombra-card);
+    gap: 38px 22px !important;
+    overflow: hidden;
+}
+
+.estante-biblioteca .livro-card {
+    position: relative;
+    overflow: visible !important;
+    border-radius: 6px 10px 10px 6px;
+    background: var(--fundo-superficie);
+    border: 1px solid color-mix(in srgb, var(--borda-forte, #c9b7a8) 70%, var(--cor-vinho, #5c0000) 30%);
+    box-shadow:
+        -4px 0 0 color-mix(in srgb, var(--cor-vinho-escuro, #4a0805) 55%, var(--borda-forte, #c9b7a8) 45%),
+        0 8px 16px -4px rgba(0, 0, 0, 0.28);
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    margin-bottom: 12px;
+}
+
+.estante-biblioteca .livro-card:hover {
+    transform: translateY(-7px);
+    box-shadow:
+        -5px 2px 0 color-mix(in srgb, var(--cor-vinho-escuro, #4a0805) 65%, var(--cor-dourado-foco, #e7ae5c) 35%),
+        0 16px 28px -6px rgba(0, 0, 0, 0.38);
+}
+
+/* Prateleira física contínua abaixo de cada livro na estante */
+.estante-biblioteca .livro-card::after {
+    content: "";
+    position: absolute;
+    left: -14px;
+    right: -14px;
+    bottom: -20px;
+    height: 16px;
+    border-radius: 4px;
+    background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--borda-forte, #c9b7a8) 50%, var(--cor-vinho, #5c0000) 50%) 0%,
+        color-mix(in srgb, var(--cor-vinho-escuro, #4a0805) 78%, var(--borda-forte, #c9b7a8) 22%) 58%,
+        color-mix(in srgb, var(--cor-vinho-escuro, #4a0805) 92%, #000000 8%) 100%
+    );
+    border-top: 2px solid color-mix(in srgb, var(--cor-dourado-foco, #e7ae5c) 30%, var(--borda-forte, #c9b7a8) 70%);
+    box-shadow:
+        0 8px 14px -2px rgba(0, 0, 0, 0.42),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Uniformiza todas as capas (corrige capas quadradas com faixa vazia e títulos cortados) */
+.estante-biblioteca .livro-capa {
+    position: relative;
+    width: 100%;
+    height: auto !important;
+    aspect-ratio: 2 / 3;
+    border-radius: 5px 9px 0 0;
+    overflow: hidden;
+    background: linear-gradient(
+        145deg,
+        var(--cor-vinho, #5c0000) 0%,
+        var(--cor-vinho-escuro, #4a0805) 100%
+    );
+}
+
+/* Efeito de lombada e vinco de capa dura no lado esquerdo */
+.estante-biblioteca .livro-capa::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 14px;
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.34) 0%,
+        rgba(255, 255, 255, 0.14) 38%,
+        rgba(0, 0, 0, 0.18) 72%,
+        transparent 100%
+    );
+    z-index: 2;
+    pointer-events: none;
+}
+
+.estante-biblioteca .livro-capa .link-livro-capa {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.estante-biblioteca .livro-capa img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.estante-biblioteca .capa-fallback {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px 18px 24px 24px;
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 1.08rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #f8f2ea;
+    background:
+        radial-gradient(circle at 75% 20%, color-mix(in srgb, var(--cor-dourado-foco, #e7ae5c) 24%, transparent) 0%, transparent 58%),
+        linear-gradient(155deg, var(--cor-vinho, #5c0000) 0%, var(--cor-vinho-escuro, #4a0805) 100%);
+    box-shadow:
+        inset 0 0 0 10px transparent,
+        inset 0 0 0 11px rgba(255, 255, 255, 0.18);
+}
+
+.estante-biblioteca .livro-info {
+    position: relative;
+    z-index: 2;
+    background: var(--fundo-superficie);
+    border-top: 1px solid var(--borda-suave);
+    border-radius: 0 0 9px 5px;
+}
+
+@media (max-width: 640px) {
+    .estante-biblioteca {
+        padding: 18px 14px 28px;
+        gap: 34px 14px !important;
+    }
+
+    .estante-biblioteca .livro-card::after {
+        left: -8px;
+        right: -8px;
+    }
+}

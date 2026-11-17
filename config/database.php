@@ -45,8 +45,8 @@ function folivro_database(): PDO
     }
 
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja')")->fetchColumn();
-        if ($appliedCount === 16) {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes')")->fetchColumn();
+        if ($appliedCount === 17) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -665,6 +665,19 @@ function folivro_database(): PDO
                 folivro_loja_sincronizar_obra_estudio($pdo, (int) $idAdl);
             }
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('016_sincronizar_obras_estudio_loja')");
+        }
+
+        // Migração 017: Solicitação de conversa no chat (pendente / aceita / recusada).
+        $mig17 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '017_chat_solicitacoes' LIMIT 1")->fetchColumn();
+        if (!$mig17) {
+            $colsChat = $pdo->query('SHOW COLUMNS FROM chat_conversas')->fetchAll(PDO::FETCH_COLUMN, 0);
+            if (!in_array('status_conversa', $colsChat, true)) {
+                $pdo->exec("ALTER TABLE chat_conversas ADD COLUMN status_conversa ENUM('pendente','aceita','recusada') NOT NULL DEFAULT 'aceita' AFTER id_usuario_maior");
+            }
+            if (!in_array('id_solicitante', $colsChat, true)) {
+                $pdo->exec("ALTER TABLE chat_conversas ADD COLUMN id_solicitante INT UNSIGNED NULL DEFAULT NULL AFTER status_conversa");
+            }
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('017_chat_solicitacoes')");
         }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.

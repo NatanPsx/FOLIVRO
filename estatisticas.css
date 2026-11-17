@@ -1,40 +1,49 @@
 /* ==========================================================================
-   FOLIVRO — Estilos específicos de Metas e Estatísticas (estatisticas.php)
-   Complementa o sistema visual compartilhado em layout.css
+   FOLIVRO — Estilos de Metas e Estatísticas (estatisticas.php)
+   Adaptativo a todos os temas usando variáveis de layout.css
    ========================================================================== */
+
+.painel-metas {
+    max-width: 1140px;
+}
 
 .cabecalho {
     margin-bottom: 24px;
 }
 
-/* Grade de indicadores estatísticos em cartões */
+/* Grade de indicadores estatísticos */
 .grade-estatisticas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    max-width: 920px;
+    gap: 18px;
 }
 
 .grade-estatisticas .estatistica {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 22px 24px;
-    border: 1px solid var(--borda-suave, #e2d6cb);
-    border-top: 4px solid var(--cor-marrom, #8a542c);
+    padding: 20px 22px;
+    border: 1px solid var(--borda-suave);
+    border-top: 4px solid var(--cor-vinho);
     border-radius: var(--raio-card, 12px);
-    background: var(--fundo-superficie, #ffffff);
-    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.grade-estatisticas .estatistica:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sombra-elevada);
 }
 
 .grade-estatisticas .estatistica h2 {
-    margin: 0 0 12px;
-    color: var(--texto-secundario, #54463f);
-    font-family: var(--fonte-interface, sans-serif);
-    font-size: 15px;
+    margin: 0 0 10px;
+    color: var(--texto-secundario);
+    font-family: var(--fonte-interface);
+    font-size: 13px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.4px;
+    letter-spacing: 0.45px;
 }
 
 .grade-estatisticas .estatistica p {
@@ -45,36 +54,84 @@
 }
 
 .grade-estatisticas .estatistica .numero {
-    color: var(--cor-vinho, #5c0000);
+    color: var(--cor-vinho);
     font-family: var(--fonte-literaria, Georgia, serif);
-    font-size: 36px;
+    font-size: 34px;
     font-weight: 700;
     line-height: 1.1;
 }
 
 .tema-escuro .grade-estatisticas .estatistica .numero {
-    color: #f3c879;
+    color: var(--cor-dourado-foco, #f3c879);
 }
 
 .grade-estatisticas .estatistica span {
-    color: var(--texto-apoio, #6e5d54);
-    font-size: 15px;
+    color: var(--texto-apoio);
+    font-size: 14px;
 }
 
-/* Bloco da Meta Anual */
+/* Grade principal de 2 colunas (Meta Anual + Gráfico) */
+.grade-metas-paineis {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 20px;
+    margin-top: 24px;
+    align-items: start;
+}
+
+@media (max-width: 920px) {
+    .grade-metas-paineis {
+        grid-template-columns: 1fr;
+    }
+}
+
 .meta-anual {
-    max-width: 920px;
-    margin-top: 32px;
-    padding: 24px 26px;
-    border: 1px solid var(--borda-suave, #e2d6cb);
+    margin-top: 24px;
+    padding: 22px 24px;
+    border: 1px solid var(--borda-suave);
     border-radius: var(--raio-card, 12px);
-    background: var(--fundo-superficie, #ffffff);
-    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
+}
+
+.grade-metas-paineis .meta-anual {
+    margin-top: 0;
 }
 
 .meta-anual h2 {
     margin: 0 0 14px;
-    font-size: 21px;
+    font-size: 20px;
+}
+
+.meta-cabecalho-linha {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.meta-cabecalho-linha h2 {
+    margin: 0;
+}
+
+.selo-ritmo-meta {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--fundo-superficie-suave);
+    color: var(--texto-principal);
+    border: 1px solid var(--borda-forte);
+}
+
+.selo-ritmo-meta.concluida {
+    background: var(--cor-verde-fundo);
+    color: var(--cor-verde-sucesso);
+    border-color: #9dc58e;
 }
 
 .informacoes-meta {
@@ -83,22 +140,22 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .informacoes-meta p {
     margin: 0;
-    color: var(--texto-secundario, #54463f);
-    font-size: 16px;
+    color: var(--texto-secundario);
+    font-size: 15px;
 }
 
 .informacoes-meta strong {
-    color: var(--cor-vinho, #5c0000);
+    color: var(--cor-vinho);
     font-size: 16px;
 }
 
 .tema-escuro .informacoes-meta strong {
-    color: #f3c879;
+    color: var(--cor-dourado-foco, #f3c879);
 }
 
 .linha-meta {
@@ -109,40 +166,132 @@
 
 .barra {
     flex: 1;
-    height: 22px;
+    height: 20px;
     border-radius: 999px;
-    background: #e4d8ce;
+    background: var(--fundo-superficie-suave);
+    border: 1px solid var(--borda-suave);
     overflow: hidden;
-}
-
-.tema-escuro .barra {
-    background: #463b37;
 }
 
 .progresso {
     width: 0%;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #5c0000, #9b5b28);
+    background: linear-gradient(90deg, var(--cor-vinho), var(--cor-dourado-foco, #9b5b28));
     transition: width 0.4s ease;
 }
 
 .porcentagem {
     min-width: 52px;
-    color: var(--texto-principal, #231b18);
+    color: var(--texto-principal);
     font-family: var(--fonte-literaria, Georgia, serif);
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
     text-align: right;
 }
 
-.nota-estatisticas {
-    max-width: 920px;
-    margin-top: 24px;
-    color: var(--texto-apoio, #6e5d54);
-    font-size: 14px;
+.meta-ritmo-detalhe {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--raio-botao, 8px);
+    background: var(--fundo-destaque);
+    border: 1px solid var(--borda-suave);
+    font-size: 13.5px;
+    color: var(--texto-secundario);
 }
 
-.marcadores {
-    display: none;
+.grafico-rosca-box {
+    position: relative;
+    height: 250px;
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* Lista de metas personalizadas */
+.lista-metas-personalizadas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.card-meta-extra {
+    background: var(--fundo-destaque);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-botao, 8px);
+    padding: 14px 16px;
+}
+
+.card-meta-extra-topo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.card-meta-extra h3 {
+    margin: 0;
+    font-size: 15.5px;
+}
+
+/* Conquistas de leitura */
+.grade-conquistas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.card-conquista {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: var(--raio-botao, 8px);
+    border: 1px solid var(--borda-suave);
+    background: var(--fundo-superficie-suave);
+    opacity: 0.55;
+}
+
+.card-conquista.desbloqueada {
+    opacity: 1;
+    background: var(--fundo-destaque);
+    border-color: var(--cor-dourado-foco, #e7ae5c);
+    box-shadow: var(--sombra-card);
+}
+
+.icone-conquista {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--cor-vinho) 20%, var(--fundo-superficie) 80%);
+    border: 1px solid var(--borda-forte);
+}
+
+.card-conquista.desbloqueada .icone-conquista {
+    background: var(--cor-vinho);
+    color: #fff;
+}
+
+.card-conquista strong {
+    display: block;
+    font-size: 13.5px;
+}
+
+.card-conquista small {
+    display: block;
+    font-size: 12px;
+    color: var(--texto-apoio);
+}
+
+.nota-estatisticas {
+    margin-top: 22px;
+    color: var(--texto-apoio);
+    font-size: 13.5px;
 }
