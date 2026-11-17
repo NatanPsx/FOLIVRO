@@ -140,25 +140,54 @@ $csrf = folivro_escape(folivro_csrf_token());
             </section>
 
             <section class="loja-card-destaque" aria-labelledby="titulo-grafico-vendas">
-                <h2 id="titulo-grafico-vendas">Evolução de vendas (últimos 6 meses)</h2>
+                <div class="loja-cabecalho-secao">
+                    <h2 id="titulo-grafico-vendas">Evolução de vendas (últimos 6 meses)</h2>
+                    <small style="color:var(--texto-apoio);">Receita bruta x líquida confirmada por mês</small>
+                </div>
                 <div class="loja-grafico-box">
                     <canvas id="grafico-vendas-autor"></canvas>
                 </div>
             </section>
 
             <section class="loja-card-destaque" aria-labelledby="titulo-repasses">
-                <h2 id="titulo-repasses">Saldo e repasses</h2>
-                <form method="post" class="progresso-form" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; margin-bottom:16px;">
-                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                    <input type="hidden" name="acao" value="solicitar_repasse">
-                    <label for="valor_repasse">Valor do repasse (R$)
-                        <input id="valor_repasse" name="valor_repasse" required placeholder="Ex.: 25,00"
-                               value="<?= folivro_escape($saldo['disponivel'] >= FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS ? folivro_centavos_para_input((int) $saldo['disponivel']) : '') ?>">
-                    </label>
-                    <button type="submit" class="botao-adicionar-livro" <?= $saldo['disponivel'] < FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS ? 'disabled' : '' ?>>
-                        Solicitar repasse
-                    </button>
-                </form>
+                <h2 id="titulo-repasses" style="margin-top:0;">Saldo e repasses</h2>
+                <div class="loja-checkout-grade" style="margin-bottom:18px;">
+                    <div style="background:var(--fundo-destaque); border:1px solid var(--borda-suave); border-radius:10px; padding:14px 16px;">
+                        <div class="loja-resumo-linha">
+                            <span>Créditos por vendas</span>
+                            <strong><?= folivro_escape(folivro_loja_formatar((int) $saldo['creditos'])) ?></strong>
+                        </div>
+                        <div class="loja-resumo-linha">
+                            <span>Estornos / reembolsos</span>
+                            <span><?= folivro_escape(folivro_loja_formatar((int) $saldo['estornos'])) ?></span>
+                        </div>
+                        <div class="loja-resumo-linha">
+                            <span>Já repassado</span>
+                            <span><?= folivro_escape(folivro_loja_formatar(abs((int) $saldo['repasses']))) ?></span>
+                        </div>
+                        <div class="loja-resumo-linha total">
+                            <span>Disponível para saque</span>
+                            <span><?= folivro_escape(folivro_loja_formatar((int) $saldo['disponivel'])) ?></span>
+                        </div>
+                    </div>
+
+                    <form method="post" style="background:var(--fundo-destaque); border:1px solid var(--borda-suave); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:12px;">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                        <input type="hidden" name="acao" value="solicitar_repasse">
+                        <label for="valor_repasse" style="display:flex; flex-direction:column; gap:6px; font-weight:600; font-size:0.92rem;">
+                            Valor do repasse (R$)
+                            <input id="valor_repasse" name="valor_repasse" required placeholder="Ex.: 25,00"
+                                   style="padding:9px 11px; border:1px solid var(--borda-forte); border-radius:8px; background:var(--fundo-superficie); color:var(--texto-principal); font:inherit;"
+                                   value="<?= folivro_escape($saldo['disponivel'] >= FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS ? folivro_centavos_para_input((int) $saldo['disponivel']) : '') ?>">
+                        </label>
+                        <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+                            <button type="submit" class="botao-adicionar-livro" <?= $saldo['disponivel'] < FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS ? 'disabled' : '' ?>>
+                                Solicitar repasse
+                            </button>
+                            <small style="color:var(--texto-apoio);">Mínimo: <?= folivro_escape(folivro_loja_formatar(FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS)) ?></small>
+                        </div>
+                    </form>
+                </div>
 
                 <?php if ($repasses): ?>
                     <div class="loja-tabela-wrap">
@@ -231,7 +260,22 @@ $csrf = folivro_escape(folivro_csrf_token());
             </section>
 
             <section class="loja-card-destaque" aria-labelledby="titulo-pedidos-recebidos">
-                <h2 id="titulo-pedidos-recebidos">Pedidos recebidos (últimos 50)</h2>
+                <div class="loja-cabecalho-secao">
+                    <h2 id="titulo-pedidos-recebidos">Pedidos recebidos (últimos 50)</h2>
+                    <?php if ($pedidos): ?>
+                        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                            <input type="search" id="filtro-pedidos-busca" placeholder="Buscar código, obra ou comprador..." aria-label="Filtrar pedidos" style="padding:7px 10px; border-radius:8px; border:1px solid var(--borda-forte); background:var(--fundo-superficie-suave); color:var(--texto-principal); font:inherit; font-size:0.88rem;">
+                            <select id="filtro-pedidos-status" aria-label="Filtrar por status do pedido" style="padding:7px 10px; border-radius:8px; border:1px solid var(--borda-forte); background:var(--fundo-superficie-suave); color:var(--texto-principal); font:inherit; font-size:0.88rem;">
+                                <option value="todos">Todos os status</option>
+                                <option value="pago">Pagos</option>
+                                <option value="pendente">Pendentes</option>
+                                <option value="reembolsado">Reembolsados</option>
+                                <option value="falhou">Falhou / Cancelado</option>
+                            </select>
+                            <button type="button" id="btn-exportar-csv-pedidos" class="filtro-pilula">Exportar CSV</button>
+                        </div>
+                    <?php endif; ?>
+                </div>
                 <?php if (!$pedidos): ?>
                     <p class="estado-vazio">Nenhum pedido registrado ainda.</p>
                 <?php else: ?>
@@ -252,7 +296,8 @@ $csrf = folivro_escape(folivro_csrf_token());
                             </thead>
                             <tbody>
                                 <?php foreach ($pedidos as $ped): ?>
-                                    <tr>
+                                    <tr data-pedido-busca="<?= folivro_escape(mb_strtolower($ped['codigo_pedido'] . ' ' . $ped['titulo_produto_snapshot'] . ' ' . $ped['comprador_nome'], 'UTF-8')) ?>"
+                                        data-pedido-status="<?= folivro_escape($ped['status_pedido']) ?>">
                                         <td>
                                             <code><?= folivro_escape($ped['codigo_pedido']) ?></code><br>
                                             <small><?= date('d/m/Y H:i', strtotime((string) $ped['criado_em'])) ?></small>
@@ -324,26 +369,99 @@ $csrf = folivro_escape(folivro_csrf_token());
             <script>
                 (function () {
                     const canvas = document.getElementById('grafico-vendas-autor');
-                    if (!canvas || typeof Chart === 'undefined') return;
-                    const meses = <?= json_encode(array_keys($resumo['meses'])) ?>;
-                    const dadosBruto = <?= json_encode(array_map(static fn($m) => round($m['bruto'] / 100, 2), array_values($resumo['meses']))) ?>;
-                    const dadosLiquido = <?= json_encode(array_map(static fn($m) => round($m['liquido'] / 100, 2), array_values($resumo['meses']))) ?>;
+                    if (canvas && typeof Chart !== 'undefined') {
+                        const cs = getComputedStyle(document.body);
+                        const corVinho = (cs.getPropertyValue('--cor-vinho') || '#5c0000').trim();
+                        const corBronze = (cs.getPropertyValue('--cor-bronze') || '#9b5b28').trim();
+                        const corTexto = (cs.getPropertyValue('--texto-secundario') || '#54463f').trim();
 
-                    new Chart(canvas, {
-                        type: 'bar',
-                        data: {
-                            labels: meses,
-                            datasets: [
-                                { label: 'Receita Bruta (R$)', data: dadosBruto, backgroundColor: 'rgba(155, 91, 40, 0.72)', borderColor: '#9b5b28', borderWidth: 1 },
-                                { label: 'Receita Líquida (R$)', data: dadosLiquido, backgroundColor: 'rgba(92, 0, 0, 0.85)', borderColor: '#5c0000', borderWidth: 1 }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: { y: { beginAtZero: true } }
-                        }
-                    });
+                        const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                        const chavesMeses = <?= json_encode(array_keys($resumo['meses'])) ?>;
+                        const labels = chavesMeses.map((ym) => {
+                            const [y, m] = ym.split('-');
+                            return `${nomesMeses[Math.max(0, Number(m) - 1)]}/${y.slice(2)}`;
+                        });
+                        const dadosBruto = <?= json_encode(array_map(static fn($m) => round($m['bruto'] / 100, 2), array_values($resumo['meses']))) ?>;
+                        const dadosLiquido = <?= json_encode(array_map(static fn($m) => round($m['liquido'] / 100, 2), array_values($resumo['meses']))) ?>;
+                        const vendasMes = <?= json_encode(array_map(static fn($m) => (int) $m['vendas'], array_values($resumo['meses']))) ?>;
+                        const maxValor = Math.max(0, ...dadosBruto, ...dadosLiquido);
+
+                        new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    { label: 'Receita Bruta (R$)', data: dadosBruto, backgroundColor: corBronze, borderRadius: 6, maxBarThickness: 38 },
+                                    { label: 'Receita Líquida (R$)', data: dadosLiquido, backgroundColor: corVinho, borderRadius: 6, maxBarThickness: 38 }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { labels: { color: corTexto } },
+                                    tooltip: {
+                                        callbacks: {
+                                            afterBody: (items) => {
+                                                const idx = items[0]?.dataIndex ?? 0;
+                                                return `Vendas confirmadas: ${vendasMes[idx] || 0}`;
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: { ticks: { color: corTexto }, grid: { display: false } },
+                                    y: {
+                                        beginAtZero: true,
+                                        suggestedMax: maxValor === 0 ? 50 : undefined,
+                                        ticks: {
+                                            color: corTexto,
+                                            callback: (v) => 'R$ ' + Number(v).toFixed(0)
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Filtro e exportação CSV de pedidos recebidos
+                    const inpBuscaPed = document.getElementById('filtro-pedidos-busca');
+                    const selStatusPed = document.getElementById('filtro-pedidos-status');
+                    const linhasPed = Array.from(document.querySelectorAll('tr[data-pedido-status]'));
+                    const btnCsv = document.getElementById('btn-exportar-csv-pedidos');
+
+                    function filtrarPedidos() {
+                        const q = (inpBuscaPed ? inpBuscaPed.value : '').trim().toLowerCase();
+                        const st = selStatusPed ? selStatusPed.value : 'todos';
+                        linhasPed.forEach((tr) => {
+                            const txt = tr.dataset.pedidoBusca || '';
+                            const s = tr.dataset.pedidoStatus || '';
+                            const okTexto = q === '' || txt.includes(q);
+                            const okStatus = st === 'todos' || (st === 'falhou' ? (s === 'falhou' || s === 'cancelado') : s === st);
+                            tr.hidden = !(okTexto && okStatus);
+                        });
+                    }
+                    if (inpBuscaPed) inpBuscaPed.addEventListener('input', filtrarPedidos);
+                    if (selStatusPed) selStatusPed.addEventListener('change', filtrarPedidos);
+
+                    if (btnCsv) {
+                        btnCsv.addEventListener('click', () => {
+                            const linhasCsv = [['Pedido', 'Obra', 'Comprador', 'Metodo', 'Bruto', 'Taxa', 'Liquido', 'Status']];
+                            linhasPed.filter((tr) => !tr.hidden).forEach((tr) => {
+                                const cols = Array.from(tr.querySelectorAll('td')).slice(0, 8).map((td) =>
+                                    '"' + (td.innerText || '').replace(/\s+/g, ' ').trim().replace(/"/g, '""') + '"'
+                                );
+                                linhasCsv.push(cols);
+                            });
+                            const blob = new Blob(['\uFEFF' + linhasCsv.map((r) => r.join(';')).join('\n')], { type: 'text/csv;charset=utf-8;' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'pedidos-folivro.csv';
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        });
+                    }
                 })();
             </script>
         <?php endif; ?>

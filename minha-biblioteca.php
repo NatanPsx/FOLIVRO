@@ -61,7 +61,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <title>Minha biblioteca digital | FOLIVRO</title>
     <link rel="stylesheet" href="layout.css?v=20261104_20">
     <link rel="stylesheet" href="home.css?v=20261104_20">
-    <link rel="stylesheet" href="estante.css?v=20261117_1">
+    <link rel="stylesheet" href="estante.css?v=20261117_4">
 </head>
 
 <body>

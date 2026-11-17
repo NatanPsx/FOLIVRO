@@ -237,6 +237,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $old = static fn(string $k): string => folivro_escape((string) ($_POST[$k] ?? ''));
 $oldRaw = static fn(string $k): string => (string) ($_POST[$k] ?? '');
 $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
+$aprovAutoEstudio = folivro_aprovacao_automatica_obras_ativa($pdo);
+$taxaLojaEstudio = 10.0;
+if (is_file(__DIR__ . '/config/loja.php')) {
+    require_once __DIR__ . '/config/loja.php';
+    $taxaLojaEstudio = (float) (folivro_loja_config()['taxa_percentual'] ?? 10.0);
+}
+$pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualificado_automatico']));
 ?>
 <!doctype html>
 <html lang="pt-br">
@@ -257,13 +264,17 @@ $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
 
     <main id="conteudo-principal" class="conteudo">
         <div class="cabecalho-estudio">
-            <h1>Estúdio de Escrita & Autopublicação</h1>
-            <p>Um ambiente silencioso e focado para dar vida às suas histórias. Seus textos são salvos com segurança e você decide quando manter como rascunho ou solicitar publicação.</p>
+            <h1>Estúdio de Escrita &amp; Publicação</h1>
+            <p>Escreva seus capítulos com foco, personalize a capa e publique diretamente na loja e na comunidade.</p>
         </div>
 
-        <div class="banner-modalidade-publicacao modal-pub-<?= folivro_escape($qualificacaoEstudio['modalidade']) ?>" role="status">
-            <strong>Modalidade de publicação:</strong>
-            <span><?= folivro_escape($qualificacaoEstudio['mensagem_interface']) ?></span>
+        <div class="banner-modalidade-publicacao modal-pub-<?= $pubImediataAtiva ? 'automatica' : folivro_escape($qualificacaoEstudio['modalidade']) ?>" role="status">
+            <strong>Status de publicação:</strong>
+            <span>
+                <?= $pubImediataAtiva
+                    ? 'Publicação imediata ativa — obras originais publicadas vão direto para a loja.'
+                    : 'Revisão editorial — novas publicações passam por aprovação da moderação antes de aparecer na loja.' ?>
+            </span>
         </div>
 
         <?php if ($erro): ?>
@@ -417,9 +428,12 @@ $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
                             <input type="text" name="generos_personalizados" id="generos_personalizados" class="input-genero-personalizado" maxlength="120" value="<?= $old('generos_personalizados') ?>" placeholder="Outro gênero (opcional, separe por vírgula)...">
                         </div>
 
-                        <label for="capa_historias">Imagem de capa original
+                        <label for="capa_historias">Imagem de capa
                             <input id="capa_historias" type="file" name="capa_historias" accept="image/jpeg,image/png,image/webp">
-                            <small style="color:var(--texto-apoio); font-size:12px;">JPG, PNG ou WebP até 2 MB (arte própria ou com autorização)</small>
+                            <small style="color:var(--texto-apoio); font-size:12px;">JPG, PNG ou WebP até 2 MB</small>
+                            <div id="preview-capa-estudio" style="display:none; margin-top:8px;">
+                                <img id="img-preview-capa-estudio" src="" alt="Prévia da capa" style="width:110px; aspect-ratio:2/3; object-fit:cover; border-radius:8px; border:1px solid var(--borda-forte);">
+                            </div>
                         </label>
 
                         <?php $classifSelecionada = folivro_normalizar_classificacao($oldRaw('aviso_conteudo_historias') ?: 'livre'); ?>
@@ -446,62 +460,54 @@ $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
                     </div>
 
                     <div class="card-estudio">
-                        <h3>Direitos & Publicação</h3>
+                        <h3>Publicação &amp; Loja</h3>
 
                         <label for="origem_obra">Origem da obra
                             <select id="origem_obra" name="origem_obra" required>
-                                <option value="autoral_original">Obra 100% autoral e inédita escrita por mim</option>
-                                <option value="autorizacao_documentada">Possuo autorização documentada do titular</option>
-                                <option value="fanfic_sem_autorizacao">Fanfic/adaptação sem autorização (requer revisão)</option>
-                                <option value="dominio_publico_nao_verificado">Domínio público não verificado (requer revisão)</option>
+                                <option value="autoral_original">Obra original escrita por mim</option>
+                                <option value="autorizacao_documentada">Obra com autorização do titular</option>
+                                <option value="fanfic_sem_autorizacao">Fanfic ou adaptação (sujeita à revisão)</option>
+                                <option value="dominio_publico_nao_verificado">Domínio público (sujeita à revisão)</option>
                             </select>
                         </label>
 
-                        <label for="licenca_historias">Licença aos leitores
+                        <label for="licenca_historias">Licença
                             <select id="licenca_historias" name="licenca_historias" required>
-                                <option value="direitos_reservados">Todos os direitos reservados pelo autor</option>
-                                <option value="cc_by_nc_nd">Creative Commons BY-NC-ND (não comercial)</option>
+                                <option value="direitos_reservados">Todos os direitos reservados</option>
+                                <option value="cc_by_nc_nd">Creative Commons (não comercial)</option>
                                 <option value="autorizacao_especifica">Licença informada na sinopse</option>
                             </select>
                         </label>
 
-                        <label for="modalidade_distribuicao">Disponibilização
+                        <label for="modalidade_distribuicao">Modelo na loja
                             <select id="modalidade_distribuicao" name="modalidade_distribuicao">
-                                <option value="venda_simulada">Comercialização na loja (venda simulada)</option>
-                                <option value="gratuita">Publicação gratuita para leitores (R$ 0,00)</option>
+                                <option value="venda_simulada">Venda na loja (e-book)</option>
+                                <option value="gratuita">Gratuito para leitores (R$ 0,00)</option>
                             </select>
                         </label>
 
-                        <label for="preco">Preço simulado (R$)
+                        <label for="preco">Preço na loja (R$)
                             <input id="preco" type="number" name="preco" min="0" max="99999999" step="0.01" value="<?= $old('preco') ?: '0.00' ?>" required>
+                            <small id="resumo-liquido-autor" style="color:var(--texto-apoio); font-size:12px;"></small>
                         </label>
 
                         <div class="estudio-termos">
                             <label class="termo-check">
                                 <input type="checkbox" name="declaracao_autoria" value="1">
-                                <span>Declaro titularidade e autoria da obra e capa para publicação.</span>
+                                <span>Declaro ser titular dos direitos autorais da obra e da capa (Lei 9.610/98).</span>
                             </label>
                             <label class="termo-check" id="bloco-declaracao-comercial">
                                 <input type="checkbox" name="declaracao_comercializacao" id="declaracao_comercializacao" value="1">
-                                <span>Autorização para comercialização na loja simulada.</span>
+                                <span>Autorizo a comercialização desta obra na loja.</span>
                             </label>
                             <label class="termo-check termo-publicar">
-                                <input type="checkbox" name="publicar" value="1">
-                                <span><strong>Solicitar publicação</strong> (permanece privada até aprovação).</span>
+                                <input type="checkbox" name="publicar" id="checkbox-publicar-estudio" value="1">
+                                <span><strong>Publicar na loja ao salvar</strong> (desmarcado salva como rascunho)</span>
                             </label>
                         </div>
 
-                        <button class="botao-adicionar-livro botao-salvar-obra" type="submit">Salvar rascunho / Obra</button>
+                        <button class="botao-adicionar-livro botao-salvar-obra" id="btn-submit-estudio" type="submit">Salvar como rascunho</button>
                     </div>
-
-                    <details class="dicas-autoria-card">
-                        <summary>Orientações de direitos autorais</summary>
-                        <div class="dicas-autoria-conteudo">
-                            <p>• Só publique textos dos quais você seja o autor original ou tenha autorização comprovada.</p>
-                            <p>• Finalidade de TCC ou gratuidade na web não concedem autorização automática de terceiros (Lei nº 9.610/1998).</p>
-                            <p>• Toda solicitação de publicação passa por revisão humana na moderação antes de ir para a loja.</p>
-                        </div>
-                    </details>
                 </aside>
             </div>
         </form>
@@ -681,6 +687,95 @@ $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
                     chk.addEventListener('change', () => atualizarGenerosUI(chk));
                 });
                 atualizarGenerosUI();
+            }
+
+            // Prévia da capa ao selecionar arquivo
+            const inputCapa = document.getElementById('capa_historias');
+            const boxPrevCapa = document.getElementById('preview-capa-estudio');
+            const imgPrevCapa = document.getElementById('img-preview-capa-estudio');
+            if (inputCapa && boxPrevCapa && imgPrevCapa) {
+                inputCapa.addEventListener('change', () => {
+                    const arq = inputCapa.files && inputCapa.files[0];
+                    if (!arq) {
+                        boxPrevCapa.style.display = 'none';
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imgPrevCapa.src = String(e.target.result || '');
+                        boxPrevCapa.style.display = 'block';
+                    };
+                    reader.readAsDataURL(arq);
+                });
+            }
+
+            // Cálculo em tempo real da receita líquida do autor e texto dinâmico do botão
+            const inputPrecoEstudio = document.getElementById('preco');
+            const resumoLiquido = document.getElementById('resumo-liquido-autor');
+            const chkPublicar = document.getElementById('checkbox-publicar-estudio');
+            const btnSubmitEstudio = document.getElementById('btn-submit-estudio');
+            const taxaPctEstudio = <?= json_encode($taxaLojaEstudio) ?>;
+            const pubImediata = <?= json_encode($pubImediataAtiva) ?>;
+
+            function atualizarResumoPreco() {
+                if (!inputPrecoEstudio || !resumoLiquido) return;
+                const val = parseFloat(inputPrecoEstudio.value || '0');
+                if (Number.isNaN(val) || val <= 0) {
+                    resumoLiquido.textContent = 'Obra gratuita na loja (sem cobrança).';
+                } else {
+                    const liq = val * (1 - (taxaPctEstudio / 100));
+                    resumoLiquido.textContent = `Você recebe R$ ${liq.toFixed(2).replace('.', ',')} por venda (taxa de ${taxaPctEstudio}%).`;
+                }
+            }
+            if (inputPrecoEstudio) {
+                inputPrecoEstudio.addEventListener('input', atualizarResumoPreco);
+                atualizarResumoPreco();
+            }
+
+            if (chkPublicar && btnSubmitEstudio) {
+                const atualizarTextoBotao = () => {
+                    if (!chkPublicar.checked) {
+                        btnSubmitEstudio.textContent = 'Salvar como rascunho';
+                    } else {
+                        btnSubmitEstudio.textContent = pubImediata ? 'Publicar na loja' : 'Enviar para aprovação';
+                    }
+                };
+                chkPublicar.addEventListener('change', atualizarTextoBotao);
+                atualizarTextoBotao();
+            }
+
+            // Auto-save local no navegador (evita perda acidental do texto)
+            const chaveLocal = 'folivro_rascunho_estudio_v1_' + <?= (int) $uid ?>;
+            const inputTit = document.getElementById('titulo');
+            const inputCap = document.getElementById('titulo_capitulo');
+            if (inputTit && inputCap && editor && form) {
+                if (!inputTit.value && !inputCap.value && editor.innerHTML.trim() === '') {
+                    try {
+                        const salvo = JSON.parse(localStorage.getItem(chaveLocal) || 'null');
+                        if (salvo && (salvo.t || salvo.c || salvo.b)) {
+                            inputTit.value = salvo.t || '';
+                            inputCap.value = salvo.c || '';
+                            editor.innerHTML = salvo.b || '';
+                            sincronizarConteudo();
+                            atualizarMetricas();
+                        }
+                    } catch (e) {}
+                }
+                const salvarLocal = () => {
+                    try {
+                        localStorage.setItem(chaveLocal, JSON.stringify({
+                            t: inputTit.value,
+                            c: inputCap.value,
+                            b: editor.innerHTML
+                        }));
+                    } catch (e) {}
+                };
+                inputTit.addEventListener('input', salvarLocal);
+                inputCap.addEventListener('input', salvarLocal);
+                editor.addEventListener('input', salvarLocal);
+                form.addEventListener('submit', () => {
+                    try { localStorage.removeItem(chaveLocal); } catch (e) {}
+                });
             }
         })();
     </script>

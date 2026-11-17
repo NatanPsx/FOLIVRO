@@ -1,123 +1,134 @@
 /* ==========================================================================
-   FOLIVRO — Estilos específicos do Perfil do Usuário (usuario.php)
-   Complementa o sistema visual compartilhado em layout.css
+   FOLIVRO — Estilos do Perfil do Usuário (usuario.php)
+   Adaptativo a todos os temas usando variáveis de layout.css
    ========================================================================== */
 
-/* Cabeçalho do perfil em cartão elevado */
+.perfil {
+    max-width: 1120px;
+}
+
+/* Cabeçalho com banner literário do tema */
+.perfil-hero {
+    border: 1px solid var(--borda-suave);
+    border-radius: 16px;
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
+    overflow: hidden;
+    margin-bottom: 22px;
+}
+
+.perfil-banner {
+    height: 112px;
+    background:
+        radial-gradient(circle at 80% 30%, color-mix(in srgb, var(--cor-dourado-foco, #e7ae5c) 28%, transparent) 0%, transparent 55%),
+        linear-gradient(125deg, var(--cor-vinho-escuro, #4a0805) 0%, var(--cor-vinho, #5c0000) 55%, var(--cor-marrom, #8a542c) 100%);
+    position: relative;
+}
+
 .cabecalho-perfil {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 24px;
-    padding: clamp(20px, 3vw, 30px);
-    border: 1px solid var(--borda-suave, #e2d6cb);
-    border-radius: var(--raio-card, 12px);
-    background: var(--fundo-superficie, #ffffff);
-    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+    align-items: flex-end;
+    gap: 20px;
+    padding: 0 clamp(20px, 3vw, 30px) 24px;
+    margin-top: -48px;
+    position: relative;
+    z-index: 2;
 }
 
 .avatar {
-    width: 96px;
-    height: 96px;
+    width: 104px;
+    height: 104px;
     flex-shrink: 0;
     border-radius: 50%;
-    box-shadow: 0 3px 10px rgba(92, 0, 0, 0.16);
+    border: 4px solid var(--fundo-superficie);
+    background: var(--fundo-superficie-suave);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
-.avatar svg {
+.avatar svg,
+.avatar img {
     width: 100%;
     height: 100%;
+    object-fit: cover;
     display: block;
 }
 
 .dados-usuario {
     flex: 1;
-    min-width: 200px;
+    min-width: 220px;
+    padding-top: 52px;
+}
+
+.perfil-nome-linha {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
 }
 
 .dados-usuario h1 {
-    margin: 0 0 4px;
-    color: var(--texto-principal, #231b18);
+    margin: 0;
+    color: var(--texto-principal);
     font-family: var(--fonte-literaria, Georgia, serif);
-    font-size: clamp(24px, 2.8vw, 32px);
+    font-size: clamp(23px, 2.7vw, 30px);
     font-weight: 700;
 }
 
+.selo-papel-perfil {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--cor-vinho) 16%, var(--fundo-superficie-suave) 84%);
+    color: var(--texto-principal);
+    border: 1px solid var(--borda-forte);
+}
+
 .email {
-    margin: 0;
-    color: var(--texto-secundario, #54463f);
-    font-size: 15.5px;
+    margin: 2px 0 0;
+    color: var(--texto-secundario);
+    font-size: 14.5px;
     overflow-wrap: anywhere;
+}
+
+.biografia {
+    margin: 10px 0 0;
+    color: var(--texto-principal);
+    font-size: 15px;
+    line-height: 1.5;
+    max-width: 72ch;
 }
 
 .membro {
     margin: 10px 0 0;
-    color: var(--cor-marrom, #8a542c);
-    font-size: 14px;
-    font-weight: 700;
+    color: var(--cor-marrom);
+    font-size: 13.5px;
+    font-weight: 600;
 }
 
 .tema-escuro .membro {
-    color: #f3c879;
+    color: var(--cor-dourado-foco, #f3c879);
 }
 
-/* Botão seletor de tema claro/escuro */
-.alternar {
-    position: relative;
-    display: inline-flex;
+.perfil-acoes-topo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     align-items: center;
-    width: 60px;
-    height: 30px;
-    flex-shrink: 0;
-    cursor: pointer;
+    padding: 0 clamp(20px, 3vw, 30px) 20px;
 }
 
-.alternar input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.controle {
-    position: absolute;
-    inset: 0;
-    background: #b9aba1;
-    border-radius: 999px;
-    transition: background 0.25s ease;
-}
-
-.controle::before {
-    content: "";
-    position: absolute;
-    width: 22px;
-    height: 22px;
-    left: 4px;
-    top: 4px;
-    background: #fff;
-    border-radius: 50%;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-    transition: transform 0.25s ease;
-}
-
-.alternar input:checked + .controle {
-    background: var(--cor-vermelho-acao, #6b130d);
-}
-
-.alternar input:checked + .controle::before {
-    transform: translateX(30px);
-}
-
-.alternar input:focus-visible + .controle {
-    outline: 3px solid var(--cor-dourado-foco, #e7ae5c);
-    outline-offset: 2px;
-}
-
-/* Cartões de resumo rápido do perfil */
+/* Cartões de resumo rápido */
 .estatisticas {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 18px;
-    margin-top: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-top: 20px;
     text-align: center;
 }
 
@@ -125,46 +136,67 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    padding: 20px 16px;
-    border: 1px solid var(--borda-suave, #e2d6cb);
+    padding: 18px 14px;
+    border: 1px solid var(--borda-suave);
+    border-top: 3px solid var(--cor-vinho);
     border-radius: var(--raio-card, 12px);
-    background: var(--fundo-superficie, #ffffff);
-    box-shadow: var(--sombra-card, 0 3px 12px rgba(45, 22, 12, 0.08));
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
 }
 
 .estatisticas .estatistica strong {
-    color: var(--cor-vinho, #5c0000);
+    color: var(--cor-vinho);
     font-family: var(--fonte-literaria, Georgia, serif);
-    font-size: 32px;
+    font-size: 28px;
     font-weight: 700;
     line-height: 1.15;
 }
 
 .tema-escuro .estatisticas .estatistica strong {
-    color: #f3c879;
+    color: var(--cor-dourado-foco, #f3c879);
 }
 
 .estatisticas .estatistica span {
-    color: var(--texto-secundario, #54463f);
-    font-size: 14.5px;
+    color: var(--texto-secundario);
+    font-size: 13.5px;
     font-weight: 600;
 }
 
-/* Seção de leituras e ações da conta */
 .area-livros {
-    margin-top: 34px;
+    margin-top: 30px;
 }
 
 .area-livros h2 {
-    margin: 0 0 12px;
-    color: var(--texto-principal, #231b18);
+    margin: 0 0 14px;
+    color: var(--texto-principal);
     font-family: var(--fonte-literaria, Georgia, serif);
-    font-size: 23px;
+    font-size: 22px;
 }
 
-.area-livros > p {
-    color: var(--texto-secundario, #54463f);
+.perfil-resenhas-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.perfil-resenha-card {
+    background: var(--fundo-superficie);
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-card, 12px);
+    padding: 16px;
+    box-shadow: var(--sombra-card);
+}
+
+.perfil-resenha-card h3 {
+    margin: 6px 0 6px;
     font-size: 15.5px;
+}
+
+.perfil-resenha-card p {
+    margin: 0;
+    color: var(--texto-secundario);
+    font-size: 14px;
+    line-height: 1.45;
 }
 
 .botao-sair {
@@ -172,42 +204,43 @@
     align-items: center;
     justify-content: center;
     min-width: 137px;
-    height: 46px;
+    height: 44px;
     padding: 0 22px;
     border: 0;
     border-radius: var(--raio-botao, 8px);
-    background: var(--cor-vinho, #5c0000);
+    background: var(--cor-vinho);
     color: #fff;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
     transition: background 0.2s ease;
 }
 
 .botao-sair:hover {
-    background: var(--cor-vermelho-hover, #861a11);
+    background: var(--cor-vermelho-hover);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
+    .perfil-banner {
+        height: 84px;
+    }
+
+    .cabecalho-perfil {
+        margin-top: -36px;
+        gap: 14px;
+    }
+
     .avatar {
-        width: 74px;
-        height: 74px;
+        width: 78px;
+        height: 78px;
+    }
+
+    .dados-usuario {
+        padding-top: 8px;
     }
 
     .estatisticas {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 10px;
-    }
-
-    .estatisticas .estatistica {
-        padding: 14px 8px;
-    }
-
-    .estatisticas .estatistica strong {
-        font-size: 24px;
-    }
-
-    .estatisticas .estatistica span {
-        font-size: 12.5px;
     }
 }

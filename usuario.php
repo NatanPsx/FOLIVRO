@@ -14,7 +14,21 @@ $msgPerfilErro = '';
 $msgPerfilSucesso = '';
 
 // Edição de perfil (RF03) e validação segura de upload de foto (RNF07) — somente o próprio dono.
-if ($ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
+if (!$ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'alternar_seguir') {
+    if (!folivro_verify_csrf()) {
+        $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
+    } else {
+        $chkSeg = $pdo->prepare('SELECT 1 FROM seguidores WHERE id_seguidor = ? AND id_seguido = ? LIMIT 1');
+        $chkSeg->execute([$uid, $idAlvo]);
+        if ($chkSeg->fetchColumn()) {
+            $pdo->prepare('DELETE FROM seguidores WHERE id_seguidor = ? AND id_seguido = ?')->execute([$uid, $idAlvo]);
+            $msgPerfilSucesso = 'Você deixou de seguir este usuário.';
+        } else {
+            $pdo->prepare('INSERT IGNORE INTO seguidores (id_seguidor, id_seguido) VALUES (?, ?)')->execute([$uid, $idAlvo]);
+            $msgPerfilSucesso = 'Agora você está seguindo este usuário!';
+        }
+    }
+} elseif ($ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'editar_perfil') {
     if (!folivro_verify_csrf()) {
         $msgPerfilErro = 'Sessão expirada. Atualize a página e tente novamente.';
     } else {
@@ -128,16 +142,55 @@ if (!$ehMeuPerfil && $user) {
     $estadoChatPerfil = $stChatP->fetch(PDO::FETCH_ASSOC) ?: null;
 }
 
-// Contadores reais do perfil (alinhados ao protótipo usuario.html e ao Figma).
+// Contadores reais do perfil (inclui seguidores, seguindo e pontos).
 $contStmt = $pdo->prepare(
     'SELECT
         (SELECT COUNT(*) FROM livraria WHERE id_usuario = ?) +
         (SELECT COUNT(*) FROM livraria_digital WHERE id_usuario = ?) AS livros_salvos,
         (SELECT COUNT(*) FROM resenha WHERE id_usuario = ?) AS livros_avaliados,
-        (SELECT COUNT(*) FROM curtidas WHERE id_usuario = ?) AS favoritos'
+        (SELECT COUNT(*) FROM curtidas WHERE id_usuario = ?) AS favoritos,
+        (SELECT COALESCE(pontos_contador_de_pontos, 0) FROM contador_pontos WHERE id_usuario = ?) AS pontos,
+        (SELECT COUNT(*) FROM seguidores WHERE id_seguido = ?) AS seguidores,
+        (SELECT COUNT(*) FROM seguidores WHERE id_seguidor = ?) AS seguindo'
 );
-$contStmt->execute([$idAlvo, $idAlvo, $idAlvo, $idAlvo]);
-$contadores = $contStmt->fetch() ?: ['livros_salvos' => 0, 'livros_avaliados' => 0, 'favoritos' => 0];
+$contStmt->execute([$idAlvo, $idAlvo, $idAlvo, $idAlvo, $idAlvo, $idAlvo, $idAlvo]);
+$contadores = $contStmt->fetch() ?: ['livros_salvos' => 0, 'livros_avaliados' => 0, 'favoritos' => 0, 'pontos' => 0, 'seguidores' => 0, 'seguindo' => 0];
+
+$jaSeguindo = false;
+if (!$ehMeuPerfil && $user) {
+    $stSeg = $pdo->prepare('SELECT 1 FROM seguidores WHERE id_seguidor = ? AND id_seguido = ? LIMIT 1');
+    $stSeg->execute([$uid, $idAlvo]);
+    $jaSeguindo = (bool) $stSeg->fetchColumn();
+}
+
+// Obras publicadas na loja pelo usuário (se for autor)
+$obrasLojaPerfil = [];
+if ($user) {
+    $stObrasLoja = $pdo->prepare(
+        "SELECT id_produto, titulo_produto, capa_produto, preco_centavos, arquivo_tipo, classificacao_produto
+           FROM loja_produtos
+          WHERE id_autor = ? AND status_produto = 'publicado'
+       ORDER BY data_publicacao DESC
+          LIMIT 6"
+    );
+    $stObrasLoja->execute([$idAlvo]);
+    $obrasLojaPerfil = $stObrasLoja->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// Últimas resenhas escritas pelo usuário
+$resenhasPerfil = [];
+if ($user) {
+    $stRevP = $pdo->prepare(
+        'SELECT r.id_livro, r.nota_resenha, r.titulo_resenha, r.resenha_resenha, r.data_avaliacao_resenha, r.compra_verificada_resenha, l.titulo_livro
+           FROM resenha r
+           JOIN livro l ON l.id_livro = r.id_livro
+          WHERE r.id_usuario = ?
+       ORDER BY r.data_avaliacao_resenha DESC
+          LIMIT 3'
+    );
+    $stRevP->execute([$idAlvo]);
+    $resenhasPerfil = $stRevP->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Prévia visual de livros salvos e obras compradas para a estante do perfil (como no Figma).
 $prevLivrosStmt = $pdo->prepare(
@@ -161,8 +214,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meu perfil | FOLIVRO</title>
-    <link rel="stylesheet" href="usuario.css?v=20261022_9">
-    <link rel="stylesheet" href="layout.css?v=20261022_11">
+    <link rel="stylesheet" href="usuario.css?v=20261117_2">
+    <link rel="stylesheet" href="layout.css?v=20261104_20">
+    <link rel="stylesheet" href="estante.css?v=20261117_4">
 </head>
 
 <body>
@@ -173,67 +227,91 @@ $csrf = folivro_escape(folivro_csrf_token());
 
     <main class="conteudo" id="conteudo-principal">
         <section class="perfil">
-            <div class="cabecalho-perfil">
-                <div class="avatar" aria-hidden="true">
-                    <?php if (!empty($user['foto_usuario'])): ?>
-                        <img src="<?= folivro_escape($user['foto_usuario']) ?>" alt="Foto de perfil" style="width:100%;height:100%;border-radius:50%;object-fit:cover">
-                    <?php else: ?>
-                        <svg viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="50" fill="#555" />
-                            <circle cx="50" cy="35" r="19" fill="#ccc" />
-                            <path d="M15 88 Q18 57 50 57 Q82 57 85 88 Q68 100 50 100 Q32 100 15 88" fill="#ccc" />
-                        </svg>
-                    <?php endif; ?>
+            <div class="perfil-hero">
+                <div class="perfil-banner" aria-hidden="true"></div>
+                <div class="cabecalho-perfil">
+                    <div class="avatar" aria-hidden="true">
+                        <?php if (!empty($user['foto_usuario'])): ?>
+                            <img src="<?= folivro_escape($user['foto_usuario']) ?>" alt="Foto de perfil">
+                        <?php else: ?>
+                            <svg viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="50" fill="#555" />
+                                <circle cx="50" cy="35" r="19" fill="#ccc" />
+                                <path d="M15 88 Q18 57 50 57 Q82 57 85 88 Q68 100 50 100 Q32 100 15 88" fill="#ccc" />
+                            </svg>
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="dados-usuario">
+                        <div class="perfil-nome-linha">
+                            <h1><?= folivro_escape($user['nome_usuario'] ?? 'Perfil não encontrado') ?></h1>
+                            <?php if ($user): ?>
+                                <span class="selo-papel-perfil"><?= folivro_escape(ucfirst((string) ($user['nivel_usuario'] ?? 'leitor'))) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($user): ?>
+                            <?php if ($ehMeuPerfil): ?>
+                                <p class="email"><?= folivro_escape($user['email_usuario'] ?? '') ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($user['biografia_usuario'])): ?>
+                                <p class="biografia"><?= folivro_escape($user['biografia_usuario']) ?></p>
+                            <?php endif; ?>
+                            <p class="membro">
+                                Membro desde <?= isset($user['data_cadastro_usuario']) ? date('d/m/Y', strtotime($user['data_cadastro_usuario'])) : '' ?>
+                                <?php if ($ehMeuPerfil): ?>
+                                    <?php if ($idadeUsuarioPerfil !== null): ?>
+                                        · Nascimento: <?= date('d/m/Y', strtotime((string) $user['data_nascimento_usuario'])) ?> (<?= $idadeUsuarioPerfil ?> anos — <?= $maiorDeIdadePerfil ? 'Maior de 18 anos' : 'Menor de 18 anos · Obras +18 ocultas' ?>)
+                                    <?php else: ?>
+                                        · Data de nascimento não informada (Obras +18 ocultas por proteção etária)
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </p>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
-                <div class="dados-usuario">
-                    <h1><?= folivro_escape($user['nome_usuario'] ?? 'Perfil não encontrado') ?></h1>
-                    <?php if ($user): ?>
+                <?php if ($user): ?>
+                    <div class="perfil-acoes-topo">
                         <?php if ($ehMeuPerfil): ?>
-                            <p class="email"><?= folivro_escape($user['email_usuario'] ?? '') ?></p>
-                        <?php else: ?>
-                            <p class="email">Perfil da comunidade · <?= folivro_escape(ucfirst((string) ($user['nivel_usuario'] ?? 'leitor'))) ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($user['biografia_usuario'])): ?>
-                            <p class="biografia"><?= folivro_escape($user['biografia_usuario']) ?></p>
-                        <?php endif; ?>
-                        <p class="membro">
-                            Membro desde: <?= isset($user['data_cadastro_usuario']) ? date('d/m/Y', strtotime($user['data_cadastro_usuario'])) : '' ?>
-                            <?php if ($ehMeuPerfil): ?>
-                                <?php if ($idadeUsuarioPerfil !== null): ?>
-                                    · Nascimento: <?= date('d/m/Y', strtotime((string) $user['data_nascimento_usuario'])) ?> (<?= $idadeUsuarioPerfil ?> anos — <?= $maiorDeIdadePerfil ? 'Maior de 18 anos' : 'Menor de 18 anos · Obras +18 ocultas' ?>)
-                                <?php else: ?>
-                                    · Data de nascimento não informada (Obras +18 ocultas por proteção etária)
-                                <?php endif; ?>
+                            <a class="filtro-pilula" href="minha-biblioteca.php">Minha estante</a>
+                            <a class="filtro-pilula" href="minhas-compras.php">Minhas compras</a>
+                            <a class="filtro-pilula" href="estatisticas.php">Metas e conquistas</a>
+                            <?php if (in_array($user['nivel_usuario'] ?? '', ['autor', 'admin'], true)): ?>
+                                <a class="filtro-pilula" href="painel-vendas.php">Painel de vendas</a>
                             <?php endif; ?>
-                        </p>
-                    <?php endif; ?>
-                </div>
+                        <?php else: ?>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                <input type="hidden" name="acao" value="alternar_seguir">
+                                <button type="submit" class="<?= $jaSeguindo ? 'filtro-pilula' : 'botao-adicionar-livro' ?>">
+                                    <?= $jaSeguindo ? 'Seguindo ✓' : '+ Seguir' ?>
+                                </button>
+                            </form>
+                            <?php if ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'pendente'): ?>
+                                <?php if ((int) ($estadoChatPerfil['id_solicitante'] ?? 0) === $uid): ?>
+                                    <span class="selo-status selo-comprado">Solicitação de mensagem pendente</span>
+                                    <a class="filtro-pilula" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Ver no chat</a>
+                                <?php else: ?>
+                                    <span class="selo-status selo-comprado">Solicitou conversar com você</span>
+                                    <a class="botao-adicionar-livro" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Responder no chat</a>
+                                <?php endif; ?>
+                            <?php elseif ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'aceita'): ?>
+                                <a class="filtro-pilula" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Abrir conversa no chat</a>
+                            <?php else: ?>
+                                <form method="post" action="chat.php" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="acao" value="iniciar_conversa">
+                                    <input type="hidden" name="id_destinatario" value="<?= (int) $idAlvo ?>">
+                                    <button type="submit" class="filtro-pilula">Solicitar conversa</button>
+                                </form>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <?php if (!$user): ?>
                 <p class="estado-vazio estado-erro">Usuário não encontrado ou inativo.</p>
-            <?php elseif (!$ehMeuPerfil): ?>
-                <div style="margin:14px 0 22px; display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-                    <?php if ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'pendente'): ?>
-                        <?php if ((int) ($estadoChatPerfil['id_solicitante'] ?? 0) === $uid): ?>
-                            <span class="selo-status selo-comprado">Solicitação de mensagem pendente</span>
-                            <a class="filtro-pilula" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Ver no chat</a>
-                        <?php else: ?>
-                            <span class="selo-status selo-comprado">Este usuário enviou uma solicitação de mensagem para você</span>
-                            <a class="botao-adicionar-livro" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Responder solicitação no chat</a>
-                        <?php endif; ?>
-                    <?php elseif ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'aceita'): ?>
-                        <a class="botao-adicionar-livro" href="chat.php?conversa=<?= (int) $estadoChatPerfil['id_conversa'] ?>">Abrir conversa no chat</a>
-                    <?php else: ?>
-                        <form method="post" action="chat.php">
-                            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                            <input type="hidden" name="acao" value="iniciar_conversa">
-                            <input type="hidden" name="id_destinatario" value="<?= (int) $idAlvo ?>">
-                            <button type="submit" class="botao-adicionar-livro">Solicitar conversa</button>
-                        </form>
-                    <?php endif; ?>
-                </div>
             <?php endif; ?>
 
             <?php if ($user && $ehMeuPerfil): ?>
@@ -269,29 +347,34 @@ $csrf = folivro_escape(folivro_csrf_token());
             <section class="estatisticas" aria-label="Resumo do perfil">
                 <div class="estatistica">
                     <strong><?= (int) $contadores['livros_salvos'] ?></strong>
-                    <span>Livros salvos</span>
+                    <span>Livros na estante</span>
                 </div>
                 <div class="estatistica">
                     <strong><?= (int) $contadores['livros_avaliados'] ?></strong>
-                    <span>Livros avaliados</span>
+                    <span>Resenhas escritas</span>
                 </div>
                 <div class="estatistica">
-                    <strong><?= (int) $contadores['favoritos'] ?></strong>
-                    <span>Favoritos</span>
+                    <strong><?= (int) $contadores['pontos'] ?></strong>
+                    <span>Pontos de leitura</span>
+                </div>
+                <div class="estatistica">
+                    <strong><?= (int) $contadores['seguidores'] ?></strong>
+                    <span>Seguidores</span>
+                </div>
+                <div class="estatistica">
+                    <strong><?= (int) $contadores['seguindo'] ?></strong>
+                    <span>Seguindo</span>
                 </div>
             </section>
 
             <section class="area-livros">
-                <h2>Minha biblioteca digital</h2>
-                <p>Consulte os livros salvos e as obras independentes que você comprou.</p>
-                <p class="atalhos-perfil-biblioteca">
-                    <a class="botao-adicionar-livro" href="minha-biblioteca.php">Abrir minha biblioteca</a>
-                    <a class="botao-adicionar-livro" href="biblioteca-autor.php">Painel do autor</a>
-                    <a class="botao-adicionar-livro" href="loja.php">Visitar loja</a>
-                </p>
+                <h2><?= $ehMeuPerfil ? 'Estante recente' : 'Estante de ' . folivro_escape($user['nome_usuario'] ?? 'leitor') ?></h2>
+                <?php if ($ehMeuPerfil): ?>
+                    <p>Consulte os livros salvos e as obras independentes que você adquiriu.</p>
+                <?php endif; ?>
 
                 <?php if ($prevLivros): ?>
-                    <div class="biblioteca-lista estante-perfil">
+                    <div class="biblioteca-lista estante-biblioteca estante-perfil">
                         <?php foreach ($prevLivros as $pl): ?>
                             <?php
                             $pctPrev = max(0, min(100, (int) round((float) $pl['porcentagem'])));
@@ -351,6 +434,61 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </div>
                 <?php endif; ?>
             </section>
+
+            <?php if ($obrasLojaPerfil): ?>
+                <section class="area-livros">
+                    <h2>Obras publicadas na Loja</h2>
+                    <div class="biblioteca-lista estante-biblioteca">
+                        <?php foreach ($obrasLojaPerfil as $olp): ?>
+                            <article class="livro-card">
+                                <div class="livro-capa">
+                                    <?php if (!empty($olp['capa_produto'])): ?>
+                                        <img src="<?= folivro_escape($olp['capa_produto']) ?>" alt="Capa de <?= folivro_escape($olp['titulo_produto']) ?>" loading="lazy">
+                                    <?php else: ?>
+                                        <div class="capa-fallback"><?= folivro_escape($olp['titulo_produto']) ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="livro-info">
+                                    <div class="linha-selos-card">
+                                        <span class="selo-status selo-comprado">
+                                            <?= (int) $olp['preco_centavos'] === 0 ? 'Gratuita' : 'R$ ' . number_format(((int) $olp['preco_centavos']) / 100, 2, ',', '.') ?>
+                                        </span>
+                                        <?php if (!empty($olp['arquivo_tipo'])): ?>
+                                            <span class="tag-genero-card"><?= strtoupper(folivro_escape((string) $olp['arquivo_tipo'])) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <h3><a href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>" class="link-titulo-livro"><?= folivro_escape($olp['titulo_produto']) ?></a></h3>
+                                    <a class="botao-adicionar-livro btn-card-principal" href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>">Ver na loja</a>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
+            <?php if ($resenhasPerfil): ?>
+                <section class="area-livros">
+                    <h2>Últimas avaliações escritas</h2>
+                    <div class="perfil-resenhas-lista">
+                        <?php foreach ($resenhasPerfil as $rp): ?>
+                            <article class="perfil-resenha-card">
+                                <div style="display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                                    <a href="livro.php?id=<?= (int) $rp['id_livro'] ?>"><strong><?= folivro_escape($rp['titulo_livro']) ?></strong></a>
+                                    <span><?= str_repeat('★', (int) ($rp['nota_resenha'] ?? 0)) ?></span>
+                                </div>
+                                <?php if (!empty($rp['titulo_resenha'])): ?>
+                                    <h3><?= folivro_escape($rp['titulo_resenha']) ?></h3>
+                                <?php endif; ?>
+                                <p><?= folivro_escape(mb_strimwidth((string) $rp['resenha_resenha'], 0, 160, '...', 'UTF-8')) ?></p>
+                                <small style="display:block; margin-top:8px; color:var(--texto-apoio);">
+                                    <?= date('d/m/Y', strtotime((string) $rp['data_avaliacao_resenha'])) ?>
+                                    <?= (int) ($rp['compra_verificada_resenha'] ?? 0) === 1 ? ' · Compra verificada' : '' ?>
+                                </small>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
 
             <?php if ($user && $ehMeuPerfil): ?>
             <section class="privacidade-conta" aria-labelledby="titulo-privacidade">

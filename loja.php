@@ -38,6 +38,7 @@ $infoModo = folivro_loja_info_modo();
     <link rel="stylesheet" href="layout.css?v=20261117_1">
     <link rel="stylesheet" href="home.css?v=20261117_1">
     <link rel="stylesheet" href="loja.css?v=20261117_1">
+    <link rel="stylesheet" href="estante.css?v=20261117_4">
 </head>
 
 <body>
@@ -121,7 +122,7 @@ $infoModo = folivro_loja_info_modo();
 
         <p><small>Exibindo <strong><?= count($itens) ?></strong> de <strong><?= (int) $resultado['total'] ?></strong> obra(s) publicada(s).</small></p>
 
-        <div class="biblioteca-lista" id="lista-loja">
+        <div class="biblioteca-lista estante-biblioteca" id="lista-loja">
             <?php if (!$itens): ?>
                 <p class="estado-vazio">Nenhuma obra encontrada com os filtros selecionados.</p>
             <?php else: ?>
