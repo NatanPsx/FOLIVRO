@@ -875,5 +875,35 @@ function folivro_avaliar_seguranca_capitulo(
     return ['acao' => 'permitir', 'motivo' => ''];
 }
 
+/** Lê uma configuração administrativa do sistema (tabela sistema_config). */
+function folivro_sistema_config_obter(PDO $pdo, string $chave, string $padrao = ''): string
+{
+    try {
+        $st = $pdo->prepare('SELECT valor FROM sistema_config WHERE chave = ? LIMIT 1');
+        $st->execute([$chave]);
+        $v = $st->fetchColumn();
+        return is_string($v) && $v !== '' ? $v : $padrao;
+    } catch (Throwable $e) {
+        return $padrao;
+    }
+}
+
+/** Grava uma configuração administrativa do sistema (tabela sistema_config). */
+function folivro_sistema_config_salvar(PDO $pdo, string $chave, string $valor, ?int $uidAdmin = null): void
+{
+    $st = $pdo->prepare(
+        'INSERT INTO sistema_config (chave, valor, atualizado_por) VALUES (?, ?, ?)
+         ON DUPLICATE KEY UPDATE valor = VALUES(valor), atualizado_por = VALUES(atualizado_por)'
+    );
+    $st->execute([$chave, $valor, $uidAdmin]);
+}
+
+/** Verifica se a aprovação automática global de obras postadas está ativada pelo administrador. */
+function folivro_aprovacao_automatica_obras_ativa(PDO $pdo): bool
+{
+    return folivro_sistema_config_obter($pdo, 'aprovacao_automatica_obras', '0') === '1';
+}
+
+
 
 

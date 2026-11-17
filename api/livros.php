@@ -10,12 +10,13 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
 $rawQuery = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
-$isDestaques = isset($_GET['destaques']) || !isset($_GET['q']) || in_array(mb_strtolower($rawQuery, 'UTF-8'), ['', 'destaques', 'populares', 'trending'], true);
+$rawCategoria = isset($_GET['categoria']) && is_string($_GET['categoria']) ? trim($_GET['categoria']) : '';
+$isDestaques = ($rawCategoria === '') && (isset($_GET['destaques']) || !isset($_GET['q']) || in_array(mb_strtolower($rawQuery, 'UTF-8'), ['', 'destaques', 'populares', 'trending'], true));
 
 if ($isDestaques) {
     $query = 'destaques';
 } else {
-    $query = $rawQuery;
+    $query = $rawCategoria !== '' ? $rawCategoria : $rawQuery;
     $queryLength = function_exists('mb_strlen') ? mb_strlen($query, 'UTF-8') : strlen($query);
     if ($queryLength > 480) {
         http_response_code(400);
@@ -317,7 +318,132 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
             return $finalList;
         }
 
-        // MODO 2: Busca por termo específico com inteligência bilíngue (Português <-> Inglês)
+        // MODO 2: Busca por CATEGORIA/GÊNERO (usa subject= da Open Library para trazer variedade real de títulos)
+        $mapaCategorias = [
+            'literatura nacional'    => ['slug' => 'literatura_nacional', 'subjects' => ['brazilian_literature', 'brazilian_fiction']],
+            'literatura brasileira'  => ['slug' => 'literatura_nacional', 'subjects' => ['brazilian_literature', 'brazilian_fiction']],
+            'literatura_nacional'    => ['slug' => 'literatura_nacional', 'subjects' => ['brazilian_literature', 'brazilian_fiction']],
+            'classicos'              => ['slug' => 'classicos', 'subjects' => ['classic_literature', 'classics']],
+            'grandes classicos'      => ['slug' => 'classicos', 'subjects' => ['classic_literature', 'classics']],
+            'suspense'               => ['slug' => 'suspense', 'subjects' => ['thriller', 'suspense']],
+            'drama'                  => ['slug' => 'drama', 'subjects' => ['drama', 'literary_fiction']],
+            'fantasia'               => ['slug' => 'fantasia', 'subjects' => ['fantasy', 'epic_fantasy']],
+            'ficcao cientifica'      => ['slug' => 'ficcao_cientifica', 'subjects' => ['science_fiction', 'dystopia']],
+            'ficcao_cientifica'      => ['slug' => 'ficcao_cientifica', 'subjects' => ['science_fiction', 'dystopia']],
+            'romance'                => ['slug' => 'romance', 'subjects' => ['romance', 'love_stories']],
+            'terror'                 => ['slug' => 'terror', 'subjects' => ['horror', 'gothic_fiction']],
+            'misterio'               => ['slug' => 'misterio', 'subjects' => ['mystery', 'detective_and_mystery_stories']],
+            'aventura'               => ['slug' => 'aventura', 'subjects' => ['adventure', 'action_and_adventure']],
+            'distopia'               => ['slug' => 'distopia', 'subjects' => ['dystopia', 'dystopian_fiction']],
+            'poesia'                 => ['slug' => 'poesia', 'subjects' => ['poetry']],
+            'jovem adulto'           => ['slug' => 'jovem_adulto', 'subjects' => ['young_adult', 'young_adult_fiction']],
+            'biografia'              => ['slug' => 'biografia', 'subjects' => ['biography']],
+            'historia'               => ['slug' => 'historia', 'subjects' => ['historical_fiction', 'history']],
+        ];
+        $normCatKey = trim(preg_replace('/\s+/u', ' ', mb_strtolower(folivro_remover_acentos($query), 'UTF-8')) ?? '');
+        $catConfig = $mapaCategorias[$normCatKey] ?? null;
+
+        if ($catConfig !== null) {
+            $cacheFile = $cacheDir . '/cat_' . $catConfig['slug'] . '_' . md5($sort) . '.json';
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+                $cached = json_decode((string) file_get_contents($cacheFile), true);
+                if (is_array($cached) && !empty($cached)) {
+                    return $cached;
+                }
+            }
+
+            $urlsCat = [];
+            foreach ($catConfig['subjects'] as $idx => $subj) {
+                $urlsCat['s_' . $idx] = 'https://openlibrary.org/search.json?subject=' . rawurlencode($subj)
+                    . '&sort=' . rawurlencode($sort)
+                    . '&limit=45'
+                    . '&fields=' . rawurlencode($fields);
+            }
+            $resMulti = folivro_executar_curl_multi($urlsCat, 8);
+            $allDocs = [];
+            foreach ($resMulti as $conteudoJson) {
+                $payload = json_decode($conteudoJson, true);
+                if (is_array($payload) && isset($payload['docs']) && is_array($payload['docs'])) {
+                    $allDocs = array_merge($allDocs, $payload['docs']);
+                }
+            }
+            if (empty($allDocs)) {
+                return [];
+            }
+
+            $cleanBooksByNorm = [];
+            foreach ($allDocs as $book) {
+                if (!is_array($book) || !isset($book['title'])) {
+                    continue;
+                }
+                $title = trim(preg_replace('/\s+/u', ' ', is_string($book['title']) ? $book['title'] : ''));
+                if ($title === '' || mb_strlen($title, 'UTF-8') < 2 || preg_match('/^[\s\.\-_,\?!:;·\(\)\[\]{}#@&]+$/u', $title)) {
+                    continue;
+                }
+                $workId = isset($book['key']) && is_string($book['key']) && preg_match('#^/works/(OL[0-9]+W)$#', $book['key'], $match) ? $match[1] : '';
+                if ($workId === '') {
+                    continue;
+                }
+                $authors = isset($book['author_name']) && is_array($book['author_name'])
+                    ? array_slice(array_values(array_filter(array_map('trim', $book['author_name']), static fn($a) => is_string($a) && $a !== '' && mb_strlen($a, 'UTF-8') > 1)), 0, 3)
+                    : [];
+                if (empty($authors) || count($book['author_name'] ?? []) > 5) {
+                    continue;
+                }
+                $coverId = isset($book['cover_i']) ? filter_var($book['cover_i'], FILTER_VALIDATE_INT) : false;
+                $hasCover = ($coverId !== false && $coverId > 0);
+                if (!$hasCover) {
+                    continue; // Nas categorias, prioriza obras com capa para uma vitrine visual rica
+                }
+                $editions = isset($book['edition_count']) && is_numeric($book['edition_count']) ? (int) $book['edition_count'] : 0;
+                $ratings = isset($book['ratings_count']) && is_numeric($book['ratings_count']) ? (int) $book['ratings_count'] : 0;
+                $ratingAvg = isset($book['ratings_average']) && is_numeric($book['ratings_average']) ? round((float) $book['ratings_average'], 2) : null;
+                $ratingSortable = isset($book['ratings_sortable']) && is_numeric($book['ratings_sortable']) ? round((float) $book['ratings_sortable'], 4) : 0.0;
+                $readingLog = isset($book['readinglog_count']) && is_numeric($book['readinglog_count']) ? (int) $book['readinglog_count'] : 0;
+
+                $infoTitulo = folivro_localizar_titulo($title);
+                $tituloFormatado = mb_substr($infoTitulo['titulo'], 0, 200, 'UTF-8');
+                $tituloOriginal = $infoTitulo['original'] ?? $title;
+                $normKey = folivro_normalizar_titulo_chave($tituloFormatado) ?: $workId;
+
+                $candidato = [
+                    'workId' => $workId,
+                    'title' => $tituloFormatado,
+                    'originalTitle' => $tituloOriginal,
+                    'authors' => $authors,
+                    'year' => isset($book['first_publish_year']) && is_numeric($book['first_publish_year']) && (int) $book['first_publish_year'] > 0 ? (int) $book['first_publish_year'] : null,
+                    'pages' => isset($book['number_of_pages_median']) && is_numeric($book['number_of_pages_median']) && (int) $book['number_of_pages_median'] > 0 ? (int) $book['number_of_pages_median'] : 0,
+                    'coverUrl' => 'https://covers.openlibrary.org/b/id/' . $coverId . '-M.jpg',
+                    'workUrl' => 'https://openlibrary.org/works/' . $workId,
+                    'editions' => $editions,
+                    'readingLog' => $readingLog,
+                    'ratingsCount' => $ratings,
+                    'ratingAvg' => $ratingAvg,
+                    'ratingSortable' => $ratingSortable,
+                    'hasCover' => true,
+                ];
+                if (!isset($cleanBooksByNorm[$normKey]) || $candidato['readingLog'] > $cleanBooksByNorm[$normKey]['readingLog']) {
+                    $cleanBooksByNorm[$normKey] = $candidato;
+                }
+            }
+
+            $finalList = array_values($cleanBooksByNorm);
+            usort($finalList, static function ($a, $b) use ($sort) {
+                if ($sort === 'rating') {
+                    return ($b['ratingSortable'] <=> $a['ratingSortable']) ?: ($b['ratingsCount'] <=> $a['ratingsCount']);
+                }
+                if ($sort === 'new') {
+                    return ((int) ($b['year'] ?? 0) <=> (int) ($a['year'] ?? 0)) ?: ($b['readingLog'] <=> $a['readingLog']);
+                }
+                return ($b['readingLog'] <=> $a['readingLog']) ?: ($b['editions'] <=> $a['editions']);
+            });
+            if (!empty($finalList)) {
+                @file_put_contents($cacheFile, json_encode($finalList, JSON_UNESCAPED_UNICODE));
+            }
+            return $finalList;
+        }
+
+        // MODO 3: Busca por termo específico com inteligência bilíngue (Português <-> Inglês)
         $normBusca = function_exists('folivro_normalizar_busca') ? folivro_normalizar_busca($query) : mb_strtolower($query, 'UTF-8');
         $cacheKey = md5($normBusca . '_' . $sort);
         $cacheFile = $cacheDir . '/search_' . $cacheKey . '.json';

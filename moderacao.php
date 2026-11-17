@@ -139,6 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
 
                         $pdo->commit();
+                        require_once __DIR__ . '/config/loja.php';
+                        folivro_loja_sincronizar_obra_estudio($pdo, $idObraRev);
                         if ($idAutorObraRev > 0) {
                             folivro_avaliar_qualificacao_autor($pdo, $idAutorObraRev, true);
                         }

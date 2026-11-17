@@ -103,9 +103,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($erro === '') {
                 $qualificacaoAutor = folivro_avaliar_qualificacao_autor($pdo, $uid, true);
+                $aprovAutoGlobal = folivro_aprovacao_automatica_obras_ativa($pdo);
                 $avalSegCap1 = folivro_avaliar_seguranca_capitulo($pdo, $title, $chapterTitle, $chapter, $origemObra, 0);
                 $baseLegalIncerta = in_array($origemObra, ['fanfic_sem_autorizacao', 'dominio_publico_nao_verificado'], true);
-                $publicarAutomatico = ($publish && !$baseLegalIncerta && $qualificacaoAutor['qualificado_automatico'] && $avalSegCap1['acao'] === 'permitir');
+                $publicarAutomatico = ($publish && !$baseLegalIncerta && ($qualificacaoAutor['qualificado_automatico'] || $aprovAutoGlobal) && $avalSegCap1['acao'] === 'permitir');
 
                 $revisaoPublicacao = 'nao_solicitada';
                 $motivoBloqueio = null;
@@ -206,6 +207,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     $pdo->prepare("UPDATE usuario SET nivel_usuario = 'autor' WHERE id_usuario = ? AND nivel_usuario = 'leitor'")->execute([$uid]);
                     $pdo->commit();
+
+                    if ($publicarAutomatico && $bookId > 0) {
+                        require_once __DIR__ . '/config/loja.php';
+                        folivro_loja_sincronizar_obra_estudio($pdo, $bookId);
+                    }
 
                     if ($publish && $baseLegalIncerta) {
                         $erro = $motivoBloqueio . ' A obra foi salva apenas como rascunho privado.';

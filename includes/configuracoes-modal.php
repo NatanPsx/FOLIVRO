@@ -54,8 +54,12 @@ $cfgModStats = [
     'chat' => 0,
     'recentes' => []
 ];
+$cfgPagamentoSimuladoAtivo = true;
+$cfgAprovacaoAutomaticaAtiva = false;
 
 if ($cfgIsAdmin && $cfgPdo) {
+    $cfgPagamentoSimuladoAtivo = folivro_sistema_config_obter($cfgPdo, 'payment_mode', strtolower((string) (getenv('PAYMENT_MODE') ?: 'simulated'))) !== 'real';
+    $cfgAprovacaoAutomaticaAtiva = folivro_aprovacao_automatica_obras_ativa($cfgPdo);
     try {
         $stmtStats = $cfgPdo->query("
             SELECT
@@ -708,6 +712,59 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
     line-height: 1.25 !important;
 }
 
+.lista-controles-admin {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+}
+
+.controle-admin-card {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 14px !important;
+    padding: 12px 14px !important;
+    background: var(--fundo-destaque, #fcf9f5) !important;
+    border: 1px solid var(--borda-suave, #e2d6cb) !important;
+    border-radius: 10px !important;
+}
+
+.controle-admin-info strong {
+    display: block !important;
+    font-size: 14px !important;
+    color: var(--texto-principal, #231b18) !important;
+    margin-bottom: 2px !important;
+}
+
+.controle-admin-info small {
+    display: block !important;
+    font-size: 12px !important;
+    color: var(--texto-secundario, #54463f) !important;
+    line-height: 1.35 !important;
+}
+
+.btn-toggle-admin {
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    border: 1px solid var(--borda-forte, #c9b7a8) !important;
+    transition: all 0.15s ease !important;
+}
+
+.btn-toggle-admin.ativo {
+    background: #2f5222 !important;
+    color: #ffffff !important;
+    border-color: #2f5222 !important;
+}
+
+.btn-toggle-admin.inativo {
+    background: var(--fundo-superficie-suave, #faf6f2) !important;
+    color: var(--texto-principal, #231b18) !important;
+}
+
 .lista-denuncias-rapidas {
     display: flex !important;
     flex-direction: column !important;
@@ -1182,6 +1239,46 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                     </div>
                 </div>
 
+                <div class="secao-config-bloco">
+                    <h4>Controles da Plataforma (Loja &amp; Publicação)</h4>
+                    <div class="lista-controles-admin">
+                        <div class="controle-admin-card">
+                            <div class="controle-admin-info">
+                                <strong>Pagamento Simulado (Loja)</strong>
+                                <small id="descPagamentoSimulado">
+                                    <?= $cfgPagamentoSimuladoAtivo
+                                        ? 'Ativo: compras na loja usam o gateway simulado (sem dinheiro real).'
+                                        : 'Desativado: loja operando em modo real (Mercado Pago).' ?>
+                                </small>
+                            </div>
+                            <button type="button"
+                                    id="btnTogglePagamentoSimulado"
+                                    class="btn-toggle-admin <?= $cfgPagamentoSimuladoAtivo ? 'ativo' : 'inativo' ?>"
+                                    data-ativo="<?= $cfgPagamentoSimuladoAtivo ? '1' : '0' ?>">
+                                <?= $cfgPagamentoSimuladoAtivo ? 'Ativado (Desativar)' : 'Desativado (Ativar)' ?>
+                            </button>
+                        </div>
+
+                        <div class="controle-admin-card">
+                            <div class="controle-admin-info">
+                                <strong>Aprovação Automática de Obras Postadas</strong>
+                                <small id="descAprovacaoAutomatica">
+                                    <?= $cfgAprovacaoAutomaticaAtiva
+                                        ? 'Ativada: obras seguras são aprovadas e publicadas automaticamente.'
+                                        : 'Desativada: obras novas passam por revisão humana ou critérios de confiança.' ?>
+                                </small>
+                            </div>
+                            <button type="button"
+                                    id="btnToggleAprovacaoAuto"
+                                    class="btn-toggle-admin <?= $cfgAprovacaoAutomaticaAtiva ? 'ativo' : 'inativo' ?>"
+                                    data-ativo="<?= $cfgAprovacaoAutomaticaAtiva ? '1' : '0' ?>">
+                                <?= $cfgAprovacaoAutomaticaAtiva ? 'Ativada (Desativar)' : 'Desativada (Ativar)' ?>
+                            </button>
+                        </div>
+                    </div>
+                    <p id="feedbackAdminConfigModal" class="estado-vazio" style="display:none; margin-top:10px; padding:10px; font-size:13px;" role="status"></p>
+                </div>
+
                 <?php if (!empty($cfgModStats['recentes'])): ?>
                 <div class="secao-config-bloco">
                     <h4>Denúncias Recentes em Aberto</h4>
@@ -1365,6 +1462,91 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
         }
 
         atualizarInterfaceTemas(obterTemaSalvo(), obterModoSalvo());
+
+        const btnPagSim = document.getElementById('btnTogglePagamentoSimulado');
+        const btnAprovAuto = document.getElementById('btnToggleAprovacaoAuto');
+        const feedbackAdmin = document.getElementById('feedbackAdminConfigModal');
+
+        async function enviarAdminConfig(payload) {
+            if (feedbackAdmin) {
+                feedbackAdmin.style.display = 'none';
+                feedbackAdmin.className = 'estado-vazio';
+            }
+            const resp = await fetch('api/admin-config.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': <?= json_encode($cfgCsrf) ?>
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!resp.ok || !data.ok) {
+                throw new Error(data.error || 'Não foi possível atualizar a configuração.');
+            }
+            if (feedbackAdmin) {
+                feedbackAdmin.textContent = data.mensagem || 'Configuração atualizada.';
+                feedbackAdmin.className = 'estado-vazio estado-sucesso';
+                feedbackAdmin.style.display = 'block';
+            }
+            return data;
+        }
+
+        if (btnPagSim) {
+            btnPagSim.addEventListener('click', async function () {
+                const proximo = this.getAttribute('data-ativo') !== '1';
+                this.disabled = true;
+                try {
+                    const res = await enviarAdminConfig({ acao: 'alternar_pagamento', simulado_ativo: proximo });
+                    const ativo = !!res.simulado_ativo;
+                    this.setAttribute('data-ativo', ativo ? '1' : '0');
+                    this.className = 'btn-toggle-admin ' + (ativo ? 'ativo' : 'inativo');
+                    this.textContent = ativo ? 'Ativado (Desativar)' : 'Desativado (Ativar)';
+                    const desc = document.getElementById('descPagamentoSimulado');
+                    if (desc) {
+                        desc.textContent = ativo
+                            ? 'Ativo: compras na loja usam o gateway simulado (sem dinheiro real).'
+                            : 'Desativado: loja operando em modo real (Mercado Pago).';
+                    }
+                } catch (err) {
+                    if (feedbackAdmin) {
+                        feedbackAdmin.textContent = err.message;
+                        feedbackAdmin.className = 'estado-vazio estado-erro';
+                        feedbackAdmin.style.display = 'block';
+                    }
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        }
+
+        if (btnAprovAuto) {
+            btnAprovAuto.addEventListener('click', async function () {
+                const proximo = this.getAttribute('data-ativo') !== '1';
+                this.disabled = true;
+                try {
+                    const res = await enviarAdminConfig({ acao: 'alternar_aprovacao_automatica', aprovacao_automatica: proximo });
+                    const ativo = !!res.aprovacao_automatica;
+                    this.setAttribute('data-ativo', ativo ? '1' : '0');
+                    this.className = 'btn-toggle-admin ' + (ativo ? 'ativo' : 'inativo');
+                    this.textContent = ativo ? 'Ativada (Desativar)' : 'Desativada (Ativar)';
+                    const desc = document.getElementById('descAprovacaoAutomatica');
+                    if (desc) {
+                        desc.textContent = ativo
+                            ? 'Ativada: obras seguras são aprovadas e publicadas automaticamente.'
+                            : 'Desativada: obras novas passam por revisão humana ou critérios de confiança.';
+                    }
+                } catch (err) {
+                    if (feedbackAdmin) {
+                        feedbackAdmin.textContent = err.message;
+                        feedbackAdmin.className = 'estado-vazio estado-erro';
+                        feedbackAdmin.style.display = 'block';
+                    }
+                } finally {
+                    this.disabled = false;
+                }
+            });
+        }
     });
 })();
 </script>

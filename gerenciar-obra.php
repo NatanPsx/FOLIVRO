@@ -197,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hashCapitulo = folivro_content_hash($body);
                 $qualificacaoAutor = folivro_avaliar_qualificacao_autor($pdo, $uid, true);
                 $obraJaPublicada = ($work['status_autor_dos_livros'] === 'a_venda' && ($work['revisao_publicacao'] ?? '') === 'aprovada' && !$temSuspensaoPreventiva);
-                $publicarAutomatico = ($qualificacaoAutor['qualificado_automatico'] && $obraJaPublicada && $avalSeg['acao'] === 'permitir');
+                $publicarAutomatico = (($qualificacaoAutor['qualificado_automatico'] || folivro_aprovacao_automatica_obras_ativa($pdo)) && $obraJaPublicada && $avalSeg['acao'] === 'permitir');
 
                 $statusNovoCap = $publicarAutomatico ? 'publicado' : 'rascunho';
                 $modoPubCap    = $publicarAutomatico ? 'automatica' : 'revisao_humana';
@@ -274,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hashCapitulo = folivro_content_hash($body);
                 $qualificacaoAutor = folivro_avaliar_qualificacao_autor($pdo, $uid, true);
                 $obraJaPublicada = ($work['status_autor_dos_livros'] === 'a_venda' && ($work['revisao_publicacao'] ?? '') === 'aprovada' && !$temSuspensaoPreventiva);
-                $publicarAutomatico = ($qualificacaoAutor['qualificado_automatico'] && $obraJaPublicada && $avalSeg['acao'] === 'permitir');
+                $publicarAutomatico = (($qualificacaoAutor['qualificado_automatico'] || folivro_aprovacao_automatica_obras_ativa($pdo)) && $obraJaPublicada && $avalSeg['acao'] === 'permitir');
 
                 $statusCapEdit = $publicarAutomatico ? 'publicado' : 'rascunho';
                 $modoPubCap    = $publicarAutomatico ? 'automatica' : 'revisao_humana';
@@ -388,7 +388,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                $liberarAutomaticoObra = ($qualificacaoAutor['qualificado_automatico'] && $todosCapsSeguros);
+                $liberarAutomaticoObra = (($qualificacaoAutor['qualificado_automatico'] || folivro_aprovacao_automatica_obras_ativa($pdo)) && $todosCapsSeguros);
 
                 $pdo->beginTransaction();
                 if ($liberarAutomaticoObra) {
@@ -487,6 +487,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Contestação registrada com sucesso. O caso será reavaliado por um moderador humano.';
             } else {
                 $error = 'Ação inválida.';
+            }
+            if ($success !== '' && $error === '') {
+                require_once __DIR__ . '/config/loja.php';
+                folivro_loja_sincronizar_obra_estudio($pdo, $id);
             }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {

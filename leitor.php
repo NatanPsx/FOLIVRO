@@ -103,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ?? '') === 'resenha
                     data_avaliacao_resenha = CURRENT_TIMESTAMP'
             );
             $upResenha->execute([$uid, $id, $nota, $tituloResenha !== '' ? $tituloResenha : null, $textoResenha]);
+            require_once __DIR__ . '/config/loja.php';
+            folivro_loja_sincronizar_resenha_verificada($pdo, $uid, $id);
             $sucessoResenha = 'Sua avaliação e resenha foram salvas.';
         }
     }

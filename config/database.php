@@ -45,8 +45,8 @@ function folivro_database(): PDO
     }
 
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works')")->fetchColumn();
-        if ($appliedCount === 12) {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja')")->fetchColumn();
+        if ($appliedCount === 16) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -598,6 +598,73 @@ function folivro_database(): PDO
             $pdo->exec("UPDATE livro SET genero_livro = 'Fantasia, Aventura' WHERE id_externo_livro = 'OL138052W' AND (genero_livro IS NULL OR genero_livro = '')");
 
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('012_seed_current_books_and_works')");
+        }
+
+        // Migração 013: Loja de autores (produtos, pedidos, pagamentos, webhooks, ledger e repasses).
+        $mig13 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '013_loja_marketplace' LIMIT 1")->fetchColumn();
+        if (!$mig13) {
+            $sqlLoja = file_get_contents(__DIR__ . '/../database/migrations/013_loja_marketplace.sql');
+            if ($sqlLoja === false) {
+                throw new RuntimeException('Não foi possível ler a migração da loja.');
+            }
+            foreach (preg_split('/;\s*(?:\R|$)/', $sqlLoja) as $statement) {
+                $statement = trim(preg_replace('/^\s*--.*$/m', '', $statement));
+                if ($statement !== '') {
+                    $pdo->exec($statement);
+                }
+            }
+
+            // Livros da loja entram no catálogo/biblioteca existentes com fonte própria.
+            $pdo->exec("ALTER TABLE livro MODIFY COLUMN fonte_livro ENUM('catalogo','openlibrary','loja') NOT NULL DEFAULT 'catalogo'");
+
+            // Selo de "compra verificada" nas avaliações (tabela resenha existente).
+            $resCols13 = $pdo->query('SHOW COLUMNS FROM resenha')->fetchAll(PDO::FETCH_COLUMN, 0);
+            if (!in_array('compra_verificada_resenha', $resCols13, true)) {
+                $pdo->exec('ALTER TABLE resenha ADD COLUMN compra_verificada_resenha TINYINT(1) NOT NULL DEFAULT 0 AFTER resenha_resenha');
+            }
+
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('013_loja_marketplace')");
+        }
+
+        // Migração 014: Dados de exemplo da loja (autora demo, obras PDF/EPUB, pedidos e ledger).
+        $mig14 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '014_seed_loja_marketplace' LIMIT 1")->fetchColumn();
+        if (!$mig14) {
+            require_once __DIR__ . '/../database/seeds/014_seed_loja.php';
+            folivro_seed_loja($pdo);
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('014_seed_loja_marketplace')");
+        }
+
+        // Migração 015: Configurações administrativas dinâmicas (modo de pagamento e aprovação automática de obras).
+        $mig15 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '015_sistema_config' LIMIT 1")->fetchColumn();
+        if (!$mig15) {
+            $pdo->exec(
+                "CREATE TABLE IF NOT EXISTS sistema_config (
+                    chave          VARCHAR(80) NOT NULL,
+                    valor          VARCHAR(255) NOT NULL,
+                    atualizado_em  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    atualizado_por INT UNSIGNED NULL,
+                    PRIMARY KEY (chave)
+                ) ENGINE=InnoDB"
+            );
+            $modoInicial = strtolower((string) (getenv('PAYMENT_MODE') ?: 'simulated')) === 'real' ? 'real' : 'simulated';
+            $insCfg = $pdo->prepare('INSERT IGNORE INTO sistema_config (chave, valor) VALUES (?, ?)');
+            $insCfg->execute(['payment_mode', $modoInicial]);
+            $insCfg->execute(['aprovacao_automatica_obras', '0']);
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('015_sistema_config')");
+        }
+
+        // Migração 016: Importa obras já existentes do estúdio (autor_dos_livros) para a loja (loja_produtos).
+        $mig16 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '016_sincronizar_obras_estudio_loja' LIMIT 1")->fetchColumn();
+        if (!$mig16) {
+            require_once __DIR__ . '/loja.php';
+            $idsAdl = $pdo->query(
+                "SELECT id_autor_dos_livros FROM autor_dos_livros
+                  WHERE status_autor_dos_livros = 'a_venda' AND revisao_publicacao = 'aprovada'"
+            )->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($idsAdl as $idAdl) {
+                folivro_loja_sincronizar_obra_estudio($pdo, (int) $idAdl);
+            }
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('016_sincronizar_obras_estudio_loja')");
         }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.

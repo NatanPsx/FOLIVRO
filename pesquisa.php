@@ -17,7 +17,7 @@ folivro_require_login();
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
     <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="pesquisa.css?v=20261104_20">
+    <link rel="stylesheet" href="pesquisa.css?v=20261117_2">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 
@@ -51,27 +51,42 @@ folivro_require_login();
                 <button type="button" class="chip-sugestao" data-termo="Crime e Castigo">Crime e Castigo</button>
                 <button type="button" class="chip-sugestao" data-termo="Ficção Científica">Ficção Científica</button>
                 <button type="button" class="chip-sugestao" data-termo="George Orwell">George Orwell</button>
+                <label style="margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:0.88rem;">
+                    <span>Ordenar:</span>
+                    <select id="ordenar-pesquisa" aria-label="Ordenar resultados da pesquisa" style="padding:5px 8px; border-radius:6px; border:1px solid var(--borda-forte); background:var(--fundo-superficie); color:var(--texto-principal);">
+                        <option value="readinglog">Mais populares</option>
+                        <option value="rating">Melhor avaliados</option>
+                        <option value="new">Mais recentes</option>
+                    </select>
+                </label>
             </div>
         </div>
 
         <section class="resultados">
             <h1 class="titulo-resultados">Resultados da pesquisa</h1>
             <div class="area-resultados" id="resultados-livros" aria-live="polite">
-                <p class="estado-vazio">Digite um livro ou autor para ver os resultados da pesquisa.</p>
+                <p class="estado-vazio">Digite um livro, autor ou escolha uma categoria abaixo para explorar o catálogo.</p>
+            </div>
+            <div id="container-mais-pesquisa" style="display:none; justify-content:center; margin-top:16px;">
+                <button type="button" id="btn-mais-pesquisa" class="botao-adicionar-livro">Carregar mais resultados</button>
             </div>
         </section>
 
         <section class="categorias">
             <h2>Categorias</h2>
             <div class="lista-categorias">
-                <a href="pesquisa.php?busca=literatura+brasileira">Literatura<br>Nacional</a>
-                <a href="pesquisa.php?busca=classicos">Grandes<br>Clássicos</a>
-                <a href="pesquisa.php?busca=suspense">Suspense</a>
-                <a href="pesquisa.php?busca=drama">Drama</a>
-                <a href="pesquisa.php?busca=fantasia">Fantasia</a>
-                <a href="pesquisa.php?busca=ficcao+cientifica">Ficção<br>Científica</a>
-                <a href="pesquisa.php?busca=romance">Romance</a>
-                <a href="pesquisa.php?busca=terror">Terror</a>
+                <a href="pesquisa.php?categoria=literatura_nacional" data-categoria="literatura_nacional" data-rotulo="Literatura Nacional">Literatura<br>Nacional</a>
+                <a href="pesquisa.php?categoria=classicos" data-categoria="classicos" data-rotulo="Grandes Clássicos">Grandes<br>Clássicos</a>
+                <a href="pesquisa.php?categoria=suspense" data-categoria="suspense" data-rotulo="Suspense">Suspense</a>
+                <a href="pesquisa.php?categoria=drama" data-categoria="drama" data-rotulo="Drama">Drama</a>
+                <a href="pesquisa.php?categoria=fantasia" data-categoria="fantasia" data-rotulo="Fantasia">Fantasia</a>
+                <a href="pesquisa.php?categoria=ficcao_cientifica" data-categoria="ficcao_cientifica" data-rotulo="Ficção Científica">Ficção<br>Científica</a>
+                <a href="pesquisa.php?categoria=romance" data-categoria="romance" data-rotulo="Romance">Romance</a>
+                <a href="pesquisa.php?categoria=terror" data-categoria="terror" data-rotulo="Terror">Terror</a>
+                <a href="pesquisa.php?categoria=misterio" data-categoria="misterio" data-rotulo="Mistério">Mistério</a>
+                <a href="pesquisa.php?categoria=aventura" data-categoria="aventura" data-rotulo="Aventura">Aventura</a>
+                <a href="pesquisa.php?categoria=distopia" data-categoria="distopia" data-rotulo="Distopia">Distopia</a>
+                <a href="pesquisa.php?categoria=poesia" data-categoria="poesia" data-rotulo="Poesia">Poesia</a>
             </div>
         </section>
 
@@ -81,7 +96,7 @@ folivro_require_login();
 
     </main>
 
-    <script src="livros.js?v=20261104_19"></script>
+    <script src="livros.js?v=20261117_2"></script>
 </body>
 
 </html>

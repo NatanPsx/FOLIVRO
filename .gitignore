@@ -2,6 +2,9 @@
 /backups/
 TCC_ESCRITO_FOLIVRO-v22.docx
 *.docx
+.env
+/storage/
+
 
 # Arquivos temporários de sistema operacional
 Thumbs.db

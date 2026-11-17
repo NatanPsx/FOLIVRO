@@ -201,23 +201,40 @@
 
     const cacheBuscaEmMemoria = new Map();
 
-    async function buscarLivros(query, container, limit = 12, offset = 0) {
+    async function buscarLivros(query, container, limit = 18, offset = 0, sort = 'readinglog', append = false) {
         const queryLimpa = (query || '').trim();
-        const cacheKey = `${queryLimpa.toLowerCase()}_${limit}_${offset}`;
+        const cacheKey = `${queryLimpa.toLowerCase()}_${sort}_${limit}_${offset}`;
+        const containerMais = document.querySelector('#container-mais-pesquisa');
+
+        const renderizar = (data) => {
+            if (!Array.isArray(data.items) || data.items.length === 0) {
+                if (!append) {
+                    mostrarMensagem(container, 'Nenhum livro encontrado. Tente outro título, autor ou categoria.');
+                }
+                if (containerMais) containerMais.style.display = 'none';
+                return 0;
+            }
+            const cards = data.items.map(criarCard);
+            if (append) {
+                cards.forEach((c) => container.appendChild(c));
+            } else {
+                container.replaceChildren(...cards);
+            }
+            if (containerMais) {
+                containerMais.style.display = data.hasMore ? 'flex' : 'none';
+            }
+            return data.items.length;
+        };
 
         if (cacheBuscaEmMemoria.has(cacheKey)) {
-            const data = cacheBuscaEmMemoria.get(cacheKey);
-            if (!Array.isArray(data.items) || data.items.length === 0) {
-                mostrarMensagem(container, 'Nenhum livro encontrado. Tente outro título ou autor.');
-                return;
-            }
-            container.replaceChildren(...data.items.map(criarCard));
-            return;
+            return renderizar(cacheBuscaEmMemoria.get(cacheKey));
         }
 
-        mostrarMensagem(container, 'Buscando livros no catálogo aberto…', 'estado-carregando');
+        if (!append) {
+            mostrarMensagem(container, 'Buscando livros no catálogo aberto…', 'estado-carregando');
+        }
         try {
-            const response = await fetch(`${API_URL}?q=${encodeURIComponent(queryLimpa)}&sort=readinglog&limit=${limit}&offset=${offset}`, {
+            const response = await fetch(`${API_URL}?q=${encodeURIComponent(queryLimpa)}&sort=${encodeURIComponent(sort)}&limit=${limit}&offset=${offset}`, {
                 headers: { Accept: 'application/json' }
             });
             const data = await response.json();
@@ -225,13 +242,13 @@
                 throw new Error(data.error || 'Não foi possível consultar o catálogo.');
             }
             cacheBuscaEmMemoria.set(cacheKey, data);
-            if (!Array.isArray(data.items) || data.items.length === 0) {
-                mostrarMensagem(container, 'Nenhum livro encontrado. Tente outro título ou autor.');
-                return;
-            }
-            container.replaceChildren(...data.items.map(criarCard));
+            return renderizar(data);
         } catch (error) {
-            mostrarMensagem(container, 'Não foi possível carregar o catálogo agora. Confira a conexão e tente novamente.', 'estado-erro');
+            if (!append) {
+                mostrarMensagem(container, 'Não foi possível carregar o catálogo agora. Confira a conexão e tente novamente.', 'estado-erro');
+            }
+            if (containerMais) containerMais.style.display = 'none';
+            return 0;
         }
     }
 
@@ -242,19 +259,31 @@
         const heading = document.querySelector('.titulo-resultados');
         const btnLimpar = document.querySelector('#btn-limpar-pesquisa');
         const iconeBtnBusca = document.querySelector('#icone-btn-busca');
+        const selectOrdem = document.querySelector('#ordenar-pesquisa');
+        const btnMais = document.querySelector('#btn-mais-pesquisa');
+        const containerMais = document.querySelector('#container-mais-pesquisa');
         const params = new URLSearchParams(window.location.search);
-        const initialQuery = (params.get('busca') || '').trim();
+        const initialQuery = (params.get('categoria') || params.get('busca') || '').trim();
+        let termoAtivo = '';
+        let offsetPesquisa = 0;
         let debounceTimer = null;
 
-        async function executarBusca(termoOriginal) {
+        async function executarBusca(termoOriginal, rotuloExibicao = null) {
             const query = (termoOriginal || '').trim();
+            termoAtivo = query;
+            offsetPesquisa = 0;
+            document.querySelectorAll('.lista-categorias a[data-categoria]').forEach((el) => {
+                el.classList.toggle('ativo', (el.dataset.categoria || '').toLowerCase() === query.toLowerCase());
+            });
             if (!query) {
                 const url = new URL(window.location.href);
                 url.searchParams.delete('busca');
+                url.searchParams.delete('categoria');
                 window.history.replaceState({}, '', url);
                 if (heading) heading.textContent = 'Resultados da pesquisa';
-                if (results) mostrarMensagem(results, 'Digite um livro ou autor para ver os resultados da pesquisa.');
+                if (results) mostrarMensagem(results, 'Digite um livro, autor ou escolha uma categoria abaixo para explorar o catálogo.');
                 if (btnLimpar) btnLimpar.style.display = 'none';
+                if (containerMais) containerMais.style.display = 'none';
                 return;
             }
 
@@ -263,11 +292,12 @@
             }
 
             const url = new URL(window.location.href);
+            url.searchParams.delete('categoria');
             url.searchParams.set('busca', query);
             window.history.replaceState({}, '', url);
 
             if (heading) {
-                heading.textContent = `Resultados para: “${query}”`;
+                heading.textContent = `Resultados para: “${rotuloExibicao || query}”`;
             }
 
             if (iconeBtnBusca) {
@@ -275,8 +305,10 @@
                 iconeBtnBusca.classList.add('icone-girando');
             }
 
+            const sort = selectOrdem ? selectOrdem.value : 'readinglog';
             try {
-                await buscarLivros(query, results);
+                const qtd = await buscarLivros(query, results, 18, 0, sort, false);
+                offsetPesquisa = qtd;
             } finally {
                 if (iconeBtnBusca) {
                     iconeBtnBusca.src = 'img/icones/search.png';
@@ -344,10 +376,47 @@
             });
         });
 
+        if (selectOrdem) {
+            selectOrdem.addEventListener('change', () => {
+                if (termoAtivo) {
+                    executarBusca(termoAtivo);
+                }
+            });
+        }
+
+        if (btnMais) {
+            btnMais.addEventListener('click', async () => {
+                if (!termoAtivo) return;
+                btnMais.disabled = true;
+                const sort = selectOrdem ? selectOrdem.value : 'readinglog';
+                try {
+                    const qtd = await buscarLivros(termoAtivo, results, 12, offsetPesquisa, sort, true);
+                    offsetPesquisa += qtd;
+                } finally {
+                    btnMais.disabled = false;
+                }
+            });
+        }
+
+        document.querySelectorAll('.lista-categorias a[data-categoria]').forEach((linkCat) => {
+            linkCat.addEventListener('click', (ev) => {
+                ev.preventDefault();
+                clearTimeout(debounceTimer);
+                const cat = linkCat.dataset.categoria || '';
+                const rotulo = linkCat.dataset.rotulo || linkCat.textContent.trim();
+                input.value = rotulo;
+                if (btnLimpar) btnLimpar.style.display = 'inline-flex';
+                executarBusca(cat, rotulo);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+
         if (initialQuery) {
-            input.value = initialQuery;
+            const linkMatch = document.querySelector(`.lista-categorias a[data-categoria="${CSS.escape(initialQuery)}"]`);
+            const rotuloInit = linkMatch ? (linkMatch.dataset.rotulo || initialQuery) : initialQuery;
+            input.value = rotuloInit;
             if (btnLimpar) btnLimpar.style.display = 'inline-flex';
-            executarBusca(initialQuery);
+            executarBusca(initialQuery, rotuloInit);
         }
     }
 
