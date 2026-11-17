@@ -33,28 +33,26 @@ if ($acao === 'alternar_pagamento') {
     $simuladoAtivo = !empty($body['simulado_ativo']);
     $novoModo = $simuladoAtivo ? 'simulated' : 'real';
 
+    folivro_sistema_config_salvar($pdo, 'payment_mode', $novoModo, $uidAdmin);
+    folivro_loja_log('admin_payment_mode', ['modo' => $novoModo, 'admin' => $uidAdmin]);
+
+    $avisoCredenciais = '';
     if ($novoModo === 'real') {
         $token = trim((string) folivro_env('MP_ACCESS_TOKEN', ''));
         $pubKey = trim((string) folivro_env('MP_PUBLIC_KEY', ''));
         $placeholder = str_starts_with($token, 'TEST-00000000') || str_starts_with($pubKey, 'TEST-00000000');
         if ($token === '' || $pubKey === '' || $placeholder) {
-            http_response_code(422);
-            exit(json_encode([
-                'error' => 'Configure MP_ACCESS_TOKEN e MP_PUBLIC_KEY reais (Sandbox ou Produção) no arquivo .env antes de desativar o pagamento simulado.'
-            ], JSON_UNESCAPED_UNICODE));
+            $avisoCredenciais = ' Atenção: preencha MP_ACCESS_TOKEN e MP_PUBLIC_KEY no arquivo .env para processar cobranças reais/sandbox.';
         }
     }
-
-    folivro_sistema_config_salvar($pdo, 'payment_mode', $novoModo, $uidAdmin);
-    folivro_loja_log('admin_payment_mode', ['modo' => $novoModo, 'admin' => $uidAdmin]);
 
     echo json_encode([
         'ok' => true,
         'simulado_ativo' => $simuladoAtivo,
         'payment_mode' => $novoModo,
-        'mensagem' => $simuladoAtivo
+        'mensagem' => ($simuladoAtivo
             ? 'Pagamento simulado ATIVADO (modo acadêmico, sem cobrança real).'
-            : 'Pagamento simulado DESATIVADO (modo real via Mercado Pago ativo).',
+            : 'Pagamento simulado DESATIVADO (modo real via Mercado Pago ativo).') . $avisoCredenciais,
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
