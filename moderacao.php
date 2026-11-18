@@ -211,6 +211,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     $pdo->commit();
+                    require_once __DIR__ . '/config/loja.php';
+                    folivro_loja_sincronizar_obra_estudio($pdo, $idObraRev);
                     $sucesso = 'Publicação recusada e mantida como rascunho privado com justificativa visível ao autor.';
                 } catch (Throwable $e) {
                     if ($pdo->inTransaction()) {
@@ -462,6 +464,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
+                $idObraParaSincronizar = 0;
                 if ($decisao === 'suspender_preventivamente') {
                     // Triagem: coloca em análise e interrompe preventivamente venda, distribuição ou exibição da mensagem.
                     $pdo->prepare(
@@ -487,6 +490,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $pdo->prepare("UPDATE historias SET status_historias = 'despublicada' WHERE id_historias = ?")
                                 ->execute([$idHist]);
                         }
+                        $pdo->prepare("UPDATE loja_produtos SET status_produto = 'arquivado' WHERE id_autor_dos_livros = ?")
+                            ->execute([$item]);
                     } elseif ($tipo === 'mensagem_chat') {
                         $pdo->prepare(
                             "UPDATE chat_mensagens
@@ -517,12 +522,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $obraStmt = $pdo->prepare('SELECT id_historias, declaracao_autoria, status_autor_dos_livros, revisao_publicacao FROM autor_dos_livros WHERE id_autor_dos_livros = ?');
                             $obraStmt->execute([$item]);
                             $dadosObra = $obraStmt->fetch();
-                            if ($dadosObra && $dadosObra['status_autor_dos_livros'] === 'suspenso') {
+                            if ($dadosObra && in_array($dadosObra['status_autor_dos_livros'], ['suspenso', 'removido'], true)) {
                                 if ((int) $dadosObra['declaracao_autoria'] === 1 && ($dadosObra['revisao_publicacao'] ?? '') === 'aprovada') {
                                     $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'a_venda', motivo_bloqueio_autor = NULL WHERE id_autor_dos_livros = ?")
                                         ->execute([$item]);
                                     $pdo->prepare("UPDATE historias SET status_historias = 'publicada' WHERE id_historias = ?")
                                         ->execute([(int) $dadosObra['id_historias']]);
+                                    $idObraParaSincronizar = $item;
                                 } else {
                                     $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'rascunho', motivo_bloqueio_autor = NULL WHERE id_autor_dos_livros = ?")
                                         ->execute([$item]);
@@ -565,6 +571,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $pdo->prepare("UPDATE historias SET status_historias = 'despublicada' WHERE id_historias = ?")
                                 ->execute([$idHist]);
                         }
+                        $pdo->prepare("UPDATE loja_produtos SET status_produto = 'arquivado' WHERE id_autor_dos_livros = ?")
+                            ->execute([$item]);
                     } elseif ($tipo === 'historia') {
                         $histStmt = $pdo->prepare('SELECT id_usuario FROM historias WHERE id_historias = ?');
                         $histStmt->execute([$item]);
@@ -573,6 +581,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ->execute([$item]);
                         $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'removido' WHERE id_historias = ?")
                             ->execute([$item]);
+                        $pdo->prepare(
+                            "UPDATE loja_produtos
+                                SET status_produto = 'arquivado'
+                              WHERE id_autor_dos_livros IN (SELECT id_autor_dos_livros FROM autor_dos_livros WHERE id_historias = ?)"
+                        )->execute([$item]);
                     } elseif ($tipo === 'comentario') {
                         $comStmt = $pdo->prepare('SELECT id_usuario FROM comentarios WHERE id_comentarios = ?');
                         $comStmt->execute([$item]);
@@ -583,6 +596,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         if ($decisao === 'remover_item' || $decisao === 'remover_e_banir_reincidente') {
                             $pdo->prepare("UPDATE usuario SET status_usuario = 'banido' WHERE id_usuario = ? AND nivel_usuario <> 'admin'")
                                 ->execute([$item]);
+                            $pdo->prepare("UPDATE loja_produtos SET status_produto = 'arquivado' WHERE id_autor = ?")->execute([$item]);
+                            $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'removido' WHERE id_autor = ?")->execute([$item]);
+                            $pdo->prepare("UPDATE historias SET status_historias = 'despublicada' WHERE id_usuario = ?")->execute([$item]);
                         }
                     } elseif ($tipo === 'mensagem_chat') {
                         $idAutorAlvo = $idRemetenteChat;
@@ -639,6 +655,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         justificativa_modalidade_usuario = ?
                                   WHERE id_usuario = ? AND nivel_usuario <> 'admin'"
                             )->execute([$motivoSuspDen, $idAutorAlvo]);
+                            $pdo->prepare("UPDATE loja_produtos SET status_produto = 'arquivado' WHERE id_autor = ?")->execute([$idAutorAlvo]);
+                            $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'removido' WHERE id_autor = ?")->execute([$idAutorAlvo]);
+                            $pdo->prepare("UPDATE historias SET status_historias = 'despublicada' WHERE id_usuario = ?")->execute([$idAutorAlvo]);
                         }
 
                         folivro_registrar_historico_moderacao(
@@ -676,6 +695,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $erro = 'Ação inválida.';
                 }
                 $pdo->commit();
+                if ($idObraParaSincronizar > 0) {
+                    require_once __DIR__ . '/config/loja.php';
+                    folivro_loja_sincronizar_obra_estudio($pdo, $idObraParaSincronizar);
+                }
             } catch (Throwable $e) {
                 if ($pdo->inTransaction()) {
                     $pdo->rollBack();

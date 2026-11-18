@@ -325,14 +325,42 @@ function folivro_loja_status_produto_label(string $s): string
 function folivro_loja_produto(PDO $pdo, int $idProduto): ?array
 {
     $st = $pdo->prepare(
-        'SELECT p.*, u.nome_usuario AS autor_nome, u.status_usuario AS autor_status
+        'SELECT p.*, u.nome_usuario AS autor_nome, u.status_usuario AS autor_status,
+                a.status_autor_dos_livros AS estudio_status,
+                a.revisao_publicacao AS estudio_revisao,
+                h.status_historias AS historia_status,
+                (SELECT COUNT(*) FROM denuncias d
+                  WHERE d.tipo_denuncias = \'obra_autoral\'
+                    AND d.item_denuncia = p.id_autor_dos_livros
+                    AND d.status_denuncias IN (\'aberta\', \'em_analise\')
+                    AND d.suspensao_preventiva = 1) AS suspensao_preventiva_ativa
            FROM loja_produtos p
            JOIN usuario u ON u.id_usuario = p.id_autor
+      LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+      LEFT JOIN historias h ON h.id_historias = a.id_historias
           WHERE p.id_produto = ? LIMIT 1'
     );
     $st->execute([$idProduto]);
     $p = $st->fetch(PDO::FETCH_ASSOC);
     return $p ?: null;
+}
+
+/** Verifica se o produto está efetivamente liberado para exibição pública e compra (sem bloqueio de moderação). */
+function folivro_loja_produto_disponivel_publico(array $p): bool
+{
+    if (($p['status_produto'] ?? '') !== 'publicado' || ($p['autor_status'] ?? '') !== 'ativo') {
+        return false;
+    }
+    if (!empty($p['id_autor_dos_livros'])) {
+        if (($p['estudio_status'] ?? '') !== 'a_venda'
+            || ($p['estudio_revisao'] ?? '') !== 'aprovada'
+            || ($p['historia_status'] ?? '') !== 'publicada'
+            || (int) ($p['suspensao_preventiva_ativa'] ?? 0) > 0
+        ) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /** Produto somente se pertencer ao autor informado (proteção contra IDOR). */
@@ -342,11 +370,11 @@ function folivro_loja_produto_do_autor(PDO $pdo, int $idProduto, int $uid): ?arr
     return ($p !== null && (int) $p['id_autor'] === $uid) ? $p : null;
 }
 
-/** Produto visível na vitrine (publicado e autor ativo). */
+/** Produto visível na vitrine (publicado, autor ativo e sem bloqueio/suspensão de moderação). */
 function folivro_loja_produto_publicado(PDO $pdo, int $idProduto): ?array
 {
     $p = folivro_loja_produto($pdo, $idProduto);
-    return ($p !== null && $p['status_produto'] === 'publicado' && $p['autor_status'] === 'ativo') ? $p : null;
+    return ($p !== null && folivro_loja_produto_disponivel_publico($p)) ? $p : null;
 }
 
 /** Detecta o tipo REAL do arquivo pelo conteúdo (assinatura binária + estrutura), não pela extensão. */
@@ -673,7 +701,12 @@ function folivro_loja_like(string $termo): string
  */
 function folivro_loja_listar_vitrine(PDO $pdo, array $f, int $pagina = 1, int $porPagina = 12): array
 {
-    $where = ["p.status_produto = 'publicado'", "u.status_usuario = 'ativo'"];
+    $where = [
+        "p.status_produto = 'publicado'",
+        "u.status_usuario = 'ativo'",
+        "(p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))",
+        "(p.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = p.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))",
+    ];
     $params = [];
     $q = trim((string) ($f['q'] ?? ''));
     if ($q !== '' && mb_strlen($q, 'UTF-8') <= 100) {
@@ -711,8 +744,11 @@ function folivro_loja_listar_vitrine(PDO $pdo, array $f, int $pagina = 1, int $p
     ];
     $ordem = $ordens[(string) ($f['ordenar'] ?? 'recentes')] ?? $ordens['recentes'];
     $whereSql = implode(' AND ', $where);
+    $joinsSql = 'JOIN usuario u ON u.id_usuario = p.id_autor
+            LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+            LEFT JOIN historias h ON h.id_historias = a.id_historias';
 
-    $cnt = $pdo->prepare("SELECT COUNT(*) FROM loja_produtos p JOIN usuario u ON u.id_usuario = p.id_autor WHERE {$whereSql}");
+    $cnt = $pdo->prepare("SELECT COUNT(*) FROM loja_produtos p {$joinsSql} WHERE {$whereSql}");
     $cnt->execute($params);
     $total = (int) $cnt->fetchColumn();
     $porPagina = max(1, min(48, $porPagina));
@@ -727,7 +763,7 @@ function folivro_loja_listar_vitrine(PDO $pdo, array $f, int $pagina = 1, int $p
                 (SELECT COUNT(*) FROM resenha r WHERE r.id_livro = p.id_livro) AS total_resenhas,
                 (SELECT COUNT(*) FROM loja_pedidos o WHERE o.id_produto = p.id_produto AND o.status_pedido = 'pago') AS total_vendas
            FROM loja_produtos p
-           JOIN usuario u ON u.id_usuario = p.id_autor
+           {$joinsSql}
           WHERE {$whereSql}
        ORDER BY {$ordem}
           LIMIT " . (int) $porPagina . ' OFFSET ' . (int) $offset
@@ -740,8 +776,13 @@ function folivro_loja_autores_vitrine(PDO $pdo): array
 {
     return $pdo->query(
         "SELECT DISTINCT u.id_usuario, u.nome_usuario
-           FROM loja_produtos p JOIN usuario u ON u.id_usuario = p.id_autor
+           FROM loja_produtos p
+           JOIN usuario u ON u.id_usuario = p.id_autor
+      LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+      LEFT JOIN historias h ON h.id_historias = a.id_historias
           WHERE p.status_produto = 'publicado' AND u.status_usuario = 'ativo'
+            AND (p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
+            AND (p.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = p.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))
        ORDER BY u.nome_usuario"
     )->fetchAll(PDO::FETCH_ASSOC);
 }
@@ -774,7 +815,7 @@ function folivro_loja_ja_possui(PDO $pdo, int $uid, int $idProduto): bool
 /** Regras de negócio da compra. Retorna mensagem de erro ou null se permitido. */
 function folivro_loja_validar_compra(PDO $pdo, int $uid, ?array $produto): ?string
 {
-    if ($produto === null || $produto['status_produto'] !== 'publicado' || ($produto['autor_status'] ?? 'ativo') !== 'ativo' || empty($produto['arquivo_produto'])) {
+    if ($produto === null || !folivro_loja_produto_disponivel_publico($produto) || empty($produto['arquivo_produto'])) {
         return 'Esta obra não está disponível para compra.';
     }
     if ((int) $produto['id_autor'] === $uid) {

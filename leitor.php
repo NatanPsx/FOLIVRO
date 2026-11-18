@@ -23,6 +23,29 @@ if (!$book) {
     exit('Livro não encontrado na sua biblioteca.');
 }
 
+$stProdLeitor = $pdo->prepare(
+    'SELECT p.id_produto, p.id_autor, p.id_autor_dos_livros, p.preco_centavos, p.arquivo_produto, p.arquivo_tipo, p.status_produto,
+            a.status_autor_dos_livros AS estudio_status
+       FROM loja_produtos p
+  LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+      WHERE p.id_livro = ? LIMIT 1'
+);
+$stProdLeitor->execute([$id]);
+$produtoLoja = $stProdLeitor->fetch(PDO::FETCH_ASSOC) ?: null;
+$acessoLojaLeitor = false;
+$bloqueadoModLeitor = false;
+if ($produtoLoja) {
+    require_once __DIR__ . '/config/loja.php';
+    $ehAutorProd = (int) $produtoLoja['id_autor'] === $uid;
+    $bloqueadoModLeitor = (($produtoLoja['estudio_status'] ?? '') === 'removido')
+        || (($produtoLoja['estudio_status'] ?? '') === 'suspenso' && !$ehAutorProd);
+    if (!$bloqueadoModLeitor) {
+        $acessoLojaLeitor = $ehAutorProd
+            || folivro_loja_ja_possui($pdo, $uid, (int) $produtoLoja['id_produto'])
+            || ((int) $produtoLoja['preco_centavos'] === 0 && $produtoLoja['status_produto'] === 'publicado');
+    }
+}
+
 $classLivroLeitor = !empty($book['classificacao_livro']) && $book['classificacao_livro'] !== 'livre'
     ? folivro_normalizar_classificacao((string) $book['classificacao_livro'])
     : folivro_estimar_classificacao_catalogo((string) ($book['titulo_livro'] ?? ''), (string) ($book['id_externo_livro'] ?? ''));
@@ -327,6 +350,14 @@ $csrf = folivro_escape(folivro_csrf_token());
     <script>
         const workId = <?= json_encode($book['id_externo_livro'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const idLivro = <?= (int) $book['id_livro'] ?>;
+        const produtoLoja = <?= json_encode($produtoLoja ? [
+            'idProduto' => (int) $produtoLoja['id_produto'],
+            'idAutorDosLivros' => (int) ($produtoLoja['id_autor_dos_livros'] ?? 0),
+            'tipo' => (string) ($produtoLoja['arquivo_tipo'] ?? ''),
+            'temArquivo' => !empty($produtoLoja['arquivo_produto']),
+            'acesso' => $acessoLojaLeitor,
+            'bloqueadoMod' => $bloqueadoModLeitor,
+        ] : null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const statusBox = document.getElementById('leitor-status');
 
         function linkExterno(href, texto) {
@@ -338,8 +369,43 @@ $csrf = folivro_escape(folivro_csrf_token());
             return a;
         }
 
-        // Consulta se a Open Library/Internet Archive libera leitura online desta obra.
-        if (workId) {
+        function linkInterno(href, texto, classe = 'botao-adicionar-livro') {
+            const a = document.createElement('a');
+            a.href = href;
+            a.className = classe;
+            a.style.marginLeft = '8px';
+            a.style.display = 'inline-block';
+            a.textContent = texto;
+            return a;
+        }
+
+        if (produtoLoja) {
+            if (produtoLoja.bloqueadoMod) {
+                statusBox.className = 'estado-vazio estado-erro';
+                statusBox.textContent = 'Esta obra foi bloqueada ou suspensa pela moderação e não está disponível para leitura.';
+            } else if (!produtoLoja.acesso) {
+                statusBox.textContent = 'Adquira esta obra na loja para liberar a leitura completa.';
+                statusBox.append(' ', linkInterno(`loja-obra.php?id=${produtoLoja.idProduto}`, 'Ver na loja'));
+            } else {
+                const frame = document.getElementById('leitor-embed');
+                if (produtoLoja.temArquivo && produtoLoja.tipo === 'pdf') {
+                    frame.src = `loja-download.php?id=${produtoLoja.idProduto}&inline=1`;
+                    frame.hidden = false;
+                    statusBox.textContent = 'Leitura da obra digital FOLIVRO carregada.';
+                } else if (produtoLoja.idAutorDosLivros > 0) {
+                    statusBox.textContent = 'Esta obra autoral possui leitor de capítulos interativo no FOLIVRO.';
+                } else {
+                    statusBox.textContent = 'Obra disponível para download no formato ' + (produtoLoja.tipo || 'digital').toUpperCase() + '.';
+                }
+                if (produtoLoja.idAutorDosLivros > 0) {
+                    statusBox.append(' ', linkInterno(`obra.php?id=${produtoLoja.idAutorDosLivros}`, 'Ler capítulos online'));
+                }
+                if (produtoLoja.temArquivo) {
+                    statusBox.append(' ', linkInterno(`loja-download.php?id=${produtoLoja.idProduto}`, 'Baixar arquivo', 'filtro-pilula'));
+                }
+            }
+        } else if (workId && /^OL[0-9]+W$/.test(workId)) {
+            // Consulta se a Open Library/Internet Archive libera leitura online desta obra.
             fetch(`api/leitura-disponivel.php?work=${encodeURIComponent(workId)}`)
                 .then((r) => r.json())
                 .then((data) => {
@@ -358,7 +424,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 })
                 .catch(() => { statusBox.textContent = 'Não foi possível consultar a disponibilidade agora.'; });
         } else {
-            statusBox.textContent = 'O leitor integrado está disponível para títulos da Open Library com leitura online liberada.';
+            statusBox.textContent = 'Este livro não possui conteúdo de leitura online disponível no momento.';
         }
 
         // Salva o progresso informado pelo usuário (api/progresso.php) e atualiza a barra visual.

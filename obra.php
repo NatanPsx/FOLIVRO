@@ -116,7 +116,7 @@ if (!$access) {
 }
 
 $msgErro = '';
-$msgSucesso = '';
+$msgSucesso = isset($_GET['mod_resolvida']) ? 'Decisão de moderação registrada e estado da obra atualizado.' : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!folivro_verify_csrf()) {
@@ -124,7 +124,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $acao = (string) ($_POST['acao'] ?? '');
 
-        if ($acao === 'curtir') {
+        if ($acao === 'resolver_contestacao_moderacao' && $isAdmin) {
+            $idDenMod = filter_input(INPUT_POST, 'id_denuncias', FILTER_VALIDATE_INT) ?: 0;
+            $decisaoMod = (string) ($_POST['decisao'] ?? '');
+            $justMod = trim((string) ($_POST['justificativa_moderacao'] ?? ''));
+
+            $denStmt = $pdo->prepare("SELECT * FROM denuncias WHERE id_denuncias = ? AND tipo_denuncias = 'obra_autoral' AND item_denuncia = ? LIMIT 1");
+            $denStmt->execute([$idDenMod, $id]);
+            $denRow = $denStmt->fetch();
+
+            if (!$denRow) {
+                $msgErro = 'Denúncia/contestação não encontrada para esta obra.';
+            } elseif (!in_array($decisaoMod, ['improcedente', 'remover_item'], true)) {
+                $msgErro = 'Decisão de moderação inválida.';
+            } elseif ($justMod === '' || mb_strlen($justMod, 'UTF-8') > 2000) {
+                $msgErro = 'Informe uma justificativa fundamentada (até 2.000 caracteres).';
+            } else {
+                $pdo->beginTransaction();
+                try {
+                    if ($decisaoMod === 'improcedente') {
+                        $pdo->prepare(
+                            "UPDATE denuncias
+                                SET status_denuncias = 'improcedente',
+                                    suspensao_preventiva = 0,
+                                    acao_moderacao_aplicada = 'improcedente',
+                                    justificativa_moderacao = ?,
+                                    data_resposta_denuncia = CURRENT_TIMESTAMP,
+                                    retencao_evidencia_ate = COALESCE(retencao_evidencia_ate, DATE_ADD(NOW(), INTERVAL 180 DAY))
+                              WHERE id_denuncias = ?"
+                        )->execute([$justMod, $idDenMod]);
+
+                        $outrasAtivas = $pdo->prepare(
+                            "SELECT COUNT(*) FROM denuncias
+                              WHERE tipo_denuncias = 'obra_autoral' AND item_denuncia = ?
+                                AND id_denuncias <> ? AND status_denuncias IN ('aberta', 'em_analise') AND suspensao_preventiva = 1"
+                        );
+                        $outrasAtivas->execute([$id, $idDenMod]);
+                        if ((int) $outrasAtivas->fetchColumn() === 0 && in_array($statusObra, ['suspenso', 'removido'], true)) {
+                            if ((int) $obra['declaracao_autoria'] === 1 && $statusRevisao === 'aprovada') {
+                                $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'a_venda', motivo_bloqueio_autor = NULL WHERE id_autor_dos_livros = ?")
+                                    ->execute([$id]);
+                                $pdo->prepare("UPDATE historias SET status_historias = 'publicada' WHERE id_historias = ?")
+                                    ->execute([$idHistoria]);
+                            } else {
+                                $pdo->prepare("UPDATE autor_dos_livros SET status_autor_dos_livros = 'rascunho', motivo_bloqueio_autor = NULL WHERE id_autor_dos_livros = ?")
+                                    ->execute([$id]);
+                            }
+                        }
+                    } else {
+                        $pdo->prepare(
+                            "UPDATE denuncias
+                                SET status_denuncias = 'procedente',
+                                    suspensao_preventiva = 0,
+                                    acao_moderacao_aplicada = 'remover_item',
+                                    justificativa_moderacao = ?,
+                                    data_resposta_denuncia = CURRENT_TIMESTAMP,
+                                    retencao_evidencia_ate = COALESCE(retencao_evidencia_ate, DATE_ADD(NOW(), INTERVAL 180 DAY))
+                              WHERE id_denuncias = ?"
+                        )->execute([$justMod, $idDenMod]);
+
+                        $pdo->prepare(
+                            "UPDATE autor_dos_livros
+                                SET status_autor_dos_livros = 'removido',
+                                    motivo_bloqueio_autor = ?
+                              WHERE id_autor_dos_livros = ?"
+                        )->execute(['Removida pela moderação: ' . mb_substr($justMod, 0, 210, 'UTF-8'), $id]);
+                        $pdo->prepare("UPDATE historias SET status_historias = 'despublicada' WHERE id_historias = ?")
+                            ->execute([$idHistoria]);
+                        $pdo->prepare("UPDATE loja_produtos SET status_produto = 'arquivado' WHERE id_autor_dos_livros = ?")
+                            ->execute([$id]);
+                    }
+                    $pdo->commit();
+                    require_once __DIR__ . '/config/loja.php';
+                    folivro_loja_sincronizar_obra_estudio($pdo, $id);
+                    header('Location: obra.php?id=' . $id . '&mod_resolvida=1');
+                    exit;
+                } catch (Throwable $e) {
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+                    $msgErro = 'Não foi possível registrar a decisão de moderação.';
+                }
+            }
+        } elseif ($acao === 'curtir') {
             $jaCurtiu = $pdo->prepare('SELECT id_curtidas FROM curtidas WHERE id_usuario = ? AND id_historias = ? LIMIT 1');
             $jaCurtiu->execute([$uid, $idHistoria]);
             if ($jaCurtiu->fetchColumn()) {
@@ -396,9 +478,58 @@ $csrf = folivro_escape(folivro_csrf_token());
                 </p>
             <?php else: ?>
                 <?php if ($emSuspensaoDireitos && $isAdmin): ?>
-                    <p class="estado-vazio estado-erro" role="status">
-                        <strong>Modo de inspeção da moderação:</strong> Esta obra está com venda e distribuição pública suspensas preventivamente. O texto abaixo é exibido apenas para análise da moderação.
-                    </p>
+                    <?php
+                    $stDenInsp = $pdo->prepare(
+                        "SELECT id_denuncias, motivo_denuncia, status_denuncias, suspensao_preventiva,
+                                contestacao_autor, data_contestacao, justificativa_moderacao, data_resposta_denuncia
+                           FROM denuncias
+                          WHERE tipo_denuncias = 'obra_autoral' AND item_denuncia = ?
+                          ORDER BY data_denuncia DESC LIMIT 5"
+                    );
+                    $stDenInsp->execute([$id]);
+                    $denunciasInsp = $stDenInsp->fetchAll();
+                    ?>
+                    <div class="estado-vazio estado-erro" role="status" style="text-align:left;">
+                        <p style="margin:0 0 8px;">
+                            <strong>Modo de inspeção da moderação:</strong>
+                            <?php if ($statusObra === 'removido'): ?>
+                                Esta obra foi bloqueada/removida pela moderação e permanece inacessível ao público.
+                            <?php else: ?>
+                                Esta obra está com venda e distribuição pública suspensas preventivamente. O texto abaixo é exibido apenas para análise da moderação.
+                            <?php endif; ?>
+                            <a href="moderacao.php" style="margin-left:8px;">Voltar ao painel de moderação</a>
+                        </p>
+                        <?php foreach ($denunciasInsp as $di): ?>
+                            <?php
+                            $pendenteInsp = in_array($di['status_denuncias'], ['aberta', 'em_analise'], true)
+                                || (!empty($di['contestacao_autor']) && (empty($di['data_resposta_denuncia']) || strtotime((string) $di['data_contestacao']) > strtotime((string) $di['data_resposta_denuncia'])));
+                            if (!$pendenteInsp) {
+                                continue;
+                            }
+                            ?>
+                            <div style="margin-top:10px; padding-top:10px; border-top:1px solid rgba(0,0,0,0.12);">
+                                <p style="margin:0 0 6px;">
+                                    <strong>Denúncia #<?= (int) $di['id_denuncias'] ?>:</strong> <?= folivro_escape($di['motivo_denuncia']) ?>
+                                    (Status: <?= folivro_escape(folivro_status_label($di['status_denuncias'])) ?>)
+                                </p>
+                                <?php if (!empty($di['contestacao_autor'])): ?>
+                                    <p style="margin:0 0 8px;"><strong>Contestação do autor:</strong> <?= folivro_escape($di['contestacao_autor']) ?></p>
+                                <?php endif; ?>
+                                <form method="post" class="progresso-form" style="margin:0;">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="acao" value="resolver_contestacao_moderacao">
+                                    <input type="hidden" name="id_denuncias" value="<?= (int) $di['id_denuncias'] ?>">
+                                    <label>Justificativa fundamentada da decisão
+                                        <textarea name="justificativa_moderacao" rows="2" maxlength="2000" required placeholder="Registre a fundamentação para aceitar ou rejeitar a contestação..."><?= folivro_escape((string) ($di['justificativa_moderacao'] ?? '')) ?></textarea>
+                                    </label>
+                                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+                                        <button type="submit" name="decisao" value="improcedente" class="botao-adicionar-livro">Acolher contestação e restaurar obra</button>
+                                        <button type="submit" name="decisao" value="remover_item" class="filtro-pilula" style="border:none; cursor:pointer;">Rejeitar contestação e manter bloqueio</button>
+                                    </div>
+                                </form>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 <?php endif; ?>
 
                 <?php if (!$rows): ?>

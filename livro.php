@@ -27,7 +27,7 @@ if ($idLivro !== null) {
     $stmt = $pdo->prepare('SELECT * FROM livro WHERE id_livro = ? LIMIT 1');
     $stmt->execute([$idLivro]);
     $livroLocal = $stmt->fetch();
-    if ($livroLocal && !empty($livroLocal['id_externo_livro'])) {
+    if ($livroLocal && !empty($livroLocal['id_externo_livro']) && preg_match('/^OL[0-9]+W$/', (string) $livroLocal['id_externo_livro'])) {
         $workId = (string) $livroLocal['id_externo_livro'];
     }
 } elseif ($workId !== '') {
@@ -532,6 +532,32 @@ if ($idLivro !== null) {
     $progressoUsuario = $chkProg->fetch();
 }
 
+$produtoLojaLivro = null;
+$temAcessoLojaLivro = false;
+$bloqueadoModLivro = false;
+if ($idLivro !== null) {
+    $stProdL = $pdo->prepare(
+        'SELECT p.id_produto, p.id_autor, p.id_autor_dos_livros, p.preco_centavos, p.arquivo_produto, p.arquivo_tipo, p.status_produto,
+                a.status_autor_dos_livros AS estudio_status
+           FROM loja_produtos p
+      LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+          WHERE p.id_livro = ? LIMIT 1'
+    );
+    $stProdL->execute([$idLivro]);
+    $produtoLojaLivro = $stProdL->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($produtoLojaLivro) {
+        require_once __DIR__ . '/config/loja.php';
+        $ehAutorL = (int) $produtoLojaLivro['id_autor'] === $uid;
+        $bloqueadoModLivro = (($produtoLojaLivro['estudio_status'] ?? '') === 'removido')
+            || (($produtoLojaLivro['estudio_status'] ?? '') === 'suspenso' && !$ehAutorL);
+        if (!$bloqueadoModLivro) {
+            $temAcessoLojaLivro = $ehAutorL
+                || folivro_loja_ja_possui($pdo, $uid, (int) $produtoLojaLivro['id_produto'])
+                || ((int) $produtoLojaLivro['preco_centavos'] === 0 && $produtoLojaLivro['status_produto'] === 'publicado');
+        }
+    }
+}
+
 // Resenhas da Comunidade FOLIVRO
 $resenhasComunidade = [];
 $minhaResenha = null;
@@ -673,7 +699,13 @@ $csrf = folivro_escape(folivro_csrf_token());
 
                 <!-- Painel de Ações do Leitor -->
                 <div class="painel-acoes-livro">
-                    <?php if ($registroLivraria): ?>
+                    <?php if ($bloqueadoModLivro): ?>
+                        <div class="cartao-status-leitura">
+                            <p class="estado-vazio estado-erro" style="margin:0;">
+                                Esta obra foi bloqueada ou suspensa pela moderação e não está disponível para leitura ou aquisição.
+                            </p>
+                        </div>
+                    <?php elseif ($registroLivraria): ?>
                         <?php
                         $st = (string) $registroLivraria['status_livraria'];
                         $pctLido = $progressoUsuario ? min(100, max(0, (int) round((float) $progressoUsuario['porcentagem_progressao']))) : 0;
@@ -688,9 +720,35 @@ $csrf = folivro_escape(folivro_csrf_token());
                             </div>
                             <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;"><?= $pctLido ?>% concluído</p>
 
-                            <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
-                                <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Continuar Leitura no Leitor
-                            </a>
+                            <?php if ($produtoLojaLivro): ?>
+                                <?php if (!$temAcessoLojaLivro): ?>
+                                    <a href="loja-obra.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                        Adquirir obra na loja para ler
+                                    </a>
+                                <?php elseif (!empty($produtoLojaLivro['id_autor_dos_livros'])): ?>
+                                    <a href="obra.php?id=<?= (int) $produtoLojaLivro['id_autor_dos_livros'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar / Continuar Leitura
+                                    </a>
+                                <?php elseif (!empty($produtoLojaLivro['arquivo_produto']) && ($produtoLojaLivro['arquivo_tipo'] ?? '') === 'pdf'): ?>
+                                    <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Continuar Leitura no Leitor
+                                    </a>
+                                <?php elseif (!empty($produtoLojaLivro['arquivo_produto'])): ?>
+                                    <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                        Baixar <?= strtoupper(folivro_escape((string) $produtoLojaLivro['arquivo_tipo'])) ?> para leitura
+                                    </a>
+                                <?php else: ?>
+                                    <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">Conteúdo de leitura indisponível para esta obra.</p>
+                                <?php endif; ?>
+                            <?php elseif ($workId !== ''): ?>
+                                <div id="acao-leitor-ol" data-work-id="<?= folivro_escape($workId) ?>">
+                                    <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Continuar Leitura no Leitor
+                                    </a>
+                                </div>
+                            <?php else: ?>
+                                <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">Este registro não possui conteúdo de leitura online disponível.</p>
+                            <?php endif; ?>
 
                             <!-- Alteração rápida de status -->
                             <form method="post" class="form-alterar-status">
@@ -708,6 +766,28 @@ $csrf = folivro_escape(folivro_csrf_token());
                                     <button type="submit" class="filtro-pilula" style="border:none; cursor:pointer;">OK</button>
                                 </div>
                             </form>
+                        </div>
+                    <?php elseif ($produtoLojaLivro): ?>
+                        <div class="cartao-status-leitura">
+                            <?php if ($temAcessoLojaLivro): ?>
+                                <?php if (!empty($produtoLojaLivro['id_autor_dos_livros'])): ?>
+                                    <a href="obra.php?id=<?= (int) $produtoLojaLivro['id_autor_dos_livros'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
+                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
+                                    </a>
+                                <?php elseif (!empty($produtoLojaLivro['arquivo_produto']) && ($produtoLojaLivro['arquivo_tipo'] ?? '') === 'pdf'): ?>
+                                    <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>&inline=1" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
+                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
+                                    </a>
+                                <?php elseif (!empty($produtoLojaLivro['arquivo_produto'])): ?>
+                                    <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
+                                        Baixar <?= strtoupper(folivro_escape((string) $produtoLojaLivro['arquivo_tipo'])) ?>
+                                    </a>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <a href="loja-obra.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
+                                    Ver na Loja FOLIVRO
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
                         <form method="post">
@@ -1020,6 +1100,27 @@ $csrf = folivro_escape(folivro_csrf_token());
         </div>
 
     </main>
+
+    <script>
+        (() => {
+            const box = document.getElementById('acao-leitor-ol');
+            if (!box || !box.dataset.workId) return;
+            fetch(`api/leitura-disponivel.php?work=${encodeURIComponent(box.dataset.workId)}`)
+                .then((r) => (r.ok ? r.json() : null))
+                .then((data) => {
+                    if (!data) return;
+                    if (data.availability === 'unavailable') {
+                        const aviso = document.createElement('p');
+                        aviso.style.fontSize = '13px';
+                        aviso.style.color = 'var(--texto-secundario)';
+                        aviso.style.marginBottom = '12px';
+                        aviso.textContent = 'Leitura online indisponível na Open Library para esta edição.';
+                        box.replaceChildren(aviso);
+                    }
+                })
+                .catch(() => {});
+        })();
+    </script>
 
 </body>
 

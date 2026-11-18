@@ -167,10 +167,15 @@ if (!$ehMeuPerfil && $user) {
 $obrasLojaPerfil = [];
 if ($user) {
     $stObrasLoja = $pdo->prepare(
-        "SELECT id_produto, titulo_produto, capa_produto, preco_centavos, arquivo_tipo, classificacao_produto
-           FROM loja_produtos
-          WHERE id_autor = ? AND status_produto = 'publicado'
-       ORDER BY data_publicacao DESC
+        "SELECT lp.id_produto, lp.titulo_produto, lp.capa_produto, lp.preco_centavos, lp.arquivo_tipo, lp.classificacao_produto
+           FROM loja_produtos lp
+           JOIN usuario u ON u.id_usuario = lp.id_autor
+      LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = lp.id_autor_dos_livros
+      LEFT JOIN historias h ON h.id_historias = a.id_historias
+          WHERE lp.id_autor = ? AND lp.status_produto = 'publicado' AND u.status_usuario = 'ativo'
+            AND (lp.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
+            AND (lp.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = lp.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))
+       ORDER BY lp.data_publicacao DESC
           LIMIT 6"
     );
     $stObrasLoja->execute([$idAlvo]);

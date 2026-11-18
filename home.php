@@ -9,7 +9,7 @@ $nomeUsuario = (string) ($_SESSION['nome_usuario'] ?? 'Leitor(a)');
 $primeiroNome = trim(explode(' ', $nomeUsuario)[0] ?: $nomeUsuario);
 $maiorDeIdade = folivro_usuario_maior_de_idade($pdo, $uid);
 
-// "Continuar lendo": livros com status "lendo" na biblioteca pessoal.
+// "Continuar lendo": livros com status "lendo" na biblioteca pessoal (excluindo obras removidas pela moderação).
 $continua = $pdo->prepare(
     "SELECT b.id_livro, b.titulo_livro, b.autor_livro, b.capa_livro,
             COALESCE(b.classificacao_livro, 'livre') AS classificacao_livro,
@@ -17,7 +17,10 @@ $continua = $pdo->prepare(
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
   LEFT JOIN progressao_leitura p ON p.id_usuario = l.id_usuario AND p.id_livro = l.id_livro
+  LEFT JOIN loja_produtos lp ON lp.id_livro = b.id_livro
+  LEFT JOIN autor_dos_livros adl ON adl.id_autor_dos_livros = lp.id_autor_dos_livros
       WHERE l.id_usuario = ? AND l.status_livraria = 'lendo'
+        AND (adl.id_autor_dos_livros IS NULL OR adl.status_autor_dos_livros <> 'removido')
    ORDER BY l.data_modificacao_livraria DESC
       LIMIT 6"
 );
@@ -28,10 +31,18 @@ $continuando = $continua->fetchAll(PDO::FETCH_ASSOC);
 $stKpi = $pdo->prepare(
     "SELECT
         (SELECT COUNT(*) FROM livraria WHERE id_usuario = ?) +
-        (SELECT COUNT(*) FROM livraria_digital WHERE id_usuario = ?) AS total_estante,
+        (SELECT COUNT(*) FROM livraria_digital ld JOIN autor_dos_livros adl2 ON adl2.id_autor_dos_livros = ld.id_autor_dos_livros WHERE ld.id_usuario = ? AND adl2.status_autor_dos_livros <> 'removido') AS total_estante,
         (SELECT COUNT(*) FROM livraria WHERE id_usuario = ? AND status_livraria = 'lido') AS livros_lidos,
         (SELECT COALESCE(SUM(p.pagina_atual_progressao), 0) FROM progressao_leitura p WHERE p.id_usuario = ?) AS paginas_lidas,
-        (SELECT COUNT(*) FROM loja_produtos WHERE status_produto = 'publicado') AS total_loja,
+        (SELECT COUNT(*)
+           FROM loja_produtos lp2
+           JOIN usuario u2 ON u2.id_usuario = lp2.id_autor
+      LEFT JOIN autor_dos_livros a2 ON a2.id_autor_dos_livros = lp2.id_autor_dos_livros
+      LEFT JOIN historias h2 ON h2.id_historias = a2.id_historias
+          WHERE lp2.status_produto = 'publicado' AND u2.status_usuario = 'ativo'
+            AND (lp2.id_autor_dos_livros IS NULL OR (a2.status_autor_dos_livros = 'a_venda' AND a2.revisao_publicacao = 'aprovada' AND h2.status_historias = 'publicada'))
+            AND (lp2.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d2 WHERE d2.tipo_denuncias = 'obra_autoral' AND d2.item_denuncia = lp2.id_autor_dos_livros AND d2.status_denuncias IN ('aberta', 'em_analise') AND d2.suspensao_preventiva = 1))
+        ) AS total_loja,
         (SELECT COUNT(*) FROM chat_conversas WHERE (id_usuario_menor = ? OR id_usuario_maior = ?) AND status_conversa = 'pendente' AND id_solicitante <> ?) AS solicitacoes_chat"
 );
 $stKpi->execute([$uid, $uid, $uid, $uid, $uid, $uid, $uid]);

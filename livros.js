@@ -17,13 +17,16 @@
         const siglaIdade = book.classificacaoSigla || (classNorm === 'livre' ? 'L' : `+${classNorm}`);
         const labelIdade = book.classificacaoLabel || 'Classificação Livre';
 
+        const ehFolivro = book.source === 'folivro';
+        const urlDestino = ehFolivro && book.detailUrl ? book.detailUrl : `livro.php?work=${encodeURIComponent(book.workId)}`;
+
         const wrap = document.createElement(bloqueado ? 'div' : 'a');
         wrap.className = bloqueado
             ? 'livro-capa capa-bloqueada-18'
             : 'livro-capa link-livro-capa';
         if (!bloqueado) {
-            wrap.href = `livro.php?work=${encodeURIComponent(book.workId)}`;
-            wrap.title = `Ver críticas e informações de ${book.title}`;
+            wrap.href = urlDestino;
+            wrap.title = ehFolivro ? `Abrir ${book.title} no FOLIVRO` : `Ver críticas e informações de ${book.title}`;
         }
 
         const fallbackTexto = bloqueado ? 'Obra +18' : book.title;
@@ -70,6 +73,8 @@
 
     function criarCard(book) {
         const bloqueado = Boolean(book.bloqueadoIdade);
+        const ehFolivro = book.source === 'folivro';
+        const urlDestino = ehFolivro && book.detailUrl ? book.detailUrl : `livro.php?work=${encodeURIComponent(book.workId)}`;
         const classNorm = book.classificacao || 'livre';
         const siglaIdade = book.classificacaoSigla || (classNorm === 'livre' ? 'L' : `+${classNorm}`);
         const labelIdade = book.classificacaoLabel || 'Classificação Livre';
@@ -87,16 +92,25 @@
         badgesRow.style.flexWrap = 'wrap';
         badgesRow.style.alignItems = 'center';
 
-        const badge = document.createElement('span');
-        badge.className = 'selo-status';
+        const origemBadge = document.createElement('span');
+        origemBadge.className = ehFolivro ? 'selo-status selo-lido selo-origem-folivro' : 'selo-status selo-origem-openlibrary';
+        origemBadge.textContent = ehFolivro ? (book.sourceLabel || 'Publicado no FOLIVRO') : 'Open Library';
+        badgesRow.appendChild(origemBadge);
+
         if (book.ratingAvg && book.ratingsCount > 0) {
+            const badge = document.createElement('span');
             badge.className = 'selo-status selo-avaliacao-destaque';
             badge.title = `Avaliação média: ${book.ratingAvg.toFixed(1).replace('.', ',')} de 5 estrelas (${book.ratingsCount} ${book.ratingsCount === 1 ? 'avaliação computada' : 'avaliações computadas'})`;
             badge.innerHTML = `<img src="img/icones/star.png" alt="" class="icone-btn-png icone-estrela-badge"> <strong>${book.ratingAvg.toFixed(1).replace('.', ',')}</strong> <span class="badge-votos-qtd">(${book.ratingsCount} ${book.ratingsCount === 1 ? 'voto' : 'votos'})</span>`;
-        } else {
-            badge.textContent = 'Metadados de catálogo';
+            badgesRow.appendChild(badge);
         }
-        badgesRow.appendChild(badge);
+
+        if (ehFolivro && book.priceFormatted) {
+            const precoBadge = document.createElement('span');
+            precoBadge.className = 'selo-status selo-comprado';
+            precoBadge.textContent = book.priceFormatted;
+            badgesRow.appendChild(precoBadge);
+        }
 
         const seloIdade = document.createElement('span');
         seloIdade.className = `selo-classificacao-idade selo-idade-${classNorm}`;
@@ -115,10 +129,10 @@
             title.appendChild(hiddenTitle);
         } else {
             const titleLink = document.createElement('a');
-            titleLink.href = `livro.php?work=${encodeURIComponent(book.workId)}`;
+            titleLink.href = urlDestino;
             titleLink.className = 'link-titulo-livro';
             titleLink.textContent = book.title;
-            titleLink.title = `Ver críticas e detalhes de ${book.title}`;
+            titleLink.title = ehFolivro ? `Abrir ${book.title} no FOLIVRO` : `Ver críticas e detalhes de ${book.title}`;
             title.appendChild(titleLink);
         }
         details.appendChild(title);
@@ -157,9 +171,23 @@
             blockedBtn.title = 'Conteúdo exclusivo para maiores de 18 anos';
             blockedBtn.textContent = 'Bloqueado (+18)';
             details.appendChild(blockedBtn);
+        } else if (ehFolivro) {
+            const linkDetalhes = document.createElement('a');
+            linkDetalhes.href = urlDestino;
+            linkDetalhes.className = 'link-ver-detalhes';
+            linkDetalhes.innerHTML = 'Ver ficha da obra &rarr;';
+            details.appendChild(linkDetalhes);
+
+            const openButton = document.createElement('a');
+            openButton.href = urlDestino;
+            openButton.className = 'botao-adicionar-livro';
+            openButton.style.textAlign = 'center';
+            openButton.style.textDecoration = 'none';
+            openButton.textContent = book.priceCentavos === 0 ? 'Ler / Obter grátis' : 'Ver obra na loja';
+            details.appendChild(openButton);
         } else {
             const linkDetalhes = document.createElement('a');
-            linkDetalhes.href = `livro.php?work=${encodeURIComponent(book.workId)}`;
+            linkDetalhes.href = urlDestino;
             linkDetalhes.className = 'link-ver-detalhes';
             linkDetalhes.innerHTML = 'Ver críticas & ficha completa &rarr;';
             details.appendChild(linkDetalhes);
@@ -188,12 +216,14 @@
             });
             details.appendChild(addButton);
 
-            const link = document.createElement('a');
-            link.href = book.workUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.textContent = 'Ver na Open Library';
-            details.appendChild(link);
+            if (book.workUrl) {
+                const link = document.createElement('a');
+                link.href = book.workUrl;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = 'Ver na Open Library';
+                details.appendChild(link);
+            }
         }
         card.appendChild(details);
         return card;

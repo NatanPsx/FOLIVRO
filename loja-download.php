@@ -36,6 +36,8 @@ $tipo = (string) ($produto['arquivo_tipo'] ?? 'pdf');
 $mime = $tipo === 'epub' ? 'application/epub+zip' : 'application/pdf';
 $nomeDownload = folivro_loja_nome_seguro((string) $produto['titulo_produto'], $tipo);
 $tamanho = (int) filesize($caminho);
+$inline = ($tipo === 'pdf' && isset($_GET['inline']) && $_GET['inline'] === '1');
+$disposition = $inline ? 'inline' : 'attachment';
 
 folivro_loja_log('download_autorizado', ['id_produto' => $idProduto, 'id_usuario' => $uid, 'tipo' => $tipo]);
 
@@ -43,7 +45,7 @@ while (ob_get_level() > 0) {
     ob_end_clean();
 }
 header('Content-Type: ' . $mime);
-header('Content-Disposition: attachment; filename="' . $nomeDownload . '"');
+header('Content-Disposition: ' . $disposition . '; filename="' . $nomeDownload . '"');
 header('Content-Length: ' . $tamanho);
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, no-store, max-age=0');

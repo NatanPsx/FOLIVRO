@@ -11,8 +11,8 @@ $produto = $id > 0 ? folivro_loja_produto($pdo, $id) : null;
 $jaComprou = $produto ? folivro_loja_ja_possui($pdo, $uid, $id) : false;
 $ehAutor = $produto && (int) $produto['id_autor'] === $uid;
 
-// Só exibe se publicada (ou se o usuário já comprou / é o autor).
-if ($produto === null || ($produto['status_produto'] !== 'publicado' && !$jaComprou && !$ehAutor)) {
+// Só exibe se publicada e sem bloqueio de moderação (ou se o usuário já comprou / é o autor).
+if ($produto === null || (!folivro_loja_produto_disponivel_publico($produto) && !$jaComprou && !$ehAutor)) {
     http_response_code(404);
     $produto = null;
 }
@@ -57,12 +57,39 @@ foreach ($resenhas as $r) {
     }
 }
 $mediaNota = 0.0;
+$distNotas = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+$totalResenhasLoja = count($resenhas);
 if ($resenhas) {
     $soma = 0;
     foreach ($resenhas as $r) {
-        $soma += (int) ($r['nota_resenha'] ?? 0);
+        $n = max(1, min(5, (int) ($r['nota_resenha'] ?? 0)));
+        $soma += $n;
+        $distNotas[$n]++;
     }
-    $mediaNota = round($soma / count($resenhas), 1);
+    $mediaNota = round($soma / $totalResenhasLoja, 1);
+}
+$pontosCritica = $totalResenhasLoja > 0 ? (int) round(($mediaNota / 5.0) * 100) : null;
+$classeCritica = 'score-neutro';
+$rotuloCritica = 'Aguardando avaliações';
+$descricaoCritica = 'Esta obra original do FOLIVRO ainda não possui avaliações suficientes da comunidade.';
+if ($pontosCritica !== null) {
+    if ($pontosCritica >= 80) {
+        $classeCritica = 'score-excelente';
+        $rotuloCritica = 'Aclamação da Comunidade FOLIVRO';
+        $descricaoCritica = 'Obra altamente recomendada pelos leitores verificados da plataforma.';
+    } elseif ($pontosCritica >= 60) {
+        $classeCritica = 'score-favoravel';
+        $rotuloCritica = 'Recepção Geralmente Favorável';
+        $descricaoCritica = 'Avaliações positivas com boa aceitação entre os leitores.';
+    } elseif ($pontosCritica >= 40) {
+        $classeCritica = 'score-misto';
+        $rotuloCritica = 'Avaliações Mistas ou Médias';
+        $descricaoCritica = 'A obra divide opiniões entre os leitores da comunidade.';
+    } else {
+        $classeCritica = 'score-baixo';
+        $rotuloCritica = 'Recepção Desfavorável';
+        $descricaoCritica = 'A maioria das avaliações registradas está abaixo da média.';
+    }
 }
 $csrf = folivro_escape(folivro_csrf_token());
 ?>
@@ -141,19 +168,31 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <p><?= nl2br(folivro_escape((string) ($produto['descricao_produto'] ?? 'Sem descrição informada.'))) ?></p>
 
                     <div class="loja-acoes-card" style="margin-top:16px;">
-                        <?php $idAdlLink = (int) ($produto['id_autor_dos_livros'] ?? 0); ?>
+                        <?php
+                        $idAdlLink = (int) ($produto['id_autor_dos_livros'] ?? 0);
+                        $idLivroLink = (int) ($produto['id_livro'] ?? 0);
+                        $ehRemovidaMod = ($produto['estudio_status'] ?? '') === 'removido';
+                        ?>
                         <?php if ($ehAutor): ?>
                             <a class="botao-adicionar-livro" href="loja-autor-obras.php?editar=<?= $id ?>">Gerenciar minha obra</a>
                             <a class="filtro-pilula" href="loja-download.php?id=<?= $id ?>">Baixar meu arquivo</a>
                             <?php if ($idAdlLink > 0): ?>
                                 <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler capítulos online</a>
+                            <?php elseif ($idLivroLink > 0 && ($produto['arquivo_tipo'] ?? '') === 'pdf'): ?>
+                                <a class="filtro-pilula" href="leitor.php?id=<?= $idLivroLink ?>">Abrir no leitor</a>
                             <?php endif; ?>
                         <?php elseif ($jaComprou): ?>
-                            <a class="botao-adicionar-livro" href="loja-download.php?id=<?= $id ?>">Baixar <?= strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) ?></a>
-                            <?php if ($idAdlLink > 0): ?>
-                                <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler capítulos online</a>
+                            <?php if ($ehRemovidaMod): ?>
+                                <p class="estado-vazio estado-erro">Esta obra foi removida pela moderação e não está mais disponível para leitura ou download.</p>
+                            <?php else: ?>
+                                <a class="botao-adicionar-livro" href="loja-download.php?id=<?= $id ?>">Baixar <?= strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) ?></a>
+                                <?php if ($idAdlLink > 0): ?>
+                                    <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler capítulos online</a>
+                                <?php elseif ($idLivroLink > 0 && ($produto['arquivo_tipo'] ?? '') === 'pdf'): ?>
+                                    <a class="filtro-pilula" href="leitor.php?id=<?= $idLivroLink ?>">Ler no leitor</a>
+                                <?php endif; ?>
+                                <a class="filtro-pilula" href="minha-biblioteca.php">Abrir na minha biblioteca</a>
                             <?php endif; ?>
-                            <a class="filtro-pilula" href="minha-biblioteca.php">Abrir na minha biblioteca</a>
                             <a class="filtro-pilula" href="minhas-compras.php">Ver recibo</a>
                         <?php elseif ((int) $produto['preco_centavos'] === 0): ?>
                             <form method="post">
@@ -163,6 +202,9 @@ $csrf = folivro_escape(folivro_csrf_token());
                             </form>
                         <?php else: ?>
                             <a class="botao-adicionar-livro" href="loja-checkout.php?id=<?= $id ?>">Comprar agora</a>
+                        <?php endif; ?>
+                        <?php if ($idLivroLink > 0): ?>
+                            <a class="filtro-pilula" href="livro.php?id=<?= $idLivroLink ?>">Ver ficha crítica completa</a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -174,6 +216,80 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <div class="loja-preview-caixa"><?= folivro_escape($produto['preview_produto']) ?></div>
                 </section>
             <?php endif; ?>
+
+            <section class="loja-card-destaque" aria-labelledby="titulo-ficha-critica">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+                    <h2 id="titulo-ficha-critica" style="margin:0;">Ficha Crítica &amp; Recepção da Obra</h2>
+                    <?php if ($idLivroLink > 0): ?>
+                        <a class="filtro-pilula" href="livro.php?id=<?= $idLivroLink ?>">Abrir ficha na comunidade &rarr;</a>
+                    <?php endif; ?>
+                </div>
+
+                <div class="painel-recepcao-critica" style="margin-bottom:16px;">
+                    <div class="cabecalho-critica">
+                        <div class="metascore-box <?= folivro_escape($classeCritica) ?>" title="Índice Crítico FOLIVRO">
+                            <span class="metascore-valor"><?= $pontosCritica !== null ? $pontosCritica : '—' ?></span>
+                            <span class="metascore-label">ÍNDICE FOLIVRO</span>
+                        </div>
+                        <div class="resumo-consenso">
+                            <span class="tag-critica-selo">Índice de Recepção Crítica &amp; Consenso dos Leitores</span>
+                            <h3><?= folivro_escape($rotuloCritica) ?></h3>
+                            <p><?= folivro_escape($descricaoCritica) ?></p>
+                            <?php if ($totalResenhasLoja > 0): ?>
+                                <p class="contagem-base-critica">
+                                    Baseado em <strong><?= $totalResenhasLoja ?></strong> avaliação(ões) · Média: <strong><?= number_format($mediaNota, 1, ',', '.') ?> / 5,0 ★</strong>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <?php if ($totalResenhasLoja > 0): ?>
+                        <div class="distribuicao-notas-bloco">
+                            <h4 class="subtitulo-distribuicao">Distribuição de Notas dos Leitores</h4>
+                            <div class="barras-distribuicao">
+                                <?php for ($estrela = 5; $estrela >= 1; $estrela--): ?>
+                                    <?php
+                                    $qtdEst = $distNotas[$estrela];
+                                    $pctEst = (int) round(($qtdEst / max(1, $totalResenhasLoja)) * 100);
+                                    ?>
+                                    <div class="linha-distribuicao">
+                                        <span class="rotulo-estrela"><?= $estrela ?> ★</span>
+                                        <div class="trilho-barra-distribuicao">
+                                            <div class="preenchimento-barra-distribuicao" style="width: <?= $pctEst ?>%;"></div>
+                                        </div>
+                                        <span class="valor-pct-distribuicao"><?= $pctEst ?>% (<?= $qtdEst ?>)</span>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <dl class="lista-detalhes-meta" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin:0;">
+                    <div>
+                        <dt>Autoria</dt>
+                        <dd><?= folivro_escape($produto['autor_nome']) ?></dd>
+                    </div>
+                    <div>
+                        <dt>Origem</dt>
+                        <dd>Obra Original FOLIVRO</dd>
+                    </div>
+                    <div>
+                        <dt>Classificação indicativa</dt>
+                        <dd><?= folivro_escape(folivro_aviso_conteudo_label((string) $produto['classificacao_produto'])) ?></dd>
+                    </div>
+                    <div>
+                        <dt>Formato digital</dt>
+                        <dd><?= !empty($produto['arquivo_tipo']) ? strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) : 'Digital' ?></dd>
+                    </div>
+                    <?php if (!empty($produto['data_publicacao'])): ?>
+                        <div>
+                            <dt>Publicado em</dt>
+                            <dd><?= date('d/m/Y', strtotime((string) $produto['data_publicacao'])) ?></dd>
+                        </div>
+                    <?php endif; ?>
+                </dl>
+            </section>
 
             <section class="loja-card-destaque" aria-labelledby="titulo-avaliacoes">
                 <h2 id="titulo-avaliacoes">Avaliações dos leitores (<?= count($resenhas) ?>)</h2>

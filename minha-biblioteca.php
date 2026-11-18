@@ -30,7 +30,10 @@ $stmt = $pdo->prepare(
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
   LEFT JOIN progressao_leitura p ON p.id_usuario = l.id_usuario AND p.id_livro = l.id_livro
+  LEFT JOIN loja_produtos lp ON lp.id_livro = b.id_livro
+  LEFT JOIN autor_dos_livros adl ON adl.id_autor_dos_livros = lp.id_autor_dos_livros
       WHERE l.id_usuario = ?
+        AND (adl.id_autor_dos_livros IS NULL OR adl.status_autor_dos_livros <> "removido")
   UNION ALL
      SELECT a.id_autor_dos_livros, h.titulo_historias, u.nome_usuario, h.capa_historias,
             CASE

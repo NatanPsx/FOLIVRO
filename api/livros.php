@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/traducao.php';
 
+$pdo = folivro_database();
 folivro_require_login();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -657,14 +659,221 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
     }
 }
 
-$allItems = folivro_consultar_e_filtrar_catalogo($query, $sort);
+if (!function_exists('folivro_buscar_obras_locais')) {
+    function folivro_buscar_obras_locais(PDO $pdo, string $rawQuery, string $rawCategoria, bool $isDestaques, string $sort): array
+    {
+        $catMap = [
+            'literatura_nacional' => ['nacional', 'brasileira', 'brasil', 'literatura'],
+            'classicos' => ['classico', 'clássico'],
+            'suspense' => ['suspense', 'thriller'],
+            'drama' => ['drama'],
+            'fantasia' => ['fantasia'],
+            'ficcao_cientifica' => ['ficcao cientifica', 'ficção científica', 'sci-fi'],
+            'romance' => ['romance'],
+            'terror' => ['terror', 'horror'],
+            'misterio' => ['misterio', 'mistério'],
+            'aventura' => ['aventura'],
+            'distopia' => ['distopia'],
+            'poesia' => ['poesia', 'poemas'],
+        ];
+
+        $termos = [];
+        if ($rawCategoria !== '' && isset($catMap[$rawCategoria])) {
+            $termos = $catMap[$rawCategoria];
+        } elseif (!$isDestaques && $rawQuery !== '') {
+            $normQ = mb_strtolower(folivro_remover_acentos($rawQuery), 'UTF-8');
+            $termos = array_values(array_filter(preg_split('/\s+/u', trim($normQ)) ?: []));
+        }
+
+        $orderSql = match ($sort) {
+            'title' => 'p.titulo_produto ASC',
+            'old' => 'p.data_publicacao ASC, p.id_produto ASC',
+            default => 'p.data_publicacao DESC, p.id_produto DESC',
+        };
+
+        $stLoja = $pdo->query(
+            "SELECT p.id_produto, p.id_livro, p.id_autor_dos_livros, p.titulo_produto, p.descricao_produto,
+                    p.capa_produto, p.generos_produto, p.classificacao_produto, p.preco_centavos, p.data_publicacao,
+                    u.nome_usuario AS autor_nome,
+                    COALESCE((SELECT AVG(r.nota_resenha) FROM resenha r WHERE r.id_livro = p.id_livro), 0) AS media_nota,
+                    (SELECT COUNT(*) FROM resenha r WHERE r.id_livro = p.id_livro) AS total_resenhas
+               FROM loja_produtos p
+               JOIN usuario u ON u.id_usuario = p.id_autor
+          LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+          LEFT JOIN historias h ON h.id_historias = a.id_historias
+              WHERE p.status_produto = 'publicado'
+                AND u.status_usuario = 'ativo'
+                AND (p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
+                AND (p.id_autor_dos_livros IS NULL OR NOT EXISTS (
+                    SELECT 1 FROM denuncias d
+                     WHERE d.tipo_denuncias = 'obra_autoral'
+                       AND d.item_denuncia = p.id_autor_dos_livros
+                       AND d.status_denuncias IN ('aberta', 'em_analise')
+                       AND d.suspensao_preventiva = 1
+                ))
+           ORDER BY {$orderSql}
+              LIMIT 100"
+        );
+        $rowsLoja = $stLoja->fetchAll(PDO::FETCH_ASSOC);
+
+        $stEstudio = $pdo->query(
+            "SELECT a.id_autor_dos_livros, a.titulo_autor_dos_livros, a.preco_dos_livros_autor, a.modalidade_distribuicao,
+                    a.data_publicacao_autor, h.titulo_historias, h.sinopse_historias, h.capa_historias,
+                    h.generos_historias, h.aviso_conteudo_historias, u.nome_usuario AS autor_nome
+               FROM autor_dos_livros a
+               JOIN historias h ON h.id_historias = a.id_historias
+               JOIN usuario u ON u.id_usuario = a.id_autor
+              WHERE a.status_autor_dos_livros = 'a_venda'
+                AND a.revisao_publicacao = 'aprovada'
+                AND h.status_historias = 'publicada'
+                AND u.status_usuario = 'ativo'
+                AND NOT EXISTS (SELECT 1 FROM loja_produtos lp WHERE lp.id_autor_dos_livros = a.id_autor_dos_livros)
+                AND NOT EXISTS (
+                    SELECT 1 FROM denuncias d
+                     WHERE d.tipo_denuncias = 'obra_autoral'
+                       AND d.item_denuncia = a.id_autor_dos_livros
+                       AND d.status_denuncias IN ('aberta', 'em_analise')
+                       AND d.suspensao_preventiva = 1
+                )
+           ORDER BY a.data_publicacao_autor DESC, a.id_autor_dos_livros DESC
+              LIMIT 50"
+        );
+        $rowsEstudio = $stEstudio->fetchAll(PDO::FETCH_ASSOC);
+
+        $candidatos = [];
+        foreach ($rowsLoja as $r) {
+            $preco = (int) $r['preco_centavos'];
+            $ano = !empty($r['data_publicacao']) ? (int) date('Y', strtotime((string) $r['data_publicacao'])) : null;
+            $candidatos[] = [
+                'source' => 'folivro',
+                'sourceLabel' => 'Publicado no FOLIVRO',
+                'workId' => 'FOLIVRO-P' . (int) $r['id_produto'],
+                'idProduto' => (int) $r['id_produto'],
+                'idAutorDosLivros' => (int) ($r['id_autor_dos_livros'] ?? 0),
+                'idLivro' => (int) ($r['id_livro'] ?? 0),
+                'detailUrl' => 'loja-obra.php?id=' . (int) $r['id_produto'],
+                'priceCentavos' => $preco,
+                'priceFormatted' => $preco === 0 ? 'Gratuito' : ('R$ ' . number_format($preco / 100, 2, ',', '.')),
+                'title' => (string) $r['titulo_produto'],
+                'originalTitle' => null,
+                'authors' => [(string) $r['autor_nome']],
+                'year' => $ano,
+                'coverUrl' => !empty($r['capa_produto']) ? (string) $r['capa_produto'] : null,
+                'workUrl' => null,
+                'ratingAvg' => (int) $r['total_resenhas'] > 0 ? round((float) $r['media_nota'], 1) : null,
+                'ratingsCount' => (int) $r['total_resenhas'],
+                'classificacao' => folivro_normalizar_classificacao((string) ($r['classificacao_produto'] ?? 'livre')),
+                'generos' => folivro_generos_lista((string) ($r['generos_produto'] ?? '')),
+                '_searchBlob' => mb_strtolower(folivro_remover_acentos(
+                    $r['titulo_produto'] . ' ' . $r['autor_nome'] . ' ' . ($r['generos_produto'] ?? '') . ' ' . ($r['descricao_produto'] ?? '')
+                ), 'UTF-8'),
+            ];
+        }
+
+        foreach ($rowsEstudio as $r) {
+            $preco = (($r['modalidade_distribuicao'] ?? '') === 'gratuita')
+                ? 0
+                : max(0, (int) round(((float) $r['preco_dos_livros_autor']) * 100));
+            $titulo = trim((string) ($r['titulo_autor_dos_livros'] ?: $r['titulo_historias']));
+            $ano = !empty($r['data_publicacao_autor']) ? (int) date('Y', strtotime((string) $r['data_publicacao_autor'])) : null;
+            $candidatos[] = [
+                'source' => 'folivro',
+                'sourceLabel' => 'Publicado no FOLIVRO',
+                'workId' => 'FOLIVRO-A' . (int) $r['id_autor_dos_livros'],
+                'idProduto' => 0,
+                'idAutorDosLivros' => (int) $r['id_autor_dos_livros'],
+                'idLivro' => 0,
+                'detailUrl' => 'obra.php?id=' . (int) $r['id_autor_dos_livros'],
+                'priceCentavos' => $preco,
+                'priceFormatted' => $preco === 0 ? 'Gratuito' : ('R$ ' . number_format($preco / 100, 2, ',', '.')),
+                'title' => $titulo,
+                'originalTitle' => null,
+                'authors' => [(string) $r['autor_nome']],
+                'year' => $ano,
+                'coverUrl' => !empty($r['capa_historias']) ? (string) $r['capa_historias'] : null,
+                'workUrl' => null,
+                'ratingAvg' => null,
+                'ratingsCount' => 0,
+                'classificacao' => folivro_normalizar_classificacao((string) ($r['aviso_conteudo_historias'] ?? 'livre')),
+                'generos' => folivro_generos_lista((string) ($r['generos_historias'] ?? '')),
+                '_searchBlob' => mb_strtolower(folivro_remover_acentos(
+                    $titulo . ' ' . $r['autor_nome'] . ' ' . ($r['generos_historias'] ?? '') . ' ' . ($r['sinopse_historias'] ?? '')
+                ), 'UTF-8'),
+            ];
+        }
+
+        $filtrados = [];
+        $ehCategoria = ($rawCategoria !== '' && isset($catMap[$rawCategoria]));
+        foreach ($candidatos as $c) {
+            if (!$isDestaques && !empty($termos)) {
+                $blob = $c['_searchBlob'];
+                if ($ehCategoria) {
+                    $bate = false;
+                    foreach ($termos as $t) {
+                        if (strpos($blob, folivro_remover_acentos($t)) !== false) {
+                            $bate = true;
+                            break;
+                        }
+                    }
+                    if (!$bate) {
+                        continue;
+                    }
+                } else {
+                    foreach ($termos as $t) {
+                        if ($t !== '' && strpos($blob, $t) === false) {
+                            continue 2;
+                        }
+                    }
+                }
+            }
+            unset($c['_searchBlob']);
+            $filtrados[] = $c;
+        }
+
+        if ($isDestaques) {
+            return array_slice($filtrados, 0, 6);
+        }
+        return $filtrados;
+    }
+}
+
+$localItems = folivro_buscar_obras_locais($pdo, $rawQuery, $rawCategoria, $isDestaques, $sort);
+$olItems = folivro_consultar_e_filtrar_catalogo($query, $sort);
+
+$chavesLocais = [];
+foreach ($localItems as $li) {
+    $tKey = folivro_normalizar_titulo_chave((string) ($li['title'] ?? ''));
+    $aKey = folivro_normalizar_titulo_chave((string) ($li['authors'][0] ?? ''));
+    if ($tKey !== '') {
+        $chavesLocais[$tKey . '|' . $aKey] = true;
+    }
+}
+
+$olFiltrados = [];
+foreach ($olItems as $oi) {
+    $aKey = folivro_normalizar_titulo_chave((string) ($oi['authors'][0] ?? ''));
+    $tKey1 = folivro_normalizar_titulo_chave((string) ($oi['title'] ?? ''));
+    $tKey2 = folivro_normalizar_titulo_chave((string) ($oi['originalTitle'] ?? ''));
+    if (($tKey1 !== '' && isset($chavesLocais[$tKey1 . '|' . $aKey])) || ($tKey2 !== '' && isset($chavesLocais[$tKey2 . '|' . $aKey]))) {
+        continue;
+    }
+    $oi['source'] = 'openlibrary';
+    $oi['sourceLabel'] = 'Open Library';
+    $olFiltrados[] = $oi;
+}
+
+$allItems = array_merge($localItems, $olFiltrados);
 $total = count($allItems);
 $slice = array_slice($allItems, $offset, $limit);
 
 $maiorDeIdade = folivro_usuario_maior_de_idade();
 foreach ($slice as &$item) {
-    $textoClass = (string) ($item['title'] ?? '') . ' ' . (string) ($item['originalTitle'] ?? '');
-    $classNorm = folivro_estimar_classificacao_catalogo($textoClass, (string) ($item['workId'] ?? ''));
+    if (($item['source'] ?? '') === 'folivro') {
+        $classNorm = folivro_normalizar_classificacao((string) ($item['classificacao'] ?? 'livre'));
+    } else {
+        $textoClass = (string) ($item['title'] ?? '') . ' ' . (string) ($item['originalTitle'] ?? '');
+        $classNorm = folivro_estimar_classificacao_catalogo($textoClass, (string) ($item['workId'] ?? ''));
+    }
     $bloqueado = !$maiorDeIdade && folivro_classificacao_eh_maior18($classNorm);
     $item['classificacao'] = $classNorm;
     $item['classificacaoSigla'] = folivro_classificacao_sigla($classNorm);
