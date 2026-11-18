@@ -107,7 +107,7 @@ function folivro_buscar_no_cache_local(string $cacheDir, string $wId): ?array
 /**
  * Função de consulta e cache de metadados e avaliações da Open Library.
  */
-function folivro_obter_dados_openlibrary(string $wId): ?array {
+function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = ''): ?array {
     if (!preg_match('/^OL[0-9]+W$/', $wId)) {
         return null;
     }
@@ -124,7 +124,7 @@ function folivro_obter_dados_openlibrary(string $wId): ?array {
     }
 
     $cacheFile = $cacheDir . '/ol_work_' . $wId . '.json';
-    if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+    if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 604800)) {
         $cached = json_decode((string) file_get_contents($cacheFile), true);
         if (is_array($cached)) {
             return $cached;
@@ -136,50 +136,58 @@ function folivro_obter_dados_openlibrary(string $wId): ?array {
     $ratingsRaw = null;
 
     if (function_exists('curl_multi_init')) {
-        $mh = curl_multi_init();
-        if (defined('CURLMOPT_PIPELINING') && defined('CURLPIPE_NOTHING')) {
-            @curl_multi_setopt($mh, CURLMOPT_PIPELINING, CURLPIPE_NOTHING);
-        }
-        $chWork = curl_init("https://openlibrary.org/works/{$wId}.json");
-        $chRatings = curl_init("https://openlibrary.org/works/{$wId}/ratings.json");
-
-        foreach ([$chWork, $chRatings] as $ch) {
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
-            curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-            curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-            curl_setopt($ch, CURLOPT_USERAGENT, "FOLIVRO-Academic-Demo/1.0 (TCC Platform; contact@folivro.local)");
-            curl_multi_add_handle($mh, $ch);
-        }
-
-        $running = null;
-        do {
-            $mrc = curl_multi_exec($mh, $running);
-            if ($running > 0) {
-                if (curl_multi_select($mh, 0.1) === -1) {
-                    usleep(20000);
-                }
+        foreach ([true, false] as $verifySsl) {
+            $mh = curl_multi_init();
+            if (defined('CURLMOPT_PIPELINING') && defined('CURLPIPE_NOTHING')) {
+                @curl_multi_setopt($mh, CURLMOPT_PIPELINING, CURLPIPE_NOTHING);
             }
-        } while ($running > 0 && $mrc === CURLM_OK);
+            $chWork = curl_init("https://openlibrary.org/works/{$wId}.json");
+            $chRatings = curl_init("https://openlibrary.org/works/{$wId}/ratings.json");
 
-        $workRaw = curl_multi_getcontent($chWork);
-        $ratingsRaw = curl_multi_getcontent($chRatings);
+            foreach ([$chWork, $chRatings] as $ch) {
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
+                curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+                curl_setopt($ch, CURLOPT_ENCODING, '');
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $verifySsl);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, $verifySsl ? 2 : 0);
+                curl_setopt($ch, CURLOPT_USERAGENT, "FOLIVRO-Academic-Demo/1.0 (TCC Platform; contact@folivro.local)");
+                curl_multi_add_handle($mh, $ch);
+            }
 
-        curl_multi_remove_handle($mh, $chWork);
-        curl_multi_remove_handle($mh, $chRatings);
-        curl_multi_close($mh);
-        curl_close($chWork);
-        curl_close($chRatings);
+            $running = null;
+            do {
+                $mrc = curl_multi_exec($mh, $running);
+                if ($running > 0) {
+                    if (curl_multi_select($mh, 0.1) === -1) {
+                        usleep(10000);
+                    }
+                }
+            } while ($running > 0 && $mrc === CURLM_OK);
+
+            $workRaw = curl_multi_getcontent($chWork);
+            $ratingsRaw = curl_multi_getcontent($chRatings);
+            $workErr = curl_errno($chWork);
+
+            curl_multi_remove_handle($mh, $chWork);
+            curl_multi_remove_handle($mh, $chRatings);
+            curl_multi_close($mh);
+            curl_close($chWork);
+            curl_close($chRatings);
+
+            if ($workRaw || $workErr !== 60) {
+                break;
+            }
+        }
     } else {
         foreach ([true, false] as $verifySsl) {
             $ctx = stream_context_create([
                 'http' => [
                     'method' => 'GET',
-                    'timeout' => 4,
+                    'timeout' => 3,
                     'header' => "User-Agent: FOLIVRO-Academic-Demo/1.0 (TCC Platform; contact@folivro.local)\r\nAccept: application/json\r\n",
                 ],
                 'ssl' => ['verify_peer' => $verifySsl, 'verify_peer_name' => $verifySsl],
@@ -206,9 +214,15 @@ function folivro_obter_dados_openlibrary(string $wId): ?array {
         return folivro_buscar_no_cache_local($cacheDir, $wId);
     }
 
-    // Autor
-    $autorNome = '';
-    if (!empty($work['authors'][0]['author']['key'])) {
+    // Autor: reaproveita autor já conhecido do banco/cache de busca antes de fazer uma 3ª requisição HTTP
+    $autorNome = trim($autorConhecido);
+    if ($autorNome === '') {
+        $localHit = folivro_buscar_no_cache_local($cacheDir, $wId);
+        if ($localHit && !empty($localHit['author']) && $localHit['author'] !== 'Autoria não informada') {
+            $autorNome = (string) $localHit['author'];
+        }
+    }
+    if ($autorNome === '' && !empty($work['authors'][0]['author']['key'])) {
         $authorKey = (string) $work['authors'][0]['author']['key'];
         $authorCacheFile = $cacheDir . '/ol_author_' . md5($authorKey) . '.json';
         if (file_exists($authorCacheFile) && (time() - filemtime($authorCacheFile) < 86400 * 30)) {
@@ -221,24 +235,21 @@ function folivro_obter_dados_openlibrary(string $wId): ?array {
                     $chA = curl_init("https://openlibrary.org{$authorKey}.json");
                     curl_setopt_array($chA, [
                         CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_CONNECTTIMEOUT => 1,
                         CURLOPT_TIMEOUT => 2,
+                        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                        CURLOPT_ENCODING => '',
                         CURLOPT_SSL_VERIFYPEER => $verifySsl,
                         CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
                         CURLOPT_USERAGENT => 'FOLIVRO-Academic-Demo/1.0',
                     ]);
                     $authorRaw = curl_exec($chA);
+                    $errA = curl_errno($chA);
                     curl_close($chA);
-                    if ($authorRaw) {
+                    if ($authorRaw || $errA !== 60) {
                         break;
                     }
                 }
-            }
-            if (!$authorRaw) {
-                $ctxAuthor = stream_context_create([
-                    'http' => ['method' => 'GET', 'timeout' => 2, 'header' => "User-Agent: FOLIVRO/1.0\r\n"],
-                    'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]
-                ]);
-                $authorRaw = @file_get_contents("https://openlibrary.org{$authorKey}.json", false, $ctxAuthor);
             }
             if ($authorRaw) {
                 $authorData = json_decode($authorRaw, true);
@@ -318,7 +329,7 @@ function folivro_obter_dados_openlibrary(string $wId): ?array {
 }
 
 // Obtém dados remotos se tivermos workId
-$dadosOl = $workId !== '' ? folivro_obter_dados_openlibrary($workId) : null;
+$dadosOl = $workId !== '' ? folivro_obter_dados_openlibrary($workId, (string) ($livroLocal['autor_livro'] ?? '')) : null;
 
 // Combina os dados: prioriza o banco local se existir, complementado pelos dados da Open Library
 $tituloLivroRaw = $livroLocal['titulo_livro'] ?? ($dadosOl['title'] ?? 'Obra sem título');
