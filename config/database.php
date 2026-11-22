@@ -690,6 +690,14 @@ function folivro_database(): PDO
             }
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('018_chat_notificacoes')");
         }
+
+        // Migração 019: Capas em alta definição, autor GePeTo e capítulos completos das obras de demonstração.
+        $mig19 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '019_gepeto_obras_completas_e_capas' LIMIT 1")->fetchColumn();
+        if (!$mig19) {
+            require_once __DIR__ . '/../database/seeds/019_seed_gepeto_obras.php';
+            folivro_seed_gepeto_obras($pdo);
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('019_gepeto_obras_completas_e_capas')");
+        }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.
         error_log('[FOLIVRO] Falha ao inicializar o esquema: ' . $e->getMessage());
