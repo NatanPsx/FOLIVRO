@@ -53,12 +53,16 @@ $infoModo = folivro_loja_info_modo();
                     <h1 style="margin:0;">Loja de Obras Independentes</h1>
                     <?= folivro_loja_selo_modo_html() ?>
                 </div>
-                <p>Obras digitais (PDF e EPUB) vendidas diretamente por autores da comunidade. <?= folivro_escape($infoModo['descricao']) ?></p>
+                <p><?= folivro_pagamentos_ativos()
+                    ? 'Obras digitais (PDF e EPUB) vendidas diretamente por autores da comunidade. ' . folivro_escape($infoModo['descricao'])
+                    : 'Obras digitais (PDF e EPUB) publicadas gratuitamente por autores da comunidade.' ?></p>
             </div>
             <div class="loja-atalhos-topo">
-                <a class="filtro-pilula" href="minhas-compras.php">Minhas compras</a>
+                <?php if (folivro_pagamentos_ativos()): ?>
+                    <a class="filtro-pilula" href="minhas-compras.php">Minhas compras</a>
+                <?php endif; ?>
                 <a class="filtro-pilula" href="minha-biblioteca.php">Minha biblioteca</a>
-                <a class="botao-adicionar-livro" href="loja-autor-obras.php"><?= $ehAutor ? 'Vender / Minhas obras' : 'Quero vender obras' ?></a>
+                <a class="botao-adicionar-livro" href="loja-autor-obras.php"><?= folivro_pagamentos_ativos() ? ($ehAutor ? 'Vender / Minhas obras' : 'Quero vender obras') : ($ehAutor ? 'Minhas obras' : 'Publicar obras') ?></a>
             </div>
         </div>
 
@@ -74,6 +78,7 @@ $infoModo = folivro_loja_info_modo();
                 <?php endforeach; ?>
             </select>
 
+            <?php if (folivro_pagamentos_ativos()): ?>
             <select name="preco" aria-label="Filtrar por preço">
                 <option value="">Qualquer preço</option>
                 <option value="gratis" <?= $filtros['preco'] === 'gratis' ? 'selected' : '' ?>>Gratuitas (R$ 0,00)</option>
@@ -81,6 +86,7 @@ $infoModo = folivro_loja_info_modo();
                 <option value="20a50" <?= $filtros['preco'] === '20a50' ? 'selected' : '' ?>>R$ 20,01 a R$ 50,00</option>
                 <option value="acima50" <?= $filtros['preco'] === 'acima50' ? 'selected' : '' ?>>Acima de R$ 50,00</option>
             </select>
+            <?php endif; ?>
 
             <select name="autor" aria-label="Filtrar por autor">
                 <option value="0">Todos os autores</option>
@@ -93,10 +99,14 @@ $infoModo = folivro_loja_info_modo();
 
             <select name="ordenar" aria-label="Ordenar obras">
                 <option value="recentes" <?= $filtros['ordenar'] === 'recentes' ? 'selected' : '' ?>>Mais recentes</option>
+                <?php if (folivro_pagamentos_ativos()): ?>
                 <option value="vendas" <?= $filtros['ordenar'] === 'vendas' ? 'selected' : '' ?>>Mais vendidas</option>
+                <?php endif; ?>
                 <option value="avaliacao" <?= $filtros['ordenar'] === 'avaliacao' ? 'selected' : '' ?>>Melhor avaliadas</option>
+                <?php if (folivro_pagamentos_ativos()): ?>
                 <option value="preco_asc" <?= $filtros['ordenar'] === 'preco_asc' ? 'selected' : '' ?>>Menor preço</option>
                 <option value="preco_desc" <?= $filtros['ordenar'] === 'preco_desc' ? 'selected' : '' ?>>Maior preço</option>
+                <?php endif; ?>
                 <option value="titulo" <?= $filtros['ordenar'] === 'titulo' ? 'selected' : '' ?>>Título (A–Z)</option>
             </select>
 

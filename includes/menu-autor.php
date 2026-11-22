@@ -1,5 +1,7 @@
 <?php
+require_once dirname(__DIR__) . '/config/loja.php';
 $menuAtivo = $menuAtivo ?? '';
+$pagamentosAtivosMenu = folivro_pagamentos_ativos();
 ?>
 <nav class="atalhos-extra" aria-label="Loja e área do autor">
     <a class="atalho-loja<?= $menuAtivo === 'loja' ? ' ativo' : '' ?>"
@@ -42,6 +44,7 @@ $menuAtivo = $menuAtivo ?? '';
             </span>
             <span class="rotulo-menu">Obras</span>
         </a>
+        <?php if ($pagamentosAtivosMenu): ?>
         <a href="painel-vendas.php"
            class="<?= in_array($menuAtivo, ['painel-vendas', 'loja-autor'], true) ? 'ativo' : '' ?>"
            title="Painel de vendas, repasses e obras na loja"
@@ -54,5 +57,6 @@ $menuAtivo = $menuAtivo ?? '';
             </span>
             <span class="rotulo-menu">Vendas</span>
         </a>
+        <?php endif; ?>
     </div>
 </nav>

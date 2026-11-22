@@ -499,7 +499,12 @@ $stmtConversas = $pdo->prepare(
             u_outro.status_usuario AS outro_status,
             (SELECT cm2.conteudo_mensagem FROM chat_mensagens cm2
               WHERE cm2.id_conversa = c.id_conversa AND cm2.status_mensagem = \'ativa\'
-              ORDER BY cm2.id_mensagem DESC LIMIT 1) AS ultima_mensagem
+              ORDER BY cm2.id_mensagem DESC LIMIT 1) AS ultima_mensagem,
+            (SELECT COUNT(*) FROM chat_mensagens cm3
+              WHERE cm3.id_conversa = c.id_conversa
+                AND cm3.status_mensagem = \'ativa\'
+                AND cm3.id_remetente <> :uid_nl
+                AND cm3.lida_em IS NULL) AS nao_lidas
      FROM chat_conversas c
      INNER JOIN usuario u_outro
         ON u_outro.id_usuario = CASE
@@ -510,6 +515,7 @@ $stmtConversas = $pdo->prepare(
      ORDER BY c.data_ultima_mensagem DESC'
 );
 $stmtConversas->execute([
+    'uid_nl' => $idUsuario,
     'uid_case' => $idUsuario,
     'uid_a' => $idUsuario,
     'uid_b' => $idUsuario,
@@ -528,6 +534,10 @@ $mensagensConversa = [];
 $estadoBloqueioAtivo = ['bloqueado' => false, 'eu_bloqueei' => false, 'outro_bloqueou' => false];
 
 if ($conversaSelecionada) {
+    $pdo->prepare(
+        'UPDATE chat_mensagens SET lida_em = CURRENT_TIMESTAMP WHERE id_conversa = :id_c AND id_remetente <> :uid AND lida_em IS NULL'
+    )->execute(['id_c' => (int) $conversaSelecionada['id_conversa'], 'uid' => $idUsuario]);
+
     $idOutroAtivo = (int) $conversaSelecionada['outro_id'];
     $estadoBloqueioAtivo = folivro_pagina_chat_bloqueio($pdo, $idUsuario, $idOutroAtivo);
 
@@ -720,6 +730,8 @@ $statusDenunciaLabels = [
                                     <div class="item-conversa-info">
                                         <div class="item-conversa-topo">
                                             <strong><?= folivro_escape((string) $convItem['outro_nome']) ?></strong>
+                                            <?php $qtdNaoLidas = $ativa ? 0 : (int) ($convItem['nao_lidas'] ?? 0); ?>
+                                            <span class="badge-conversa-nao-lidas" data-conversa-badge="<?= $idC ?>" <?= $qtdNaoLidas > 0 ? '' : 'hidden' ?>><?= $qtdNaoLidas > 99 ? '99+' : $qtdNaoLidas ?></span>
                                             <small><?= folivro_escape(date('d/m H:i', strtotime((string) $convItem['data_ultima_mensagem']))) ?></small>
                                         </div>
                                         <p class="item-conversa-previa">

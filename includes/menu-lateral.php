@@ -56,10 +56,11 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'chat' ? ' ativo' : '' ?>"
            title="Chat literário seguro"
            <?= $menuAtivo === 'chat' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu" aria-hidden="true">
+            <span class="icone-menu icone-menu-chat" aria-hidden="true">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                 </svg>
+                <span class="badge-chat-notificacao" id="badge-chat-notificacao" hidden aria-label="Mensagens não lidas">0</span>
             </span>
             <span class="rotulo-menu">Chat</span>
         </a>
@@ -74,4 +75,49 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
     </nav>
 
 </aside>
+<script>
+(() => {
+    const badgeGlobal = document.getElementById('badge-chat-notificacao');
+    if (!badgeGlobal) return;
+
+    async function atualizarNotificacoesChat() {
+        if (document.hidden) return;
+        try {
+            const resp = await fetch('api/chat.php?acao=nao_lidas', { credentials: 'same-origin' });
+            if (!resp.ok) return;
+            const dados = await resp.json();
+            if (!dados || !dados.ok) return;
+
+            const total = Number(dados.total || 0);
+            if (total > 0) {
+                badgeGlobal.textContent = total > 99 ? '99+' : String(total);
+                badgeGlobal.hidden = false;
+                badgeGlobal.setAttribute('aria-label', `${total} notificação(ões) no chat`);
+            } else {
+                badgeGlobal.hidden = true;
+            }
+
+            const porConv = dados.por_conversa || {};
+            document.querySelectorAll('[data-conversa-badge]').forEach((el) => {
+                const idC = el.getAttribute('data-conversa-badge');
+                const link = el.closest('.item-conversa-link');
+                const ehAtiva = link && link.classList.contains('ativa');
+                const qtd = ehAtiva ? 0 : Number(porConv[idC] || 0);
+                if (qtd > 0) {
+                    el.textContent = qtd > 99 ? '99+' : String(qtd);
+                    el.hidden = false;
+                } else {
+                    el.hidden = true;
+                }
+            });
+        } catch (_) {}
+    }
+
+    atualizarNotificacoesChat();
+    setInterval(atualizarNotificacoesChat, 8000);
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) atualizarNotificacoesChat();
+    });
+})();
+</script>
 <?php require __DIR__ . '/configuracoes-modal.php'; ?>

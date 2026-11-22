@@ -168,6 +168,47 @@ function folivro_chat_formatar_mensagem(array $msg, int $idUsuario): array
 }
 
 try {
+    if ($acao === 'nao_lidas') {
+        $stMsgs = $pdo->prepare(
+            "SELECT m.id_conversa, COUNT(*) AS qtd
+               FROM chat_mensagens m
+               INNER JOIN chat_conversas c ON c.id_conversa = m.id_conversa
+              WHERE (c.id_usuario_menor = :u1 OR c.id_usuario_maior = :u2)
+                AND COALESCE(c.status_conversa, 'aceita') = 'aceita'
+                AND m.status_mensagem = 'ativa'
+                AND m.id_remetente <> :u3
+                AND m.lida_em IS NULL
+              GROUP BY m.id_conversa"
+        );
+        $stMsgs->execute(['u1' => $idUsuario, 'u2' => $idUsuario, 'u3' => $idUsuario]);
+        $porConversa = [];
+        $naoLidas = 0;
+        foreach ($stMsgs->fetchAll() as $r) {
+            $q = (int) $r['qtd'];
+            $porConversa[(int) $r['id_conversa']] = $q;
+            $naoLidas += $q;
+        }
+
+        $stSol = $pdo->prepare(
+            "SELECT COUNT(*)
+               FROM chat_conversas
+              WHERE (id_usuario_menor = :u1 OR id_usuario_maior = :u2)
+                AND status_conversa = 'pendente'
+                AND id_solicitante <> :u3"
+        );
+        $stSol->execute(['u1' => $idUsuario, 'u2' => $idUsuario, 'u3' => $idUsuario]);
+        $solicitacoes = (int) $stSol->fetchColumn();
+
+        echo json_encode([
+            'ok' => true,
+            'nao_lidas' => $naoLidas,
+            'solicitacoes' => $solicitacoes,
+            'total' => $naoLidas + $solicitacoes,
+            'por_conversa' => $porConversa,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     if ($acao === 'listar_conversas') {
         $stmt = $pdo->prepare(
             'SELECT c.id_conversa, c.id_usuario_menor, c.id_usuario_maior, c.data_ultima_mensagem,
@@ -273,6 +314,10 @@ try {
         foreach ($stmtMsg->fetchAll() as $m) {
             $mensagensFormatadas[] = folivro_chat_formatar_mensagem($m, $idUsuario);
         }
+
+        $pdo->prepare(
+            'UPDATE chat_mensagens SET lida_em = CURRENT_TIMESTAMP WHERE id_conversa = :id_c AND id_remetente <> :uid AND lida_em IS NULL'
+        )->execute(['id_c' => $idConversa, 'uid' => $idUsuario]);
 
         $bloq = folivro_chat_estado_bloqueio($pdo, $idUsuario, $idOutro);
 

@@ -511,13 +511,13 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                         <input type="hidden" name="acao" value="alterar_senha">
                         <label for="senha_atual">Senha atual
-                            <input id="senha_atual" type="password" name="senha_atual" autocomplete="current-password" required>
+                            <input id="senha_atual" type="password" name="senha_atual" maxlength="255" autocomplete="current-password" required>
                         </label>
                         <label for="nova_senha">Nova senha (mínimo 8 caracteres)
-                            <input id="nova_senha" type="password" name="nova_senha" autocomplete="new-password" minlength="8" required>
+                            <input id="nova_senha" type="password" name="nova_senha" maxlength="255" autocomplete="new-password" minlength="8" required>
                         </label>
                         <label for="confirmacao_nova_senha">Confirmar nova senha
-                            <input id="confirmacao_nova_senha" type="password" name="confirmacao_nova_senha" autocomplete="new-password" minlength="8" required>
+                            <input id="confirmacao_nova_senha" type="password" name="confirmacao_nova_senha" maxlength="255" autocomplete="new-password" minlength="8" required>
                         </label>
                         <button class="botao-adicionar-livro" type="submit">Salvar nova senha</button>
                     </form>
@@ -529,7 +529,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                         <p>Seus dados pessoais serão anonimizados, a biblioteca e o progresso serão apagados e suas obras sairão da loja. Esta ação não pode ser desfeita.</p>
                         <label for="senha_confirmacao">Confirme sua senha
-                            <input id="senha_confirmacao" type="password" name="senha_confirmacao" autocomplete="current-password" required>
+                            <input id="senha_confirmacao" type="password" name="senha_confirmacao" maxlength="255" autocomplete="current-password" required>
                         </label>
                         <label><input type="checkbox" name="confirmo_exclusao" value="1" required> Entendo que a exclusão é definitiva.</label>
                         <button class="botao-adicionar-livro botao-perigo" type="submit">Excluir conta</button>

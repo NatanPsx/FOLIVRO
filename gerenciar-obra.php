@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/loja.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -52,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // RF11 / RF16 / RNF07 — Atualizar título, sinopse, preço, origem, licença, aviso de conteúdo e capa da obra.
                 $novoTitulo     = trim((string) ($_POST['titulo_obra'] ?? ''));
                 $novaSinopse    = trim((string) ($_POST['sinopse_obra'] ?? ''));
-                $novaModalidade = ($_POST['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita' ? 'gratuita' : 'venda_simulada';
+                $novaModalidade = (!folivro_pagamentos_ativos() || ($_POST['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita') ? 'gratuita' : 'venda_simulada';
                 $novoPreco      = $novaModalidade === 'gratuita' ? 0.00 : filter_var($_POST['preco_obra'] ?? null, FILTER_VALIDATE_FLOAT);
                 $novaOrigem     = (string) ($_POST['origem_obra_historias'] ?? ($work['origem_obra_historias'] ?? 'autoral_original'));
                 $novaLicenca    = (string) ($_POST['licenca_historias'] ?? 'direitos_reservados');
@@ -71,10 +72,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $novoAviso = 'livre';
                 }
 
-                if ($novoTitulo === '' || mb_strlen($novoTitulo, 'UTF-8') > 200
+                if ($novoTitulo === '' || mb_strlen($novoTitulo, 'UTF-8') > 120
                     || mb_strlen($novaSinopse, 'UTF-8') > 5000
                     || !is_float($novoPreco) || $novoPreco < 0 || $novoPreco > 99999999) {
-                    throw new RuntimeException('Informe título válido (até 200 caracteres), sinopse (até 5.000 caracteres) e preço não negativo.');
+                    throw new RuntimeException('Informe título válido (até 120 caracteres), sinopse (até 5.000 caracteres) e preço não negativo.');
                 }
                 if ($novosGeneros === '') {
                     throw new RuntimeException('Selecione pelo menos um gênero literário para a obra (ou informe um gênero personalizado).');
@@ -179,8 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($action === 'capitulo') {
                 $title = trim((string) ($_POST['titulo'] ?? ''));
                 $body  = trim((string) ($_POST['conteudo'] ?? ''));
-                if ($title === '' || $body === '' || mb_strlen($title, 'UTF-8') > 200 || strlen($body) > 500000) {
-                    throw new RuntimeException('Preencha o título (até 200 caracteres) e o conteúdo do capítulo.');
+                if ($title === '' || $body === '' || mb_strlen($title, 'UTF-8') > 120 || strlen($body) > 500000) {
+                    throw new RuntimeException('Preencha o título (até 120 caracteres) e o conteúdo do capítulo.');
                 }
                 $avalSeg = folivro_avaliar_seguranca_capitulo(
                     $pdo,
@@ -255,7 +256,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $idCap = filter_input(INPUT_POST, 'id_capitulos', FILTER_VALIDATE_INT) ?: 0;
                 $title = trim((string) ($_POST['titulo'] ?? ''));
                 $body  = trim((string) ($_POST['conteudo'] ?? ''));
-                if ($idCap < 1 || $title === '' || $body === '' || mb_strlen($title, 'UTF-8') > 200 || strlen($body) > 500000) {
+                if ($idCap < 1 || $title === '' || $body === '' || mb_strlen($title, 'UTF-8') > 120 || strlen($body) > 500000) {
                     throw new RuntimeException('Informe título e conteúdo válidos para o capítulo.');
                 }
                 $avalSeg = folivro_avaliar_seguranca_capitulo(
@@ -625,8 +626,8 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <form method="post" enctype="multipart/form-data" class="progresso-form form-largura-total">
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="editar_obra">
-                    <label for="titulo_obra">Título da obra
-                        <input id="titulo_obra" name="titulo_obra" maxlength="200" required value="<?= folivro_escape($work['titulo_autor_dos_livros']) ?>">
+                    <label for="titulo_obra">Título da obra (máx. 120 caracteres)
+                        <input id="titulo_obra" name="titulo_obra" maxlength="120" required value="<?= folivro_escape($work['titulo_autor_dos_livros']) ?>">
                     </label>
                     <label for="sinopse_obra">Sinopse
                         <textarea id="sinopse_obra" name="sinopse_obra" maxlength="5000" rows="3"><?= folivro_escape((string) ($work['sinopse_historias'] ?? '')) ?></textarea>
@@ -695,17 +696,25 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 <?php endforeach; ?>
                             </select>
                         </label>
+                        <?php if (folivro_pagamentos_ativos()): ?>
                         <label for="modalidade_distribuicao">Modalidade de disponibilização
                             <select id="modalidade_distribuicao" name="modalidade_distribuicao">
                                 <option value="venda_simulada" <?= ($work['modalidade_distribuicao'] ?? 'venda_simulada') === 'venda_simulada' ? 'selected' : '' ?>>Comercialização na loja (venda simulada)</option>
                                 <option value="gratuita" <?= ($work['modalidade_distribuicao'] ?? '') === 'gratuita' ? 'selected' : '' ?>>Publicação gratuita (R$ 0,00)</option>
                             </select>
                         </label>
+                        <?php else: ?>
+                            <input type="hidden" name="modalidade_distribuicao" value="gratuita">
+                        <?php endif; ?>
                     </div>
                     <div class="grade-campos-dupla">
+                        <?php if (folivro_pagamentos_ativos()): ?>
                         <label for="preco_obra">Preço em reais (simulação acadêmica)
                             <input id="preco_obra" type="number" name="preco_obra" min="0" max="99999999" step="0.01" required value="<?= number_format((float) $work['preco_dos_livros_autor'], 2, '.', '') ?>">
                         </label>
+                        <?php else: ?>
+                            <input type="hidden" name="preco_obra" value="0.00">
+                        <?php endif; ?>
                         <label for="capa_historias">Substituir imagem de capa original (JPG, PNG ou WebP até 2 MB)
                             <input id="capa_historias" type="file" name="capa_historias" accept="image/jpeg,image/png,image/webp">
                         </label>
@@ -843,7 +852,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
                                         <header class="estudio-manuscrito-topo">
                                             <span class="etiqueta-manuscrito-topo">Editando Capítulo <?= $ordemCap ?></span>
-                                            <input name="titulo" class="input-capitulo-manuscrito" maxlength="200" required value="<?= folivro_escape($c['titulo_capitulos']) ?>" placeholder="Título do capítulo..." aria-label="Título do capítulo">
+                                            <input name="titulo" class="input-capitulo-manuscrito" maxlength="120" required value="<?= folivro_escape($c['titulo_capitulos']) ?>" placeholder="Título do capítulo (máx. 120 caracteres)..." aria-label="Título do capítulo">
                                         </header>
 
                                         <div class="estudio-canvas-wrapper">
@@ -900,7 +909,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 <span class="selo-status-rascunho">● Estúdio de escrita formatada</span>
                             </div>
                             <h2 id="titulo-novo-capitulo" class="titulo-estudio-continuacao">Adicionar novo capítulo</h2>
-                            <input id="cap-titulo" name="titulo" class="input-capitulo-manuscrito" maxlength="200" required placeholder="Capítulo <?= $proximoNumeroCap ?>: Digite o título do novo capítulo..." autocomplete="off">
+                            <input id="cap-titulo" name="titulo" class="input-capitulo-manuscrito" maxlength="120" required placeholder="Capítulo <?= $proximoNumeroCap ?>: Digite o título do novo capítulo (máx. 120 caracteres)..." autocomplete="off">
                         </header>
 
                         <div class="estudio-canvas-wrapper">

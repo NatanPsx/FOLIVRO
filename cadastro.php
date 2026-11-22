@@ -136,16 +136,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="campo">
                     <span aria-hidden="true"><img src="img/icones/lock.png" alt="" class="icone-input-png"></span>
-                    <label class="sr-only" for="senha">Senha (mínimo 8 caracteres)</label>
+                    <label class="sr-only" for="senha">Senha (8 a 255 caracteres)</label>
                     <input id="senha" name="senha" type="password" placeholder="Senha (mín. 8 caracteres)"
-                           autocomplete="new-password" minlength="8" required>
+                           autocomplete="new-password" minlength="8" maxlength="255" required>
                 </div>
 
                 <div class="campo">
                     <span aria-hidden="true"><img src="img/icones/lock.png" alt="" class="icone-input-png"></span>
                     <label class="sr-only" for="confirmacao">Confirmar senha</label>
                     <input id="confirmacao" name="confirmacao" type="password" placeholder="Confirmar senha"
-                           autocomplete="new-password" minlength="8" required>
+                           autocomplete="new-password" minlength="8" maxlength="255" required>
                 </div>
 
                 <label class="aceite-termos">

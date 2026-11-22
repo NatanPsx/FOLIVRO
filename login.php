@@ -66,11 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Entrar</button>
             </div>
         </form>
-        <p class="credenciais-teste">
-            Ambiente acadêmico — Contas de demonstração:<br>
-            <span>Admin: <strong>admin@folivro.local</strong> · Senha: <strong>Admin123!</strong></span><br>
-            <span>Usuário comum: <strong>leitor@folivro.local</strong> · Senha: <strong>Leitor123!</strong></span>
-        </p>
         <p class="links-rodape-login"><a href="termos.php">Termos de Uso, Direitos Autorais e Privacidade (LGPD)</a></p>
     </main>
 </body>

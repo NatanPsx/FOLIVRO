@@ -239,82 +239,6 @@ a:focus-visible,
     }
 }
 
-@media (prefers-color-scheme: dark) {
-    body {
-        background: radial-gradient(circle at top, #241c19 0%, #151110 100%);
-        color: #f5efe9;
-    }
-
-    .container {
-        background: #231c19;
-        border-color: #433834;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
-    }
-
-    .logo {
-        background: #231c19;
-    }
-
-    h1 {
-        color: #f0a399;
-    }
-
-    p {
-        color: #d5c7be;
-    }
-
-    .campo input {
-        background: #2d2420;
-        border-color: #55443d;
-        color: #f5efe9;
-    }
-
-    .campo input:focus {
-        background: #362c27;
-        border-color: #e7ae5c;
-    }
-
-    .voltar {
-        background: #2d2420;
-        border-color: #55443d;
-        color: #f5efe9;
-    }
-
-    .voltar:hover {
-        background: #3b2f2a;
-    }
-
-    .aceite-termos {
-        color: #d5c7be;
-    }
-
-    .aceite-termos a {
-        color: #f0a399;
-    }
-
-    .rotulo-data-nascimento {
-        color: #e5d6cb;
-    }
-
-    .dica-idade-cadastro {
-        background: #2d2420;
-        border-color: #55443d;
-        color: #d5c7be;
-    }
-
-    .dica-idade-cadastro.dica-idade-menor {
-        background: rgba(184, 98, 27, 0.22);
-        border-color: #d48236;
-        color: #ffd5ab;
-    }
-
-    .dica-idade-cadastro.dica-idade-maior {
-        background: rgba(47, 82, 34, 0.28);
-        border-color: #6ca659;
-        color: #c2f0b1;
-    }
-}
-
 .bloco-data-nascimento {
     margin-bottom: 14px;
     text-align: left;
@@ -362,4 +286,88 @@ a:focus-visible,
     border-color: #c96157;
     color: #6e160e;
     font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background: radial-gradient(circle at top, #241c19 0%, #151110 100%);
+        color: #f5efe9;
+    }
+
+    .container {
+        background: #231c19;
+        border-color: #433834;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .logo {
+        background: #231c19;
+    }
+
+    h1 {
+        color: #f0a399;
+    }
+
+    p {
+        color: #d5c7be;
+    }
+
+    .campo input {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #f5efe9;
+    }
+
+    .campo input:focus {
+        background: #362c27;
+        border-color: #e7ae5c;
+    }
+
+    .voltar {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #f5efe9;
+    }
+
+    .voltar:hover {
+        background: #3b2f2a;
+    }
+
+    .aceite-termos {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #e5d6cb;
+    }
+
+    .aceite-termos a {
+        color: #f0a399;
+    }
+
+    .rotulo-data-nascimento {
+        color: #e5d6cb;
+    }
+
+    .dica-idade-cadastro {
+        background: #2d2420;
+        border-color: #55443d;
+        color: #d5c7be;
+    }
+
+    .dica-idade-cadastro.dica-idade-menor {
+        background: rgba(184, 98, 27, 0.22);
+        border-color: #d48236;
+        color: #ffd5ab;
+    }
+
+    .dica-idade-cadastro.dica-idade-maior {
+        background: rgba(47, 82, 34, 0.28);
+        border-color: #6ca659;
+        color: #c2f0b1;
+    }
+
+    .dica-idade-cadastro.dica-idade-alerta {
+        background: rgba(155, 44, 34, 0.28);
+        border-color: #c96157;
+        color: #f7b7b0;
+    }
 }

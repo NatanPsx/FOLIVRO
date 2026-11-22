@@ -1242,6 +1242,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                 <div class="secao-config-bloco">
                     <h4>Controles da Plataforma (Loja &amp; Publicação)</h4>
                     <div class="lista-controles-admin">
+                        <?php if (defined('FOLIVRO_PAGAMENTOS_ATIVOS') && FOLIVRO_PAGAMENTOS_ATIVOS): ?>
                         <div class="controle-admin-card">
                             <div class="controle-admin-info">
                                 <strong>Pagamento Simulado (Loja)</strong>
@@ -1258,6 +1259,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                                 <?= $cfgPagamentoSimuladoAtivo ? 'Ativado (Desativar)' : 'Desativado (Ativar)' ?>
                             </button>
                         </div>
+                        <?php endif; ?>
 
                         <div class="controle-admin-card">
                             <div class="controle-admin-info">

@@ -45,8 +45,8 @@ function folivro_database(): PDO
     }
 
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes')")->fetchColumn();
-        if ($appliedCount === 17) {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes')")->fetchColumn();
+        if ($appliedCount === 18) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -678,6 +678,17 @@ function folivro_database(): PDO
                 $pdo->exec("ALTER TABLE chat_conversas ADD COLUMN id_solicitante INT UNSIGNED NULL DEFAULT NULL AFTER status_conversa");
             }
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('017_chat_solicitacoes')");
+        }
+
+        // Migração 018: Controle de leitura para notificações de mensagens no chat.
+        $mig18 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '018_chat_notificacoes' LIMIT 1")->fetchColumn();
+        if (!$mig18) {
+            $colsMsg = $pdo->query('SHOW COLUMNS FROM chat_mensagens')->fetchAll(PDO::FETCH_COLUMN, 0);
+            if (!in_array('lida_em', $colsMsg, true)) {
+                $pdo->exec("ALTER TABLE chat_mensagens ADD COLUMN lida_em DATETIME NULL DEFAULT NULL AFTER data_envio_mensagem");
+                $pdo->exec("UPDATE chat_mensagens SET lida_em = data_envio_mensagem WHERE lida_em IS NULL");
+            }
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('018_chat_notificacoes')");
         }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.

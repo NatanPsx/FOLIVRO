@@ -162,7 +162,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <?php endif; ?>
 
                     <div class="loja-preco-destaque">
-                        <?= (int) $produto['preco_centavos'] === 0 ? 'Gratuito (R$ 0,00)' : folivro_escape(folivro_loja_formatar((int) $produto['preco_centavos'])) ?>
+                        <?= (int) $produto['preco_centavos'] === 0 || !folivro_pagamentos_ativos() ? 'Gratuito' : folivro_escape(folivro_loja_formatar((int) $produto['preco_centavos'])) ?>
                     </div>
 
                     <p><?= nl2br(folivro_escape((string) ($produto['descricao_produto'] ?? 'Sem descrição informada.'))) ?></p>
@@ -193,14 +193,16 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 <?php endif; ?>
                                 <a class="filtro-pilula" href="minha-biblioteca.php">Abrir na minha biblioteca</a>
                             <?php endif; ?>
-                            <a class="filtro-pilula" href="minhas-compras.php">Ver recibo</a>
+                            <?php if (folivro_pagamentos_ativos()): ?>
+                                <a class="filtro-pilula" href="minhas-compras.php">Ver recibo</a>
+                            <?php endif; ?>
                         <?php elseif ((int) $produto['preco_centavos'] === 0): ?>
                             <form method="post">
                                 <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                                 <input type="hidden" name="acao" value="obter_gratis">
                                 <button type="submit" class="botao-adicionar-livro">Obter gratuitamente e adicionar à biblioteca</button>
                             </form>
-                        <?php else: ?>
+                        <?php elseif (folivro_pagamentos_ativos()): ?>
                             <a class="botao-adicionar-livro" href="loja-checkout.php?id=<?= $id ?>">Comprar agora</a>
                         <?php endif; ?>
                         <?php if ($idLivroLink > 0): ?>

@@ -4,6 +4,10 @@ require_once __DIR__ . '/config/loja.php';
 
 $pdo = folivro_database();
 folivro_require_login();
+if (!folivro_pagamentos_ativos()) {
+    header('Location: minha-biblioteca.php');
+    exit;
+}
 $uid = (int) $_SESSION['id_usuario'];
 
 $st = $pdo->prepare(

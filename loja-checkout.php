@@ -7,6 +7,10 @@ folivro_require_login();
 $uid = (int) $_SESSION['id_usuario'];
 
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
+if (!folivro_pagamentos_ativos()) {
+    header('Location: ' . ($id > 0 ? 'loja-obra.php?id=' . $id : 'loja.php'));
+    exit;
+}
 $produto = $id > 0 ? folivro_loja_produto($pdo, $id) : null;
 $erroBloqueio = folivro_loja_validar_compra($pdo, $uid, $produto);
 

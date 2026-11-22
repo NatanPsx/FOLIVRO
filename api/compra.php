@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/loja.php';
 
 folivro_database();
 folivro_require_login();
@@ -11,6 +12,10 @@ function compra_resposta(int $status, array $body): void
 {
     http_response_code($status);
     exit(json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
+
+if (!folivro_pagamentos_ativos()) {
+    compra_resposta(403, ['error' => 'Pagamentos indisponíveis no momento.']);
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

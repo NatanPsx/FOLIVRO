@@ -4,6 +4,10 @@ require_once __DIR__ . '/config/loja.php';
 
 $pdo = folivro_database();
 folivro_require_login();
+if (!folivro_pagamentos_ativos()) {
+    header('Location: biblioteca-autor.php');
+    exit;
+}
 $uid = (int) $_SESSION['id_usuario'];
 $ehAutor = folivro_loja_eh_autor($pdo, $uid);
 

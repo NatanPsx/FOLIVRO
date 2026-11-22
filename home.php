@@ -40,13 +40,22 @@ $stKpi = $pdo->prepare(
       LEFT JOIN autor_dos_livros a2 ON a2.id_autor_dos_livros = lp2.id_autor_dos_livros
       LEFT JOIN historias h2 ON h2.id_historias = a2.id_historias
           WHERE lp2.status_produto = 'publicado' AND u2.status_usuario = 'ativo'
+            " . (folivro_pagamentos_ativos() ? '' : 'AND lp2.preco_centavos = 0') . "
             AND (lp2.id_autor_dos_livros IS NULL OR (a2.status_autor_dos_livros = 'a_venda' AND a2.revisao_publicacao = 'aprovada' AND h2.status_historias = 'publicada'))
             AND (lp2.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d2 WHERE d2.tipo_denuncias = 'obra_autoral' AND d2.item_denuncia = lp2.id_autor_dos_livros AND d2.status_denuncias IN ('aberta', 'em_analise') AND d2.suspensao_preventiva = 1))
         ) AS total_loja,
-        (SELECT COUNT(*) FROM chat_conversas WHERE (id_usuario_menor = ? OR id_usuario_maior = ?) AND status_conversa = 'pendente' AND id_solicitante <> ?) AS solicitacoes_chat"
+        (SELECT COUNT(*) FROM chat_conversas WHERE (id_usuario_menor = ? OR id_usuario_maior = ?) AND status_conversa = 'pendente' AND id_solicitante <> ?) AS solicitacoes_chat,
+        (SELECT COUNT(*)
+           FROM chat_mensagens cm
+           JOIN chat_conversas cc ON cc.id_conversa = cm.id_conversa
+          WHERE (cc.id_usuario_menor = ? OR cc.id_usuario_maior = ?)
+            AND COALESCE(cc.status_conversa, 'aceita') = 'aceita'
+            AND cm.status_mensagem = 'ativa'
+            AND cm.id_remetente <> ?
+            AND cm.lida_em IS NULL) AS mensagens_nao_lidas"
 );
-$stKpi->execute([$uid, $uid, $uid, $uid, $uid, $uid, $uid]);
-$kpisHome = $stKpi->fetch(PDO::FETCH_ASSOC) ?: ['total_estante' => 0, 'livros_lidos' => 0, 'paginas_lidas' => 0, 'total_loja' => 0, 'solicitacoes_chat' => 0];
+$stKpi->execute([$uid, $uid, $uid, $uid, $uid, $uid, $uid, $uid, $uid, $uid]);
+$kpisHome = $stKpi->fetch(PDO::FETCH_ASSOC) ?: ['total_estante' => 0, 'livros_lidos' => 0, 'paginas_lidas' => 0, 'total_loja' => 0, 'solicitacoes_chat' => 0, 'mensagens_nao_lidas' => 0];
 
 // Meta anual vigente
 $metaRow = $pdo->prepare("SELECT tipo_metas, quantidade_metas FROM metas_leitura WHERE id_usuario = ? AND status_metas IN ('em_andamento','concluida') ORDER BY id_metas_leitura DESC LIMIT 1");
@@ -155,10 +164,11 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
                 <strong><?= (int) $kpisHome['total_loja'] ?></strong>
                 <small>Obras disponíveis</small>
             </a>
+            <?php $totalNotifChat = (int) ($kpisHome['solicitacoes_chat'] ?? 0) + (int) ($kpisHome['mensagens_nao_lidas'] ?? 0); ?>
             <a href="chat.php" class="home-kpi-atalho">
                 <span>Chat literário</span>
-                <strong><?= (int) $kpisHome['solicitacoes_chat'] > 0 ? (int) $kpisHome['solicitacoes_chat'] . ' nova(s)' : 'Ativo' ?></strong>
-                <small><?= (int) $kpisHome['solicitacoes_chat'] > 0 ? 'Solicitação pendente' : 'Conversas e leitores' ?></small>
+                <strong><?= $totalNotifChat > 0 ? $totalNotifChat . ' nova(s)' : 'Ativo' ?></strong>
+                <small><?= (int) ($kpisHome['mensagens_nao_lidas'] ?? 0) > 0 ? (int) $kpisHome['mensagens_nao_lidas'] . ' mensagem(ns) não lida(s)' : ((int) ($kpisHome['solicitacoes_chat'] ?? 0) > 0 ? 'Solicitação pendente' : 'Conversas e leitores') ?></small>
             </a>
         </section>
 

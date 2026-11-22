@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/loja.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -17,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $synopsis         = trim((string) ($_POST['sinopse'] ?? ''));
         $chapter          = trim((string) ($_POST['capitulo'] ?? ''));
         $chapterTitle     = trim((string) ($_POST['titulo_capitulo'] ?? ''));
-        $modalidade       = ($_POST['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita' ? 'gratuita' : 'venda_simulada';
+        $modalidade       = (!folivro_pagamentos_ativos() || ($_POST['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita') ? 'gratuita' : 'venda_simulada';
         $price            = $modalidade === 'gratuita' ? 0.00 : filter_var($_POST['preco'] ?? null, FILTER_VALIDATE_FLOAT);
         $origemObra       = (string) ($_POST['origem_obra'] ?? 'autoral_original');
         $licenca          = (string) ($_POST['licenca_historias'] ?? 'direitos_reservados');
@@ -44,10 +45,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($title === '' || $chapter === '' || $chapterTitle === ''
-            || mb_strlen($title, 'UTF-8') > 200 || mb_strlen($chapterTitle, 'UTF-8') > 200
+            || mb_strlen($title, 'UTF-8') > 120 || mb_strlen($chapterTitle, 'UTF-8') > 120
             || mb_strlen($synopsis, 'UTF-8') > 5000 || strlen($chapter) > 500000
             || !is_float($price) || $price < 0 || $price > 99999999) {
-            $erro = 'Preencha título, primeiro capítulo e preço válido.';
+            $erro = 'Preencha título (até 120 caracteres), nome do capítulo (até 120 caracteres), texto e preço válido.';
         } elseif ($generosString === '') {
             $erro = 'Selecione pelo menos um gênero literário para a sua obra (ou informe um gênero personalizado).';
         } elseif ($publish && !$declareAutoria) {
@@ -291,8 +292,8 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                 <!-- ÁREA PRINCIPAL: O MANUSCRITO RELAXANTE -->
                 <section class="estudio-manuscrito" aria-label="Área de escrita do manuscrito">
                     <header class="estudio-manuscrito-topo">
-                        <input id="titulo" name="titulo" class="input-titulo-manuscrito" maxlength="200" required placeholder="Título do seu livro..." value="<?= $old('titulo') ?>" aria-label="Título da obra" autocomplete="off">
-                        <input id="titulo_capitulo" name="titulo_capitulo" class="input-capitulo-manuscrito" maxlength="200" required placeholder="Capítulo 1: Título do primeiro capítulo..." value="<?= $old('titulo_capitulo') ?>" aria-label="Título do primeiro capítulo" autocomplete="off">
+                        <input id="titulo" name="titulo" class="input-titulo-manuscrito" maxlength="120" required placeholder="Título do seu livro (máx. 120 caracteres)..." value="<?= $old('titulo') ?>" aria-label="Título da obra" autocomplete="off">
+                        <input id="titulo_capitulo" name="titulo_capitulo" class="input-capitulo-manuscrito" maxlength="120" required placeholder="Capítulo 1: Título do primeiro capítulo (máx. 120 caracteres)..." value="<?= $old('titulo_capitulo') ?>" aria-label="Título do primeiro capítulo" autocomplete="off">
                     </header>
 
                     <div class="estudio-canvas-wrapper">
@@ -479,6 +480,7 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                             </select>
                         </label>
 
+                        <?php if (folivro_pagamentos_ativos()): ?>
                         <label for="modalidade_distribuicao">Modelo na loja
                             <select id="modalidade_distribuicao" name="modalidade_distribuicao">
                                 <option value="venda_simulada">Venda na loja (e-book)</option>
@@ -490,16 +492,22 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                             <input id="preco" type="number" name="preco" min="0" max="99999999" step="0.01" value="<?= $old('preco') ?: '0.00' ?>" required>
                             <small id="resumo-liquido-autor" style="color:var(--texto-apoio); font-size:12px;"></small>
                         </label>
+                        <?php else: ?>
+                            <input type="hidden" name="modalidade_distribuicao" value="gratuita">
+                            <input type="hidden" name="preco" value="0.00">
+                        <?php endif; ?>
 
                         <div class="estudio-termos">
                             <label class="termo-check">
                                 <input type="checkbox" name="declaracao_autoria" value="1">
                                 <span>Declaro ser titular dos direitos autorais da obra e da capa (Lei 9.610/98).</span>
                             </label>
+                            <?php if (folivro_pagamentos_ativos()): ?>
                             <label class="termo-check" id="bloco-declaracao-comercial">
                                 <input type="checkbox" name="declaracao_comercializacao" id="declaracao_comercializacao" value="1">
                                 <span>Autorizo a comercialização desta obra na loja.</span>
                             </label>
+                            <?php endif; ?>
                             <label class="termo-check termo-publicar">
                                 <input type="checkbox" name="publicar" id="checkbox-publicar-estudio" value="1">
                                 <span><strong>Publicar na loja ao salvar</strong> (desmarcado salva como rascunho)</span>

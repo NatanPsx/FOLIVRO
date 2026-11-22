@@ -34,7 +34,7 @@ folivro_require_login();
                 <div class="icone-busca-decorativa" aria-hidden="true">
                     <img src="img/icones/search.png" alt="" class="icone-decorativo-png">
                 </div>
-                <input type="search" name="busca" id="campo-busca-livros" autocomplete="off" spellcheck="false" placeholder="Pesquisar livro ou autor..." aria-label="Pesquisar livro ou autor">
+                <input type="search" name="busca" id="campo-busca-livros" maxlength="100" autocomplete="off" spellcheck="false" placeholder="Pesquisar livro ou autor..." aria-label="Pesquisar livro ou autor">
                 <button type="button" class="btn-limpar-pesquisa" id="btn-limpar-pesquisa" aria-label="Limpar pesquisa" title="Limpar busca" style="display: none;">
                     <img src="img/icones/close.png" alt="" class="icone-btn-png">
                 </button>

@@ -275,6 +275,10 @@ button:hover {
         color: #d5c7be;
     }
 
+    .botoes a {
+        color: #f0a399;
+    }
+
     .links-rodape-login {
         color: #b5a499;
     }

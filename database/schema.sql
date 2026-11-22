@@ -418,6 +418,7 @@ CREATE TABLE IF NOT EXISTS chat_mensagens (
   status_mensagem        ENUM('ativa','apagada_pelo_autor','oculta_preventivamente','removida_moderacao') NOT NULL DEFAULT 'ativa',
   motivo_ocultacao       VARCHAR(255) NULL,
   data_envio_mensagem    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lida_em                DATETIME NULL DEFAULT NULL,
   PRIMARY KEY (id_mensagem),
   KEY idx_chat_msg_conversa (id_conversa, data_envio_mensagem),
   KEY idx_chat_msg_remetente_data (id_remetente, data_envio_mensagem),

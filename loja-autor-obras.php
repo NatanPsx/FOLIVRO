@@ -33,7 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erro = 'Ative seu perfil de autor antes de gerenciar obras na loja.';
         } elseif ($acao === 'salvar_produto') {
             $idProdPost = filter_input(INPUT_POST, 'id_produto', FILTER_VALIDATE_INT) ?: null;
-            $res = folivro_loja_salvar_produto($pdo, $uid, $idProdPost, $_POST, $_FILES, true);
+            $dadosProdutoPost = $_POST;
+            if (!folivro_pagamentos_ativos()) {
+                $dadosProdutoPost['preco'] = '0,00';
+            }
+            $res = folivro_loja_salvar_produto($pdo, $uid, $idProdPost, $dadosProdutoPost, $_FILES, true);
             if ($res['ok']) {
                 $idSalvo = (int) $res['id'];
                 $sucesso = $idProdPost ? 'Obra atualizada com sucesso.' : 'Obra cadastrada como rascunho. Revise os dados e clique em "Publicar" quando estiver pronta.';
@@ -154,13 +158,17 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
 
                     <div class="grade-campos-dupla">
                         <label for="titulo_produto">Título da obra *
-                            <input id="titulo_produto" name="titulo_produto" maxlength="200" required
+                            <input id="titulo_produto" name="titulo_produto" maxlength="120" required
                                    value="<?= folivro_escape((string) ($obraEdicao['titulo_produto'] ?? ($_POST['titulo_produto'] ?? ''))) ?>">
                         </label>
+                        <?php if (folivro_pagamentos_ativos()): ?>
                         <label for="preco">Preço (R$) — informe 0,00 para obra gratuita *
                             <input id="preco" name="preco" maxlength="12" required placeholder="Ex.: 19,90 ou 0,00"
                                    value="<?= folivro_escape($obraEdicao ? folivro_centavos_para_input((int) $obraEdicao['preco_centavos']) : (string) ($_POST['preco'] ?? '0,00')) ?>">
                         </label>
+                        <?php else: ?>
+                            <input type="hidden" name="preco" value="0,00">
+                        <?php endif; ?>
                     </div>
 
                     <label for="descricao_produto">Sinopse / descrição comercial

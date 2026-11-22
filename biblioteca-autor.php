@@ -77,7 +77,9 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
             <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
                 <a class="botao-adicionar-livro" href="escrever.php">+ Escrever novo livro</a>
                 <a class="filtro-pilula" href="loja-autor-obras.php">Subir PDF/EPUB na loja</a>
+                <?php if (folivro_pagamentos_ativos()): ?>
                 <a class="filtro-pilula" href="painel-vendas.php">Painel de vendas</a>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -99,6 +101,7 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
                 <span>Visualizações totais</span>
                 <strong><?= $visualizacoesTotais ?></strong>
             </article>
+            <?php if (folivro_pagamentos_ativos()): ?>
             <article class="card-kpi-autor">
                 <span>Vendas concluídas</span>
                 <strong><?= $vendasTotais ?></strong>
@@ -107,6 +110,7 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
                 <span>Receita líquida (<?= (int) $pctAutor ?>%)</span>
                 <strong>R$ <?= number_format($receitaTotal, 2, ',', '.') ?></strong>
             </article>
+            <?php endif; ?>
         </section>
 
         <?php if ($works): ?>

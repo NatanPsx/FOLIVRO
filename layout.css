@@ -196,6 +196,7 @@ body {
 }
 
 .menu-lateral .item-menu .icone-menu {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,6 +207,40 @@ body {
     color: #000000;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
     transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.badge-chat-notificacao {
+    position: absolute;
+    top: -5px;
+    right: -6px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #d92d20;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 19px;
+    text-align: center;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
+.badge-conversa-nao-lidas {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #d92d20;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 
 .menu-lateral .item-menu .rotulo-menu {

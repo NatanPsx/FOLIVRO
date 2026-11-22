@@ -18,11 +18,17 @@ require_once dirname(__DIR__) . '/lib/pagamento/PaymentGatewayInterface.php';
 require_once dirname(__DIR__) . '/lib/pagamento/SimulatedGateway.php';
 require_once dirname(__DIR__) . '/lib/pagamento/MercadoPagoGateway.php';
 
+const FOLIVRO_PAGAMENTOS_ATIVOS = false;
 const FOLIVRO_LOJA_TERMO_VERSAO = 'loja-1.0';
 const FOLIVRO_LOJA_ARQUIVO_MAX_BYTES = 20 * 1024 * 1024; // 20 MB
 const FOLIVRO_LOJA_CAPA_MAX_BYTES = 2 * 1024 * 1024;     // 2 MB (mesmo limite do estúdio)
 const FOLIVRO_LOJA_PRECO_MAX_CENTAVOS = 999999;          // R$ 9.999,99
 const FOLIVRO_LOJA_REPASSE_MIN_CENTAVOS = 100;           // R$ 1,00
+
+function folivro_pagamentos_ativos(): bool
+{
+    return FOLIVRO_PAGAMENTOS_ATIVOS;
+}
 
 // ---------------------------------------------------------------------
 // Configuração e seleção do gateway
@@ -121,6 +127,9 @@ function folivro_loja_info_modo(): array
 
 function folivro_loja_selo_modo_html(): string
 {
+    if (!folivro_pagamentos_ativos()) {
+        return '';
+    }
     $info = folivro_loja_info_modo();
     return '<span class="selo-modo-pagamento selo-modo-' . folivro_escape($info['modo']) . '" title="' . folivro_escape($info['descricao']) . '">'
         . folivro_escape($info['rotulo']) . '</span>';
@@ -707,6 +716,9 @@ function folivro_loja_listar_vitrine(PDO $pdo, array $f, int $pagina = 1, int $p
         "(p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))",
         "(p.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = p.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))",
     ];
+    if (!folivro_pagamentos_ativos()) {
+        $where[] = 'p.preco_centavos = 0';
+    }
     $params = [];
     $q = trim((string) ($f['q'] ?? ''));
     if ($q !== '' && mb_strlen($q, 'UTF-8') <= 100) {
@@ -774,13 +786,14 @@ function folivro_loja_listar_vitrine(PDO $pdo, array $f, int $pagina = 1, int $p
 
 function folivro_loja_autores_vitrine(PDO $pdo): array
 {
+    $filtroPreco = folivro_pagamentos_ativos() ? '' : ' AND p.preco_centavos = 0';
     return $pdo->query(
         "SELECT DISTINCT u.id_usuario, u.nome_usuario
            FROM loja_produtos p
            JOIN usuario u ON u.id_usuario = p.id_autor
       LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
       LEFT JOIN historias h ON h.id_historias = a.id_historias
-          WHERE p.status_produto = 'publicado' AND u.status_usuario = 'ativo'
+          WHERE p.status_produto = 'publicado' AND u.status_usuario = 'ativo'{$filtroPreco}
             AND (p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
             AND (p.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = p.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))
        ORDER BY u.nome_usuario"
