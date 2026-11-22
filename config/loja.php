@@ -672,11 +672,106 @@ function folivro_loja_alterar_status_produto(PDO $pdo, int $uid, int $idProduto,
 }
 
 /**
+ * Garante que todo produto da loja possua registro vinculado em historias/autor_dos_livros/capitulos
+ * para ser lido no leitor original de capítulos do FOLIVRO (obra.php).
+ */
+function folivro_loja_garantir_obra_autoral(PDO $pdo, int $idProduto): ?int
+{
+    $p = folivro_loja_produto($pdo, $idProduto);
+    if ($p === null) {
+        return null;
+    }
+    $idAdl = (int) ($p['id_autor_dos_livros'] ?? 0);
+    if ($idAdl > 0) {
+        $stChk = $pdo->prepare('SELECT id_autor_dos_livros FROM autor_dos_livros WHERE id_autor_dos_livros = ? LIMIT 1');
+        $stChk->execute([$idAdl]);
+        if ($stChk->fetchColumn()) {
+            return $idAdl;
+        }
+    }
+
+    $idAutor = (int) $p['id_autor'];
+    $titulo = (string) $p['titulo_produto'];
+    $sinopse = (string) ($p['descricao_produto'] ?? '');
+    $capa = !empty($p['capa_produto']) ? (string) $p['capa_produto'] : null;
+    $generos = !empty($p['generos_produto']) ? (string) $p['generos_produto'] : 'Ficção, Literatura Nacional';
+    $classif = folivro_normalizar_classificacao((string) ($p['classificacao_produto'] ?? 'livre'));
+    $precoCent = (int) ($p['preco_centavos'] ?? 0);
+    $precoDecimal = round($precoCent / 100, 2);
+    $modalidade = $precoCent === 0 ? 'gratuita' : 'venda_simulada';
+    $statusAdl = ($p['status_produto'] ?? 'publicado') === 'publicado' ? 'a_venda' : 'rascunho';
+
+    $pdo->prepare(
+        "INSERT INTO historias (id_usuario, titulo_historias, sinopse_historias, capa_historias, generos_historias,
+                                licenca_historias, aviso_conteudo_historias, origem_obra_historias,
+                                hash_conteudo_historias, status_historias)
+         VALUES (?, ?, ?, ?, ?, 'direitos_reservados', ?, 'autoral_original', ?, 'publicada')"
+    )->execute([$idAutor, $titulo, $sinopse, $capa, $generos, $classif, hash('sha256', $titulo . '|' . $idProduto)]);
+    $idHistoria = (int) $pdo->lastInsertId();
+
+    $previewRaw = trim((string) ($p['preview_produto'] ?? ''));
+    $tituloCap = $titulo;
+    $textoCap = $previewRaw !== '' ? $previewRaw : $sinopse;
+    if (preg_match('/^Cap[íi]tulo\s+\d+\s*[—\-:]\s*([^:]+):\s*(.+)$/isu', $previewRaw, $m)) {
+        $tituloCap = trim($m[1]);
+        $textoCap = trim($m[2]);
+    }
+    $conteudoCapHtml = str_contains($textoCap, '<p>') ? $textoCap : ('<p>' . nl2br(htmlspecialchars($textoCap, ENT_QUOTES, 'UTF-8')) . '</p>');
+
+    $pdo->prepare(
+        "INSERT INTO capitulos (id_historias, titulo_capitulos, conteudo_capitulos, hash_conteudo_capitulos,
+                                ordem_capitulos, status_capitulos, modo_publicacao_capitulos, revisao_capitulos, data_revisao_capitulos)
+         VALUES (?, ?, ?, ?, 1, 'publicado', 'revisao_humana', 'aprovada', CURRENT_TIMESTAMP)"
+    )->execute([$idHistoria, $tituloCap, $conteudoCapHtml, hash('sha256', $conteudoCapHtml)]);
+
+    $pdo->prepare(
+        "INSERT INTO autor_dos_livros (id_historias, id_autor, titulo_autor_dos_livros, preco_dos_livros_autor,
+                                       modalidade_distribuicao, declaracao_autoria, data_declaracao_autoria,
+                                       declaracao_comercializacao, data_declaracao_comercializacao,
+                                       revisao_publicacao, data_revisao_publicacao, id_moderador_revisao,
+                                       status_autor_dos_livros, data_publicacao_autor)
+         VALUES (?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, 1, CURRENT_TIMESTAMP, 'aprovada', CURRENT_TIMESTAMP, ?, ?, CURRENT_TIMESTAMP)"
+    )->execute([$idHistoria, $idAutor, $titulo, $precoDecimal, $modalidade, $idAutor, $statusAdl]);
+    $novoIdAdl = (int) $pdo->lastInsertId();
+
+    $pdo->prepare('UPDATE loja_produtos SET id_autor_dos_livros = ? WHERE id_produto = ?')
+        ->execute([$novoIdAdl, $idProduto]);
+
+    // Sincroniza compradores existentes com livraria_digital
+    $stComp = $pdo->prepare("SELECT DISTINCT id_comprador, valor_bruto_centavos, taxa_percentual, valor_liquido_centavos FROM loja_pedidos WHERE id_produto = ? AND status_pedido = 'pago'");
+    $stComp->execute([$idProduto]);
+    foreach ($stComp->fetchAll(PDO::FETCH_ASSOC) as $comp) {
+        $pdo->prepare("INSERT IGNORE INTO compra (id_usuario, id_autor_dos_livros, valor_pago_compra, percentual_autor_compra, ingresso_autor_compra, percentual_plataforma_compra, status_compra) VALUES (?, ?, ?, ?, ?, ?, 'concluida')")
+            ->execute([
+                (int) $comp['id_comprador'],
+                $novoIdAdl,
+                round(((int) $comp['valor_bruto_centavos']) / 100, 2),
+                round(100 - (float) $comp['taxa_percentual'], 2),
+                round(((int) $comp['valor_liquido_centavos']) / 100, 2),
+                (float) $comp['taxa_percentual'],
+            ]);
+        $idCompra = (int) $pdo->lastInsertId();
+        if ($idCompra <= 0) {
+            $stC = $pdo->prepare('SELECT id_compra FROM compra WHERE id_usuario = ? AND id_autor_dos_livros = ? ORDER BY id_compra DESC LIMIT 1');
+            $stC->execute([(int) $comp['id_comprador'], $novoIdAdl]);
+            $idCompra = (int) $stC->fetchColumn();
+        }
+        if ($idCompra > 0) {
+            $pdo->prepare('INSERT IGNORE INTO livraria_digital (id_usuario, id_autor_dos_livros, id_compra) VALUES (?, ?, ?)')
+                ->execute([(int) $comp['id_comprador'], $novoIdAdl, $idCompra]);
+        }
+    }
+
+    return $novoIdAdl;
+}
+
+/**
  * Integra a obra ao catálogo existente (tabela livro, fonte 'loja'):
  * é por ela que a compra entra na biblioteca pessoal (livraria) e nas avaliações (resenha).
  */
 function folivro_loja_sincronizar_livro(PDO $pdo, int $idProduto): ?int
 {
+    folivro_loja_garantir_obra_autoral($pdo, $idProduto);
     $p = folivro_loja_produto($pdo, $idProduto);
     if ($p === null) {
         return null;
@@ -865,7 +960,7 @@ function folivro_loja_pedido_do_comprador(PDO $pdo, string $codigo, int $uid): ?
         return null;
     }
     $st = $pdo->prepare(
-        'SELECT o.*, p.capa_produto, p.id_livro, p.arquivo_tipo, p.arquivo_produto, u.nome_usuario AS vendedor_nome
+        'SELECT o.*, p.capa_produto, p.id_livro, p.id_autor_dos_livros, p.arquivo_tipo, p.arquivo_produto, u.nome_usuario AS vendedor_nome
            FROM loja_pedidos o
            JOIN loja_produtos p ON p.id_produto = o.id_produto
            JOIN usuario u ON u.id_usuario = o.id_vendedor

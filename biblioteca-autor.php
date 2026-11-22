@@ -76,7 +76,7 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
                 <a class="botao-adicionar-livro" href="escrever.php">+ Escrever novo livro</a>
-                <a class="filtro-pilula" href="loja-autor-obras.php">Subir PDF/EPUB na loja</a>
+                <a class="filtro-pilula" href="loja-autor-obras.php">Gerenciar obras na loja</a>
                 <?php if (folivro_pagamentos_ativos()): ?>
                 <a class="filtro-pilula" href="painel-vendas.php">Painel de vendas</a>
                 <?php endif; ?>

@@ -23,9 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Biblioteca pessoal (livros do catálogo) + biblioteca digital (obras autorais adquiridas).
 // Obras removidas definitivamente pela moderação não são exibidas; obras sob análise refletem seu estado atual.
 $stmt = $pdo->prepare(
-    'SELECT b.id_livro AS item_id, b.titulo_livro AS titulo, b.autor_livro AS autor, b.capa_livro AS capa,
-            l.status_livraria AS status, p.porcentagem_progressao AS progresso, 0 AS obra_autoral,
-            "" AS motivo_bloqueio, COALESCE(b.classificacao_livro, "livre") AS classificacao,
+    'SELECT COALESCE(adl.id_autor_dos_livros, b.id_livro) AS item_id, b.titulo_livro AS titulo, b.autor_livro AS autor, b.capa_livro AS capa,
+            l.status_livraria AS status, p.porcentagem_progressao AS progresso,
+            CASE WHEN adl.id_autor_dos_livros IS NOT NULL THEN 1 ELSE 0 END AS obra_autoral,
+            COALESCE(adl.motivo_bloqueio_autor, "") AS motivo_bloqueio, COALESCE(b.classificacao_livro, "livre") AS classificacao,
             COALESCE(b.genero_livro, "") AS generos
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
@@ -48,7 +49,12 @@ $stmt = $pdo->prepare(
        JOIN autor_dos_livros a ON a.id_autor_dos_livros = d.id_autor_dos_livros
        JOIN historias h ON h.id_historias = a.id_historias
        JOIN usuario u ON u.id_usuario = a.id_autor
-      WHERE d.id_usuario = ? AND a.status_autor_dos_livros <> "removido"'
+      WHERE d.id_usuario = ? AND a.status_autor_dos_livros <> "removido"
+        AND NOT EXISTS (
+            SELECT 1 FROM livraria l2
+            JOIN loja_produtos lp2 ON lp2.id_livro = l2.id_livro
+            WHERE l2.id_usuario = d.id_usuario AND lp2.id_autor_dos_livros = a.id_autor_dos_livros
+        )'
 );
 $stmt->execute([$uid, $uid]);
 $books = $stmt->fetchAll();

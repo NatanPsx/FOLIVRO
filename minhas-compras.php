@@ -11,7 +11,7 @@ if (!folivro_pagamentos_ativos()) {
 $uid = (int) $_SESSION['id_usuario'];
 
 $st = $pdo->prepare(
-    'SELECT o.*, p.arquivo_tipo, p.capa_produto, p.id_livro, u.nome_usuario AS vendedor_nome
+    'SELECT o.*, p.arquivo_tipo, p.capa_produto, p.id_livro, p.id_autor_dos_livros, u.nome_usuario AS vendedor_nome
        FROM loja_pedidos o
        JOIN loja_produtos p ON p.id_produto = o.id_produto
        JOIN usuario u ON u.id_usuario = o.id_vendedor
@@ -86,9 +86,8 @@ $pedidos = $st->fetchAll(PDO::FETCH_ASSOC);
                                         <div style="display:flex; flex-wrap:wrap; gap:6px;">
                                             <a class="filtro-pilula" href="loja-pedido.php?codigo=<?= urlencode((string) $ped['codigo_pedido']) ?>">Recibo / Detalhes</a>
                                             <?php if ($ped['status_pedido'] === 'pago'): ?>
-                                                <a class="botao-adicionar-livro" href="loja-download.php?id=<?= (int) $ped['id_produto'] ?>">
-                                                    Baixar <?= strtoupper(folivro_escape((string) $ped['arquivo_tipo'])) ?>
-                                                </a>
+                                                <?php $idAdlComp = (int) ($ped['id_autor_dos_livros'] ?? 0); ?>
+                                                <a class="botao-adicionar-livro" href="<?= $idAdlComp > 0 ? 'obra.php?id=' . $idAdlComp : 'loja-obra.php?id=' . (int) $ped['id_produto'] ?>">Ler obra</a>
                                                 <a class="filtro-pilula" href="loja-obra.php?id=<?= (int) $ped['id_produto'] ?>#titulo-avaliacoes">Avaliar</a>
                                             <?php endif; ?>
                                         </div>

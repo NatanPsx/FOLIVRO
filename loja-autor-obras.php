@@ -108,8 +108,8 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
     <main class="conteudo" id="conteudo-principal">
         <div class="loja-topo-cabecalho">
             <div>
-                <h1>Minhas obras à venda na Loja</h1>
-                <p>Cadastre eBooks em PDF ou EPUB, defina o preço (ou ofereça gratuitamente) e gerencie suas publicações.</p>
+                <h1>Minhas obras na Loja</h1>
+                <p>Cadastre suas obras digitais, defina o preço (ou ofereça gratuitamente) e gerencie suas publicações.</p>
             </div>
             <div class="loja-atalhos-topo">
                 <a class="filtro-pilula" href="loja.php">Vitrine da loja</a>
@@ -129,7 +129,7 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
         <?php if (!$ehAutor): ?>
             <section class="loja-card-destaque">
                 <h2>Torne-se um autor vendedor no FOLIVRO</h2>
-                <p>Sua conta está atualmente como <strong>leitor</strong>. Para publicar e vender obras digitais (PDF ou EPUB) diretamente aos leitores, ative seu perfil de autor aceitando a declaração de titularidade abaixo.</p>
+                <p>Sua conta está atualmente como <strong>leitor</strong>. Para publicar obras digitais diretamente aos leitores, ative seu perfil de autor aceitando a declaração de titularidade abaixo.</p>
                 <form method="post" class="progresso-form form-largura-total">
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="ativar_autor">
@@ -278,9 +278,6 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
                                         <span class="selo-status">
                                             <?= (int) $w['preco_centavos'] === 0 ? 'Gratuita' : folivro_loja_formatar((int) $w['preco_centavos']) ?>
                                         </span>
-                                        <?php if (!empty($w['arquivo_tipo'])): ?>
-                                            <span class="tag-genero-card"><?= strtoupper(folivro_escape((string) $w['arquivo_tipo'])) ?></span>
-                                        <?php endif; ?>
                                     </div>
                                     <h3><?= folivro_escape($w['titulo_produto']) ?></h3>
                                     <p><?= folivro_escape(mb_strimwidth((string) ($w['descricao_produto'] ?? ''), 0, 140, '...', 'UTF-8')) ?></p>

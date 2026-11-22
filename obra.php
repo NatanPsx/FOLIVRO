@@ -103,11 +103,22 @@ $suspCheck = $pdo->prepare(
 $suspCheck->execute([$id]);
 $emSuspensaoDireitos = ((int) $suspCheck->fetchColumn() > 0) || $statusObra === 'removido';
 
-// Acesso: o próprio autor, administrador, obra gratuita aprovada e publicada ou comprador na biblioteca digital.
+// Acesso: o próprio autor, administrador, obra gratuita aprovada e publicada ou comprador na biblioteca digital / loja.
 $access = $idAutor === $uid || $isAdmin || (($obra['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita' && $statusObra === 'a_venda' && $statusRevisao === 'aprovada' && (int) $obra['declaracao_autoria'] === 1);
 if (!$access && in_array($statusObra, ['a_venda', 'suspenso'], true)) {
-    $check = $pdo->prepare('SELECT 1 FROM livraria_digital WHERE id_usuario = ? AND id_autor_dos_livros = ?');
-    $check->execute([$uid, $id]);
+    $check = $pdo->prepare(
+        "SELECT 1 FROM livraria_digital WHERE id_usuario = ? AND id_autor_dos_livros = ?
+         UNION ALL
+         SELECT 1 FROM loja_pedidos ped
+         JOIN loja_produtos lp ON lp.id_produto = ped.id_produto
+         WHERE ped.id_comprador = ? AND lp.id_autor_dos_livros = ? AND ped.status_pedido = 'pago'
+         UNION ALL
+         SELECT 1 FROM livraria l
+         JOIN loja_produtos lp2 ON lp2.id_livro = l.id_livro
+         WHERE l.id_usuario = ? AND lp2.id_autor_dos_livros = ? AND lp2.preco_centavos = 0
+         LIMIT 1"
+    );
+    $check->execute([$uid, $id, $uid, $id, $uid, $id]);
     $access = (bool) $check->fetchColumn();
 }
 if (!$access) {

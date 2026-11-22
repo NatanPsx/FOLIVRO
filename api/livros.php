@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/loja.php';
 require_once __DIR__ . '/../config/traducao.php';
 
 $pdo = folivro_database();
@@ -691,6 +692,7 @@ if (!function_exists('folivro_buscar_obras_locais')) {
             default => 'p.data_publicacao DESC, p.id_produto DESC',
         };
 
+        $filtroPagosLoja = folivro_pagamentos_ativos() ? '' : 'AND p.preco_centavos = 0';
         $stLoja = $pdo->query(
             "SELECT p.id_produto, p.id_livro, p.id_autor_dos_livros, p.titulo_produto, p.descricao_produto,
                     p.capa_produto, p.generos_produto, p.classificacao_produto, p.preco_centavos, p.data_publicacao,
@@ -703,6 +705,7 @@ if (!function_exists('folivro_buscar_obras_locais')) {
           LEFT JOIN historias h ON h.id_historias = a.id_historias
               WHERE p.status_produto = 'publicado'
                 AND u.status_usuario = 'ativo'
+                {$filtroPagosLoja}
                 AND (p.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
                 AND (p.id_autor_dos_livros IS NULL OR NOT EXISTS (
                     SELECT 1 FROM denuncias d
@@ -716,6 +719,7 @@ if (!function_exists('folivro_buscar_obras_locais')) {
         );
         $rowsLoja = $stLoja->fetchAll(PDO::FETCH_ASSOC);
 
+        $filtroPagosEstudio = folivro_pagamentos_ativos() ? '' : "AND (a.modalidade_distribuicao = 'gratuita' OR a.preco_dos_livros_autor = 0)";
         $stEstudio = $pdo->query(
             "SELECT a.id_autor_dos_livros, a.titulo_autor_dos_livros, a.preco_dos_livros_autor, a.modalidade_distribuicao,
                     a.data_publicacao_autor, h.titulo_historias, h.sinopse_historias, h.capa_historias,
@@ -727,6 +731,7 @@ if (!function_exists('folivro_buscar_obras_locais')) {
                 AND a.revisao_publicacao = 'aprovada'
                 AND h.status_historias = 'publicada'
                 AND u.status_usuario = 'ativo'
+                {$filtroPagosEstudio}
                 AND NOT EXISTS (SELECT 1 FROM loja_produtos lp WHERE lp.id_autor_dos_livros = a.id_autor_dos_livros)
                 AND NOT EXISTS (
                     SELECT 1 FROM denuncias d

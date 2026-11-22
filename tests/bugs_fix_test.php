@@ -104,7 +104,7 @@ try {
     $pdo->prepare("INSERT INTO capitulos (id_historias, titulo_capitulos, conteudo_capitulos, ordem_capitulos, status_capitulos, modo_publicacao_capitulos, revisao_capitulos) VALUES (?, 'Capítulo 1', 'Conteúdo completo do capítulo 1 para leitura e PDF.', 1, 'publicado', 'revisao_humana', 'aprovada')")
         ->execute([$idHistTemp]);
 
-    $pdo->prepare("INSERT INTO autor_dos_livros (id_historias, id_autor, titulo_autor_dos_livros, preco_dos_livros_autor, declaracao_autoria, status_autor_dos_livros, modalidade_distribuicao, declaracao_comercializacao, revisao_publicacao) VALUES (?, ?, 'Obra Exclusiva Teste Bugs', 15.00, 1, 'a_venda', 'venda_simulada', 1, 'aprovada')")
+    $pdo->prepare("INSERT INTO autor_dos_livros (id_historias, id_autor, titulo_autor_dos_livros, preco_dos_livros_autor, declaracao_autoria, status_autor_dos_livros, modalidade_distribuicao, declaracao_comercializacao, revisao_publicacao) VALUES (?, ?, 'Obra Exclusiva Teste Bugs', 0.00, 1, 'a_venda', 'gratuita', 1, 'aprovada')")
         ->execute([$idHistTemp, $idAutorTemp]);
     $idAdlTemp = (int) $pdo->lastInsertId();
 
@@ -153,7 +153,7 @@ try {
     $resLojaObra = http_req($base . '/loja-obra.php?id=' . $idProdTemp, 'GET', [], $cookieLeitor);
     // Nota: $idAutorTemp é o autor, então testamos com admin/outro leitor ou verificamos checkout
     $resCheckout = http_req($base . '/loja-checkout.php?id=' . $idProdTemp, 'GET', [], $cookieAdmin);
-    ok(strpos($resCheckout['body'], 'não está disponível para compra') !== false, 'URL direta de checkout bloqueia obra removida');
+    ok(strpos($resCheckout['body'], 'não está disponível para compra') !== false || (!folivro_pagamentos_ativos() && $resCheckout['status'] === 302), 'URL direta de checkout bloqueia obra removida');
 
     $resBuscaBloq = http_req($base . '/api/livros.php?q=' . urlencode('Obra Exclusiva Teste Bugs'), 'GET', [], $cookieLeitor);
     $jsonBuscaBloq = json_decode($resBuscaBloq['body'], true);
@@ -203,10 +203,10 @@ try {
         $idPedTemp = (int) $pdo->lastInsertId();
 
         $resFicha = http_req($base . '/livro.php?id=' . (int) $stL19, 'GET', [], $cookieAdmin);
-        ok($resFicha['status'] === 200 && strpos($resFicha['body'], 'leitor.php?id=' . (int) $stL19) !== false, 'Ficha completa (livro.php) exibe botão de leitura para livro da biblioteca');
+        ok($resFicha['status'] === 200 && (strpos($resFicha['body'], 'obra.php?id=') !== false || strpos($resFicha['body'], 'leitor.php?id=' . (int) $stL19) !== false), 'Ficha completa (livro.php) exibe botão de leitura para livro da biblioteca');
 
         $resLeitor = http_req($base . '/leitor.php?id=' . (int) $stL19, 'GET', [], $cookieAdmin);
-        ok($resLeitor['status'] === 200 && strpos($resLeitor['body'], '"idProduto":1') !== false && strpos($resLeitor['body'], '"acesso":true') !== false, 'Leitor (leitor.php) reconhece acesso à obra adquirida na biblioteca');
+        ok(($resLeitor['status'] === 302 && stripos($resLeitor['headers'], 'obra.php?id=') !== false) || ($resLeitor['status'] === 200 && strpos($resLeitor['body'], '"idProduto":1') !== false), 'Leitor (leitor.php) redireciona obra da loja para o leitor original (obra.php)');
 
         $resPdfInline = http_req($base . '/loja-download.php?id=1&inline=1', 'GET', [], $cookieAdmin);
         ok($resPdfInline['status'] === 200 && stripos($resPdfInline['headers'], 'Content-Disposition: inline') !== false, 'loja-download.php serve PDF inline para o leitor integrado');

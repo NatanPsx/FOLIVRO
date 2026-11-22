@@ -121,11 +121,10 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <section class="loja-card-destaque" id="painel-status-pagamento">
                     <?php if ($pedido['status_pedido'] === 'pago'): ?>
                         <h2>Pagamento confirmado!</h2>
-                        <p>A obra já foi adicionada à sua biblioteca pessoal e o arquivo está liberado para download.</p>
+                        <?php $idAdlPed = (int) ($pedido['id_autor_dos_livros'] ?? 0); ?>
+                        <p>A obra já foi adicionada à sua biblioteca pessoal e está liberada para leitura.</p>
                         <div class="loja-acoes-card">
-                            <a class="botao-adicionar-livro" href="loja-download.php?id=<?= (int) $pedido['id_produto'] ?>">
-                                Baixar <?= strtoupper(folivro_escape((string) $pedido['arquivo_tipo'])) ?>
-                            </a>
+                            <a class="botao-adicionar-livro" href="<?= $idAdlPed > 0 ? 'obra.php?id=' . $idAdlPed : 'loja-obra.php?id=' . (int) $pedido['id_produto'] ?>">Ler obra</a>
                             <a class="filtro-pilula" href="loja-obra.php?id=<?= (int) $pedido['id_produto'] ?>">Avaliar obra</a>
                             <a class="filtro-pilula" href="minha-biblioteca.php">Minha biblioteca</a>
                         </div>

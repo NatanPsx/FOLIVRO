@@ -54,8 +54,8 @@ $infoModo = folivro_loja_info_modo();
                     <?= folivro_loja_selo_modo_html() ?>
                 </div>
                 <p><?= folivro_pagamentos_ativos()
-                    ? 'Obras digitais (PDF e EPUB) vendidas diretamente por autores da comunidade. ' . folivro_escape($infoModo['descricao'])
-                    : 'Obras digitais (PDF e EPUB) publicadas gratuitamente por autores da comunidade.' ?></p>
+                    ? 'Obras digitais vendidas diretamente por autores da comunidade. ' . folivro_escape($infoModo['descricao'])
+                    : 'Obras digitais publicadas gratuitamente por autores da comunidade.' ?></p>
             </div>
             <div class="loja-atalhos-topo">
                 <?php if (folivro_pagamentos_ativos()): ?>
@@ -180,9 +180,6 @@ $infoModo = folivro_loja_info_modo();
                                     <span class="selo-status selo-comprado"><?= folivro_escape(folivro_loja_formatar($precoCentavos)) ?></span>
                                 <?php endif; ?>
 
-                                <?php if (!empty($w['arquivo_tipo'])): ?>
-                                    <span class="tag-genero-card"><?= strtoupper(folivro_escape((string) $w['arquivo_tipo'])) ?></span>
-                                <?php endif; ?>
                                 <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifObra) ?>" title="<?= folivro_escape(folivro_aviso_conteudo_label($classifObra)) ?>">
                                     <?= folivro_escape(folivro_classificacao_sigla($classifObra)) ?>
                                 </span>
@@ -216,7 +213,8 @@ $infoModo = folivro_loja_info_modo();
                                     <?php if ($isAutor): ?>
                                         <a class="botao-adicionar-livro" href="loja-autor-obras.php?editar=<?= $idProd ?>">Gerenciar</a>
                                     <?php elseif ($jaComprou): ?>
-                                        <a class="botao-adicionar-livro" href="loja-download.php?id=<?= $idProd ?>">Baixar <?= strtoupper(folivro_escape((string) $w['arquivo_tipo'])) ?></a>
+                                        <?php $idAdlCard = (int) ($w['id_autor_dos_livros'] ?? 0); ?>
+                                        <a class="botao-adicionar-livro" href="<?= $idAdlCard > 0 ? 'obra.php?id=' . $idAdlCard : 'loja-obra.php?id=' . $idProd ?>">Ler obra</a>
                                     <?php else: ?>
                                         <a class="botao-adicionar-livro" href="loja-checkout.php?id=<?= $idProd ?>">
                                             <?= $ehGratuita ? 'Obter grátis' : 'Comprar (' . folivro_escape(folivro_loja_formatar($precoCentavos)) . ')' ?>

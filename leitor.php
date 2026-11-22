@@ -36,6 +36,9 @@ $acessoLojaLeitor = false;
 $bloqueadoModLeitor = false;
 if ($produtoLoja) {
     require_once __DIR__ . '/config/loja.php';
+    if (empty($produtoLoja['id_autor_dos_livros'])) {
+        $produtoLoja['id_autor_dos_livros'] = folivro_loja_garantir_obra_autoral($pdo, (int) $produtoLoja['id_produto']);
+    }
     $ehAutorProd = (int) $produtoLoja['id_autor'] === $uid;
     $bloqueadoModLeitor = (($produtoLoja['estudio_status'] ?? '') === 'removido')
         || (($produtoLoja['estudio_status'] ?? '') === 'suspenso' && !$ehAutorProd);
@@ -43,6 +46,10 @@ if ($produtoLoja) {
         $acessoLojaLeitor = $ehAutorProd
             || folivro_loja_ja_possui($pdo, $uid, (int) $produtoLoja['id_produto'])
             || ((int) $produtoLoja['preco_centavos'] === 0 && $produtoLoja['status_produto'] === 'publicado');
+    }
+    if ($acessoLojaLeitor && !$bloqueadoModLeitor && !empty($produtoLoja['id_autor_dos_livros'])) {
+        header('Location: obra.php?id=' . (int) $produtoLoja['id_autor_dos_livros']);
+        exit;
     }
 }
 
@@ -180,7 +187,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= $csrf ?>">
     <title><?= $titulo ?> | Leitor · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
+    <link rel="stylesheet" href="layout.css?v=20261122_01">
     <link rel="stylesheet" href="home.css?v=20261104_20">
 </head>
 
@@ -243,6 +250,23 @@ $csrf = folivro_escape(folivro_csrf_token());
             </header>
 
             <section id="leitor-status" class="estado-vazio" role="status">Verificando disponibilidade do leitor…</section>
+            <section id="leitor-pdf-container" class="leitor-pdf-container" hidden aria-label="Leitor FOLIVRO">
+                <div class="leitor-pdf-barra">
+                    <div class="leitor-pdf-controles">
+                        <button type="button" class="filtro-pilula" id="pdf-prev" disabled>← Anterior</button>
+                        <span class="leitor-pdf-paginacao" id="pdf-page-info">Página 1 de 1</span>
+                        <button type="button" class="filtro-pilula" id="pdf-next" disabled>Próxima →</button>
+                    </div>
+                    <div class="leitor-pdf-controles">
+                        <button type="button" class="filtro-pilula" id="pdf-zoom-out" title="Diminuir zoom">−</button>
+                        <span class="leitor-pdf-zoom" id="pdf-zoom-info">100%</span>
+                        <button type="button" class="filtro-pilula" id="pdf-zoom-in" title="Aumentar zoom">+</button>
+                    </div>
+                </div>
+                <div class="leitor-pdf-viewport" oncontextmenu="return false;">
+                    <canvas id="leitor-pdf-canvas"></canvas>
+                </div>
+            </section>
             <iframe id="leitor-embed" class="leitor-embed" title="Leitor de <?= $titulo ?>" hidden allow="fullscreen" referrerpolicy="no-referrer"></iframe>
 
             <!-- PAINEL DUPLO ALINHADO: REGISTRAR PROGRESSO + STATUS NA BIBLIOTECA -->
@@ -379,6 +403,101 @@ $csrf = folivro_escape(folivro_csrf_token());
             return a;
         }
 
+        function carregarScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+
+        async function iniciarLeitorPdfFolivro(pdfUrl) {
+            const container = document.getElementById('leitor-pdf-container');
+            const canvas = document.getElementById('leitor-pdf-canvas');
+            const ctx = canvas.getContext('2d');
+            const btnPrev = document.getElementById('pdf-prev');
+            const btnNext = document.getElementById('pdf-next');
+            const pageInfo = document.getElementById('pdf-page-info');
+            const btnZoomOut = document.getElementById('pdf-zoom-out');
+            const btnZoomIn = document.getElementById('pdf-zoom-in');
+            const zoomInfo = document.getElementById('pdf-zoom-info');
+            const inputPagAtual = document.getElementById('pagina_atual');
+            const inputTotalPag = document.getElementById('total_paginas');
+
+            try {
+                if (!window.pdfjsLib) {
+                    await carregarScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+                }
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+                const pdfDoc = await window.pdfjsLib.getDocument({ url: pdfUrl, withCredentials: true }).promise;
+                const totalPages = pdfDoc.numPages;
+                let currentPage = Math.max(1, Math.min(totalPages, Number(inputPagAtual?.value) || 1));
+                let scale = 1.25;
+                let renderTask = null;
+
+                if (inputTotalPag) {
+                    inputTotalPag.value = String(totalPages);
+                }
+
+                async function renderPage(num) {
+                    currentPage = num;
+                    if (renderTask) {
+                        try { renderTask.cancel(); } catch (_) {}
+                    }
+                    const page = await pdfDoc.getPage(num);
+                    const viewport = page.getViewport({ scale });
+                    const dpr = window.devicePixelRatio || 1;
+                    canvas.width = Math.floor(viewport.width * dpr);
+                    canvas.height = Math.floor(viewport.height * dpr);
+                    canvas.style.width = `${Math.floor(viewport.width)}px`;
+                    canvas.style.height = `${Math.floor(viewport.height)}px`;
+
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    renderTask = page.render({ canvasContext: ctx, viewport });
+                    await renderTask.promise;
+
+                    pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+                    zoomInfo.textContent = `${Math.round((scale / 1.25) * 100)}%`;
+                    btnPrev.disabled = currentPage <= 1;
+                    btnNext.disabled = currentPage >= totalPages;
+                    if (inputPagAtual) {
+                        inputPagAtual.value = String(currentPage);
+                    }
+                }
+
+                btnPrev.addEventListener('click', () => {
+                    if (currentPage > 1) renderPage(currentPage - 1);
+                });
+                btnNext.addEventListener('click', () => {
+                    if (currentPage < totalPages) renderPage(currentPage + 1);
+                });
+                btnZoomOut.addEventListener('click', () => {
+                    if (scale > 0.75) {
+                        scale = Math.max(0.75, scale - 0.2);
+                        renderPage(currentPage);
+                    }
+                });
+                btnZoomIn.addEventListener('click', () => {
+                    if (scale < 2.5) {
+                        scale = Math.min(2.5, scale + 0.2);
+                        renderPage(currentPage);
+                    }
+                });
+
+                container.hidden = false;
+                statusBox.textContent = 'Leitura da obra digital FOLIVRO carregada.';
+                await renderPage(currentPage);
+            } catch (err) {
+                const frame = document.getElementById('leitor-embed');
+                frame.src = `${pdfUrl}#toolbar=0&navpanes=0`;
+                frame.hidden = false;
+                statusBox.textContent = 'Leitura da obra digital FOLIVRO carregada.';
+            }
+        }
+
         if (produtoLoja) {
             if (produtoLoja.bloqueadoMod) {
                 statusBox.className = 'estado-vazio estado-erro';
@@ -389,9 +508,8 @@ $csrf = folivro_escape(folivro_csrf_token());
             } else {
                 const frame = document.getElementById('leitor-embed');
                 if (produtoLoja.temArquivo && produtoLoja.tipo === 'pdf') {
-                    frame.src = `loja-download.php?id=${produtoLoja.idProduto}&inline=1`;
-                    frame.hidden = false;
-                    statusBox.textContent = 'Leitura da obra digital FOLIVRO carregada.';
+                    statusBox.textContent = 'Carregando obra no leitor FOLIVRO…';
+                    iniciarLeitorPdfFolivro(`loja-download.php?id=${produtoLoja.idProduto}&inline=1`);
                 } else if (produtoLoja.idAutorDosLivros > 0) {
                     statusBox.textContent = 'Esta obra autoral possui leitor de capítulos interativo no FOLIVRO.';
                 } else {
@@ -400,7 +518,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 if (produtoLoja.idAutorDosLivros > 0) {
                     statusBox.append(' ', linkInterno(`obra.php?id=${produtoLoja.idAutorDosLivros}`, 'Ler capítulos online'));
                 }
-                if (produtoLoja.temArquivo) {
+                if (produtoLoja.temArquivo && produtoLoja.tipo !== 'pdf') {
                     statusBox.append(' ', linkInterno(`loja-download.php?id=${produtoLoja.idProduto}`, 'Baixar arquivo', 'filtro-pilula'));
                 }
             }

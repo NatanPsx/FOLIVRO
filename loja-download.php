@@ -37,6 +37,12 @@ $mime = $tipo === 'epub' ? 'application/epub+zip' : 'application/pdf';
 $nomeDownload = folivro_loja_nome_seguro((string) $produto['titulo_produto'], $tipo);
 $tamanho = (int) filesize($caminho);
 $inline = ($tipo === 'pdf' && isset($_GET['inline']) && $_GET['inline'] === '1');
+if ($tipo === 'pdf' && !$inline) {
+    folivro_loja_log('download_pdf_bloqueado', ['id_produto' => $idProduto, 'id_usuario' => $uid]);
+    http_response_code(403);
+    header('Content-Type: text/html; charset=utf-8');
+    exit('O download de livros em PDF foi desativado. Utilize o leitor online.');
+}
 $disposition = $inline ? 'inline' : 'attachment';
 
 folivro_loja_log('download_autorizado', ['id_produto' => $idProduto, 'id_usuario' => $uid, 'tipo' => $tipo]);

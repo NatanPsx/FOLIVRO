@@ -140,9 +140,6 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($produto['classificacao_produto']) ?>">
                             <?= folivro_escape(folivro_classificacao_sigla($produto['classificacao_produto'])) ?>
                         </span>
-                        <?php if (!empty($produto['arquivo_tipo'])): ?>
-                            <span class="tag-genero-card">Formato: <?= strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) ?></span>
-                        <?php endif; ?>
                     </div>
 
                     <h1 style="margin:0 0 6px;"><?= folivro_escape($produto['titulo_produto']) ?></h1>
@@ -170,26 +167,25 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <div class="loja-acoes-card" style="margin-top:16px;">
                         <?php
                         $idAdlLink = (int) ($produto['id_autor_dos_livros'] ?? 0);
+                        if ($idAdlLink <= 0) {
+                            $idAdlLink = (int) (folivro_loja_garantir_obra_autoral($pdo, $id) ?: 0);
+                        }
                         $idLivroLink = (int) ($produto['id_livro'] ?? 0);
                         $ehRemovidaMod = ($produto['estudio_status'] ?? '') === 'removido';
                         ?>
                         <?php if ($ehAutor): ?>
                             <a class="botao-adicionar-livro" href="loja-autor-obras.php?editar=<?= $id ?>">Gerenciar minha obra</a>
-                            <a class="filtro-pilula" href="loja-download.php?id=<?= $id ?>">Baixar meu arquivo</a>
                             <?php if ($idAdlLink > 0): ?>
-                                <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler capítulos online</a>
-                            <?php elseif ($idLivroLink > 0 && ($produto['arquivo_tipo'] ?? '') === 'pdf'): ?>
-                                <a class="filtro-pilula" href="leitor.php?id=<?= $idLivroLink ?>">Abrir no leitor</a>
+                                <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler obra</a>
                             <?php endif; ?>
                         <?php elseif ($jaComprou): ?>
                             <?php if ($ehRemovidaMod): ?>
-                                <p class="estado-vazio estado-erro">Esta obra foi removida pela moderação e não está mais disponível para leitura ou download.</p>
+                                <p class="estado-vazio estado-erro">Esta obra foi removida pela moderação e não está mais disponível para leitura.</p>
                             <?php else: ?>
-                                <a class="botao-adicionar-livro" href="loja-download.php?id=<?= $id ?>">Baixar <?= strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) ?></a>
                                 <?php if ($idAdlLink > 0): ?>
-                                    <a class="filtro-pilula" href="obra.php?id=<?= $idAdlLink ?>">Ler capítulos online</a>
-                                <?php elseif ($idLivroLink > 0 && ($produto['arquivo_tipo'] ?? '') === 'pdf'): ?>
-                                    <a class="filtro-pilula" href="leitor.php?id=<?= $idLivroLink ?>">Ler no leitor</a>
+                                    <a class="botao-adicionar-livro" href="obra.php?id=<?= $idAdlLink ?>">Ler obra</a>
+                                <?php elseif ($idLivroLink > 0): ?>
+                                    <a class="botao-adicionar-livro" href="leitor.php?id=<?= $idLivroLink ?>">Ler obra</a>
                                 <?php endif; ?>
                                 <a class="filtro-pilula" href="minha-biblioteca.php">Abrir na minha biblioteca</a>
                             <?php endif; ?>
@@ -281,8 +277,8 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <dd><?= folivro_escape(folivro_aviso_conteudo_label((string) $produto['classificacao_produto'])) ?></dd>
                     </div>
                     <div>
-                        <dt>Formato digital</dt>
-                        <dd><?= !empty($produto['arquivo_tipo']) ? strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) : 'Digital' ?></dd>
+                        <dt>Formato</dt>
+                        <dd>Leitura online no FOLIVRO</dd>
                     </div>
                     <?php if (!empty($produto['data_publicacao'])): ?>
                         <div>

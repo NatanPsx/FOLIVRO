@@ -289,6 +289,10 @@ a:focus-visible,
 }
 
 @media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+    }
+
     body {
         background: radial-gradient(circle at top, #241c19 0%, #151110 100%);
         color: #f5efe9;
@@ -302,6 +306,10 @@ a:focus-visible,
 
     .logo {
         background: #231c19;
+    }
+
+    .logo img {
+        filter: brightness(0) invert(0.92);
     }
 
     h1 {

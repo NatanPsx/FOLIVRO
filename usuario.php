@@ -166,6 +166,8 @@ if (!$ehMeuPerfil && $user) {
 // Obras publicadas na loja pelo usuário (se for autor)
 $obrasLojaPerfil = [];
 if ($user) {
+    $pagamentosAtivosPerfil = function_exists('folivro_pagamentos_ativos') && folivro_pagamentos_ativos();
+    $filtroPagosPerfil = $pagamentosAtivosPerfil ? '' : 'AND lp.preco_centavos = 0';
     $stObrasLoja = $pdo->prepare(
         "SELECT lp.id_produto, lp.titulo_produto, lp.capa_produto, lp.preco_centavos, lp.arquivo_tipo, lp.classificacao_produto
            FROM loja_produtos lp
@@ -173,6 +175,7 @@ if ($user) {
       LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = lp.id_autor_dos_livros
       LEFT JOIN historias h ON h.id_historias = a.id_historias
           WHERE lp.id_autor = ? AND lp.status_produto = 'publicado' AND u.status_usuario = 'ativo'
+            {$filtroPagosPerfil}
             AND (lp.id_autor_dos_livros IS NULL OR (a.status_autor_dos_livros = 'a_venda' AND a.revisao_publicacao = 'aprovada' AND h.status_historias = 'publicada'))
             AND (lp.id_autor_dos_livros IS NULL OR NOT EXISTS (SELECT 1 FROM denuncias d WHERE d.tipo_denuncias = 'obra_autoral' AND d.item_denuncia = lp.id_autor_dos_livros AND d.status_denuncias IN ('aberta', 'em_analise') AND d.suspensao_preventiva = 1))
        ORDER BY lp.data_publicacao DESC
@@ -458,9 +461,6 @@ $csrf = folivro_escape(folivro_csrf_token());
                                         <span class="selo-status selo-comprado">
                                             <?= (int) $olp['preco_centavos'] === 0 ? 'Gratuita' : 'R$ ' . number_format(((int) $olp['preco_centavos']) / 100, 2, ',', '.') ?>
                                         </span>
-                                        <?php if (!empty($olp['arquivo_tipo'])): ?>
-                                            <span class="tag-genero-card"><?= strtoupper(folivro_escape((string) $olp['arquivo_tipo'])) ?></span>
-                                        <?php endif; ?>
                                     </div>
                                     <h3><a href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>" class="link-titulo-livro"><?= folivro_escape($olp['titulo_produto']) ?></a></h3>
                                     <a class="botao-adicionar-livro btn-card-principal" href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>">Ver na loja</a>

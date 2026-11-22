@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Criar conta — FOLIVRO</title>
-    <link rel="stylesheet" href="cadastro.css?v=20261022_11">
+    <link rel="stylesheet" href="cadastro.css?v=20261122_01">
 </head>
 <body>
     <main class="container">
@@ -150,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <label class="aceite-termos">
                     <input type="checkbox" name="aceite_termos" value="1" required <?= isset($_POST['aceite_termos']) ? 'checked' : '' ?>>
-                    Li e aceito os <a href="termos.php#termos" target="_blank">termos de uso</a> e a <a href="termos.php#privacidade" target="_blank">política de privacidade</a>.
+                    <span>Li e aceito os <a href="termos.php#termos" target="_blank">termos de uso</a> e a <a href="termos.php#privacidade" target="_blank">política de privacidade</a>.</span>
                 </label>
 
                 <div class="botoes">

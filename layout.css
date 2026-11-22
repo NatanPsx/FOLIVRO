@@ -1240,6 +1240,59 @@ body {
     box-shadow: var(--sombra-card);
 }
 
+.leitor-pdf-container {
+    width: 100%;
+    border: 1px solid var(--borda-suave);
+    border-radius: var(--raio-card);
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.leitor-pdf-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--borda-suave);
+    background: var(--fundo-secundario, var(--fundo-superficie));
+}
+
+.leitor-pdf-controles {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.leitor-pdf-paginacao,
+.leitor-pdf-zoom {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--texto-principal);
+}
+
+.leitor-pdf-viewport {
+    width: 100%;
+    max-height: min(75vh, 860px);
+    overflow: auto;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    background: var(--fundo-pagina, #1e1917);
+}
+
+#leitor-pdf-canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+    user-select: none;
+}
+
 .cabecalho-leitor-livro {
     display: flex;
     flex-wrap: wrap;

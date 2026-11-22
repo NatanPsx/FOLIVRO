@@ -786,7 +786,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                         <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto']) && ($produtoLojaLivro['arquivo_tipo'] ?? '') === 'pdf'): ?>
-                                    <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>&inline=1" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
+                                    <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
                                         <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto'])): ?>

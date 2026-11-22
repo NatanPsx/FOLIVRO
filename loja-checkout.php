@@ -129,7 +129,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </div>
                     <div class="loja-resumo-linha">
                         <span>Formato</span>
-                        <span><?= strtoupper(folivro_escape((string) $produto['arquivo_tipo'])) ?></span>
+                        <span>Leitura digital</span>
                     </div>
                     <div class="loja-resumo-linha">
                         <span>Repasse ao autor (<?= number_format(100 - $valores['taxa_percentual'], 2, ',', '.') ?>%)</span>
