@@ -192,6 +192,9 @@ $csrf = folivro_escape(folivro_csrf_token());
 </head>
 
 <body>
+    <div class="progresso-leitura-fixo-topo" aria-hidden="true">
+        <span id="barra-progresso-scroll-topo"></span>
+    </div>
 
     <?php $menuAtivo = 'biblioteca'; require __DIR__ . '/includes/menu-lateral.php'; ?>
 
@@ -251,47 +254,60 @@ $csrf = folivro_escape(folivro_csrf_token());
 
             <section id="leitor-status" class="estado-vazio" role="status">Verificando disponibilidade do leitor…</section>
 
-            <!-- LEITOR NATIVO DE CAPÍTULOS — ACERVO NACIONAL DE DOMÍNIO PÚBLICO (LEI Nº 9.610/1998) -->
+            <!-- LEITOR NATIVO DE CAPÍTULOS — ACERVO NACIONAL DE DOMÍNIO PÚBLICO (IDÊNTICO AO OBRA.PHP) -->
             <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público">
-                <div class="barra-ferramentas-leitura" role="toolbar" aria-label="Opções de conforto visual e navegação de capítulos">
-                    <div class="grupo-conforto seletor-capitulo-barra">
-                        <label for="dp-select-capitulo" class="rotulo-conforto">Capítulo:</label>
-                        <select id="dp-select-capitulo" class="select-capitulo-rapido"></select>
+                <div class="barra-conforto-leitura-moderna" role="toolbar" aria-label="Controles de conforto e navegação de leitura">
+                    <div class="grupo-controle-leitura">
+                        <label for="dp-select-capitulo" class="rotulo-controle-leitura">Capítulo:</label>
+                        <select id="dp-select-capitulo" class="select-capitulo-leitura" aria-label="Selecionar capítulo"></select>
                     </div>
-                    <div class="controles-tipografia-direita">
-                        <div class="grupo-conforto" role="group" aria-label="Tamanho e tipo de fonte">
-                            <span class="rotulo-conforto">Letra:</span>
-                            <button type="button" class="btn-conforto-item" id="dp-btn-fonte-menor" title="Diminuir fonte">A−</button>
-                            <span class="indicador-tamanho-fonte" id="dp-indicador-px">18px</span>
-                            <button type="button" class="btn-conforto-item" id="dp-btn-fonte-maior" title="Aumentar fonte">A+</button>
-                            <button type="button" class="btn-conforto-item" id="dp-btn-alternar-fonte" title="Alternar fonte com ou sem serifa">Sem serifa</button>
-                        </div>
-                        <div class="grupo-conforto" role="group" aria-label="Tema do papel">
-                            <span class="rotulo-conforto">Papel:</span>
-                            <button type="button" class="btn-conforto-item ativo" data-dp-tema="padrao">Padrão</button>
-                            <button type="button" class="btn-conforto-item" data-dp-tema="sepia">Sépia</button>
-                            <button type="button" class="btn-conforto-item" data-dp-tema="noturno">Noturno</button>
-                        </div>
+
+                    <div class="grupo-controle-leitura">
+                        <span class="rotulo-controle-leitura">Letra:</span>
+                        <button type="button" class="btn-conforto-item" id="dp-btn-fonte-menor" title="Diminuir tamanho da letra">A−</button>
+                        <span id="dp-indicador-px" class="indicador-fonte-valor">18px</span>
+                        <button type="button" class="btn-conforto-item" id="dp-btn-fonte-maior" title="Aumentar tamanho da letra">A+</button>
+                        <button type="button" class="btn-conforto-item" id="dp-btn-alternar-fonte" title="Alternar entre fonte com serifa e sem serifa">Sem serifa</button>
                     </div>
+
+                    <div class="grupo-controle-leitura">
+                        <span class="rotulo-controle-leitura">Papel:</span>
+                        <button type="button" class="btn-papel-cor ativo" data-dp-tema="padrao" title="Papel do tema atual">Padrão</button>
+                        <button type="button" class="btn-papel-cor" data-dp-tema="sepia" title="Papel Sépia Aconchegante">Sépia</button>
+                        <button type="button" class="btn-papel-cor" data-dp-tema="noturno" title="Leitura Noturna Suave">Noturno</button>
+                    </div>
+
+                    <button type="button" class="btn-conforto-item btn-modo-foco-leitura" id="dp-btn-modo-foco" title="Ocultar menus e distrações (Atalho: tecla F)">
+                        <img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco
+                    </button>
                 </div>
 
-                <div class="painel-leitura-unificado" id="dp-painel-papel">
-                    <article class="folha-leitura-capitulo" id="dp-folha-capitulo">
-                        <header class="cabecalho-capitulo-folha">
-                            <span class="numero-capitulo-folha" id="dp-meta-capitulo">CAPÍTULO 1 · ~2 MIN DE LEITURA</span>
+                <div class="palco-capitulos-leitura" id="dp-painel-papel">
+                    <article class="capitulo folha-leitura-capitulo papel-leitura-padrao" id="dp-folha-capitulo">
+                        <header class="cabecalho-folha-capitulo">
+                            <span class="etiqueta-ordem-capitulo" id="dp-meta-capitulo">Capítulo 1 de 1 · ~2 min de leitura</span>
                             <h2 id="dp-titulo-capitulo">Carregando capítulo…</h2>
                         </header>
-                        <div class="texto-capitulo-formatado" id="dp-conteudo-capitulo"></div>
-                        <footer class="rodape-fim-capitulo">
-                            <span id="dp-fim-capitulo-label">✦ Fim do Capítulo 1 ✦</span>
-                            <div style="display:flex; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
-                                <button type="button" class="filtro-pilula" id="dp-btn-cap-anterior" disabled>← Capítulo anterior</button>
-                                <button type="button" class="botao-adicionar-livro" id="dp-btn-cap-proximo" disabled>Próximo capítulo →</button>
+                        <div class="conteudo-capitulo-texto" id="dp-conteudo-capitulo"></div>
+                        <footer class="rodape-folha-capitulo">
+                            <span class="marcador-fim-capitulo" id="dp-fim-capitulo-label">✦ Fim do Capítulo 1 ✦</span>
+                            <div class="navegacao-entre-capitulos">
+                                <button type="button" class="filtro-pilula" id="dp-btn-cap-anterior" disabled>
+                                    ← Capítulo anterior
+                                </button>
+                                <span class="indicador-posicao-cap" id="dp-indicador-posicao">1 / 1</span>
+                                <button type="button" class="botao-adicionar-livro" id="dp-btn-cap-proximo" disabled>
+                                    Próximo capítulo →
+                                </button>
                             </div>
-                            <p id="dp-referencia-legal" style="margin-top:16px; font-size:12px; opacity:0.78;"></p>
                         </footer>
                     </article>
                 </div>
+
+                <details class="aviso-licenca-discreto elemento-ocultavel-foco" style="margin-top: 14px;">
+                    <summary>Informações de licença autoral e aviso legal (Domínio Público — Lei nº 9.610/1998)</summary>
+                    <p id="dp-referencia-legal" style="margin-top: 8px;"></p>
+                </details>
             </section>
 
             <section id="leitor-pdf-container" class="leitor-pdf-container" hidden aria-label="Leitor FOLIVRO">
@@ -572,22 +588,37 @@ $csrf = folivro_escape(folivro_csrf_token());
             iniciarLeitorDominioPublico(workId || '', tituloLivro || '');
         }
 
+        const barraScrollTopo = document.getElementById('barra-progresso-scroll-topo');
+        function atualizarProgressoScrollTopo() {
+            if (!barraScrollTopo) return;
+            const docEl = document.documentElement;
+            const scrollTop = window.scrollY || docEl.scrollTop;
+            const alturaTotal = Math.max(1, docEl.scrollHeight - window.innerHeight);
+            const pct = Math.min(100, Math.max(0, (scrollTop / alturaTotal) * 100));
+            barraScrollTopo.style.width = `${pct.toFixed(1)}%`;
+        }
+        window.addEventListener('scroll', atualizarProgressoScrollTopo, { passive: true });
+        atualizarProgressoScrollTopo();
+
         async function iniciarLeitorDominioPublico(wId, tit) {
             const secaoDp = document.getElementById('leitor-dominio-publico');
+            const folhaCap = document.getElementById('dp-folha-capitulo');
             const selCap = document.getElementById('dp-select-capitulo');
             const metaCap = document.getElementById('dp-meta-capitulo');
             const titCap = document.getElementById('dp-titulo-capitulo');
             const contCap = document.getElementById('dp-conteudo-capitulo');
             const fimLabel = document.getElementById('dp-fim-capitulo-label');
+            const indPos = document.getElementById('dp-indicador-posicao');
             const refLegal = document.getElementById('dp-referencia-legal');
             const btnAnt = document.getElementById('dp-btn-cap-anterior');
             const btnProx = document.getElementById('dp-btn-cap-proximo');
+            const btnFocoDp = document.getElementById('dp-btn-modo-foco');
             const inputPagAtual = document.getElementById('pagina_atual');
             const inputTotalPag = document.getElementById('total_paginas');
 
             let capInicial = Math.max(1, Number(inputPagAtual?.value) || 1);
 
-            async function carregarCapituloDp(numCap) {
+            async function carregarCapituloDp(numCap, rolarTopo = false) {
                 statusBox.textContent = 'Carregando capítulo do acervo de Domínio Público…';
                 const r = await fetch(`api/dominio-publico.php?work=${encodeURIComponent(wId)}&titulo=${encodeURIComponent(tit)}&cap=${numCap}`);
                 const d = await r.json();
@@ -600,7 +631,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     (d.listaCapitulos || []).forEach((c) => {
                         const opt = document.createElement('option');
                         opt.value = String(c.ordem);
-                        opt.textContent = c.titulo;
+                        opt.textContent = `Cap. ${c.ordem} — ${c.titulo}`;
                         selCap.appendChild(opt);
                     });
                 }
@@ -610,11 +641,12 @@ $csrf = folivro_escape(folivro_csrf_token());
                 titCap.textContent = d.capituloAtual.titulo;
                 contCap.innerHTML = d.capituloAtual.conteudoHtml;
                 fimLabel.textContent = `✦ Fim do Capítulo ${ordem} ✦`;
+                if (indPos) indPos.textContent = `${ordem} / ${d.totalCapitulos}`;
                 refLegal.textContent = `${d.baseLegal} (${d.edicaoReferencia})`;
                 btnAnt.disabled = ordem <= 1;
                 btnProx.disabled = ordem >= d.totalCapitulos;
-                btnAnt.onclick = () => { if (ordem > 1) carregarCapituloDp(ordem - 1); };
-                btnProx.onclick = () => { if (ordem < d.totalCapitulos) carregarCapituloDp(ordem + 1); };
+                btnAnt.onclick = () => { if (ordem > 1) carregarCapituloDp(ordem - 1, true); };
+                btnProx.onclick = () => { if (ordem < d.totalCapitulos) carregarCapituloDp(ordem + 1, true); };
 
                 if (inputPagAtual && inputTotalPag) {
                     inputPagAtual.value = String(ordem);
@@ -622,44 +654,72 @@ $csrf = folivro_escape(folivro_csrf_token());
                 }
 
                 secaoDp.hidden = false;
-                statusBox.textContent = `${d.baseLegal}`;
+                statusBox.hidden = true;
+                if (rolarTopo) {
+                    secaoDp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                atualizarProgressoScrollTopo();
                 return true;
             }
 
             try {
-                const okDp = await carregarCapituloDp(capInicial);
+                const okDp = await carregarCapituloDp(capInicial, false);
                 if (okDp) {
-                    selCap.addEventListener('change', () => carregarCapituloDp(Number(selCap.value) || 1));
+                    selCap.addEventListener('change', () => carregarCapituloDp(Number(selCap.value) || 1, true));
 
-                    // Controles de fonte e tema iguais ao leitor original (obra.php)
-                    let fontPx = 18;
-                    let semSerifa = false;
+                    let fontPx = Number(localStorage.getItem('folivro_fonte_tamanho')) || 18;
+                    let serifa = (localStorage.getItem('folivro_fonte_familia') || 'serifa') === 'serifa';
+                    let papel = localStorage.getItem('folivro_papel_leitura') || 'padrao';
                     const indPx = document.getElementById('dp-indicador-px');
                     const btnMenor = document.getElementById('dp-btn-fonte-menor');
                     const btnMaior = document.getElementById('dp-btn-fonte-maior');
                     const btnFonte = document.getElementById('dp-btn-alternar-fonte');
-                    const painelPapel = document.getElementById('dp-painel-papel');
+                    const botoesPapel = document.querySelectorAll('[data-dp-tema]');
 
                     function aplicarTipografiaDp() {
+                        fontPx = Math.min(28, Math.max(15, fontPx));
                         contCap.style.fontSize = `${fontPx}px`;
-                        contCap.style.fontFamily = semSerifa ? 'system-ui, -apple-system, sans-serif' : 'Georgia, "Times New Roman", serif';
+                        contCap.style.fontFamily = serifa
+                            ? 'Georgia, "Newsreader", "Times New Roman", serif'
+                            : 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
                         indPx.textContent = `${fontPx}px`;
-                        btnFonte.textContent = semSerifa ? 'Com serifa' : 'Sem serifa';
-                    }
-                    btnMenor.addEventListener('click', () => { fontPx = Math.max(14, fontPx - 2); aplicarTipografiaDp(); });
-                    btnMaior.addEventListener('click', () => { fontPx = Math.min(26, fontPx + 2); aplicarTipografiaDp(); });
-                    btnFonte.addEventListener('click', () => { semSerifa = !semSerifa; aplicarTipografiaDp(); });
+                        btnFonte.classList.toggle('ativo', !serifa);
+                        btnFonte.textContent = serifa ? 'Sem serifa' : 'Com serifa';
 
-                    document.querySelectorAll('[data-dp-tema]').forEach((btn) => {
+                        if (folhaCap) {
+                            folhaCap.classList.remove('papel-leitura-padrao', 'papel-leitura-sepia', 'papel-leitura-noturno');
+                            folhaCap.classList.add(`papel-leitura-${papel}`);
+                        }
+                        botoesPapel.forEach((b) => {
+                            b.classList.toggle('ativo', b.getAttribute('data-dp-tema') === papel);
+                        });
+
+                        localStorage.setItem('folivro_fonte_tamanho', String(fontPx));
+                        localStorage.setItem('folivro_fonte_familia', serifa ? 'serifa' : 'padrao');
+                        localStorage.setItem('folivro_papel_leitura', papel);
+                    }
+
+                    btnMenor.addEventListener('click', () => { fontPx -= 2; aplicarTipografiaDp(); });
+                    btnMaior.addEventListener('click', () => { fontPx += 2; aplicarTipografiaDp(); });
+                    btnFonte.addEventListener('click', () => { serifa = !serifa; aplicarTipografiaDp(); });
+
+                    botoesPapel.forEach((btn) => {
                         btn.addEventListener('click', () => {
-                            document.querySelectorAll('[data-dp-tema]').forEach((b) => b.classList.remove('ativo'));
-                            btn.classList.add('ativo');
-                            const tema = btn.getAttribute('data-dp-tema');
-                            painelPapel.classList.remove('tema-papel-sepia', 'tema-papel-noturno');
-                            if (tema === 'sepia') painelPapel.classList.add('tema-papel-sepia');
-                            if (tema === 'noturno') painelPapel.classList.add('tema-papel-noturno');
+                            papel = btn.getAttribute('data-dp-tema') || 'padrao';
+                            aplicarTipografiaDp();
                         });
                     });
+
+                    if (btnFocoDp) {
+                        btnFocoDp.addEventListener('click', () => {
+                            const focoAtivo = document.body.classList.toggle('modo-leitura-foco');
+                            btnFocoDp.classList.toggle('ativo', focoAtivo);
+                            btnFocoDp.innerHTML = focoAtivo
+                                ? '<img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Sair do Foco'
+                                : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco';
+                        });
+                    }
+
                     aplicarTipografiaDp();
                     return;
                 }
