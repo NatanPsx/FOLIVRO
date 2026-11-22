@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/dominio_publico.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -21,6 +22,32 @@ $book = $stmt->fetch();
 if (!$book) {
     http_response_code(404);
     exit('Livro não encontrado na sua biblioteca.');
+}
+
+// Se for uma obra do Acervo Nacional de Domínio Público, garante título, autor, capa e classificação corretos.
+$obraDpLeitor = folivro_dp_encontrar_obra((string) ($book['id_externo_livro'] ?? ''), (string) ($book['titulo_livro'] ?? ''));
+if ($obraDpLeitor !== null) {
+    $precisaReparo = ($book['titulo_livro'] ?? '') === '' || $book['titulo_livro'] === 'Obra sem título'
+        || ($book['autor_livro'] ?? '') === '' || $book['autor_livro'] === 'Autoria não informada'
+        || empty($book['capa_livro'])
+        || ($book['classificacao_livro'] ?? '') !== $obraDpLeitor['classificacao'];
+    $book['titulo_livro'] = $obraDpLeitor['title'];
+    $book['autor_livro'] = $obraDpLeitor['authors'][0] ?? 'Autor Clássico';
+    $book['capa_livro'] = $obraDpLeitor['coverUrl'] ?: ($book['capa_livro'] ?? null);
+    $book['classificacao_livro'] = $obraDpLeitor['classificacao'];
+    $book['paginas_livro'] = count($obraDpLeitor['capitulos'] ?? []);
+    if ($precisaReparo) {
+        $pdo->prepare(
+            'UPDATE livro SET titulo_livro = ?, autor_livro = ?, capa_livro = ?, classificacao_livro = ?, paginas_livro = ? WHERE id_livro = ?'
+        )->execute([
+            $book['titulo_livro'],
+            $book['autor_livro'],
+            $book['capa_livro'],
+            $book['classificacao_livro'],
+            $book['paginas_livro'],
+            (int) $book['id_livro'],
+        ]);
+    }
 }
 
 $stProdLeitor = $pdo->prepare(
@@ -201,25 +228,22 @@ $csrf = folivro_escape(folivro_csrf_token());
     <?php require __DIR__ . '/includes/menu-autor.php'; ?>
 
     <main class="conteudo conteudo-leitura-confortavel" id="conteudo-principal">
-        <div class="leitura-imersiva-container leitor-catalogo-container">
+        <div class="leitura-imersiva-container" id="container-leitura-catalogo">
             <?php
             $pctAtual = max(0, min(100, (int) round((float) ($book['porcentagem_progressao'] ?? 0))));
             $siglaIdadeLeitor = folivro_classificacao_sigla($classLivroLeitor);
             $labelIdadeLeitor = folivro_aviso_conteudo_label($classLivroLeitor);
             ?>
 
-            <nav class="navegacao-topo-leitura" aria-label="Navegação do leitor">
+            <nav class="navegacao-topo-leitura elemento-ocultavel-foco" aria-label="Navegação do leitor">
                 <div class="links-retorno-leitura">
                     <a href="minha-biblioteca.php" class="link-retorno-suave">← Minha Biblioteca</a>
                     <span class="separador-nav">·</span>
                     <a href="livro.php?id=<?= (int) $book['id_livro'] ?>" class="link-retorno-suave">Ver ficha completa e críticas</a>
                 </div>
-                <button type="button" class="btn-conforto-item btn-modo-foco-leitura" id="btn-modo-foco-catalogo" title="Ocultar menus laterais para focar na leitura">
-                    <img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco
-                </button>
             </nav>
 
-            <header class="cabecalho-leitor-livro">
+            <header class="cabecalho-leitor-livro elemento-ocultavel-foco">
                 <div class="livro-capa">
                     <?php if (!empty($book['capa_livro'])): ?>
                         <img src="<?= folivro_escape($book['capa_livro']) ?>" alt="Capa de <?= $titulo ?>">
@@ -237,11 +261,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                         </span>
                     </div>
                     <h1><?= $titulo ?></h1>
-                    <p><strong><?= folivro_escape($book['autor_livro']) ?></strong> · Acompanhamento de leitura sem distrações. O leitor integrado exibe edições cujo acesso online é disponibilizado oficialmente pela Open Library / Internet Archive.</p>
+                    <p id="subtitulo-cabecalho-leitor"><strong><?= folivro_escape($book['autor_livro']) ?></strong> · Leitura confortável e acompanhamento de progresso no FOLIVRO.</p>
                     <div class="bloco-progresso-leitor">
                         <div class="topo-progresso-leitor-flex">
                             <span id="progresso-rotulo-topo">Progresso atual: <?= $pctAtual ?>%</span>
-                            <span class="paginas-rotulo-topo">
+                            <span class="paginas-rotulo-topo" id="paginas-rotulo-topo">
                                 Pág. <?= (int) ($book['pagina_atual_progressao'] ?? 0) ?> de <?= (int) ($book['total_paginas_progressao'] ?: $book['paginas_livro'] ?: 1) ?>
                             </span>
                         </div>
@@ -255,7 +279,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             <section id="leitor-status" class="estado-vazio" role="status">Verificando disponibilidade do leitor…</section>
 
             <!-- LEITOR NATIVO DE CAPÍTULOS — ACERVO NACIONAL DE DOMÍNIO PÚBLICO (IDÊNTICO AO OBRA.PHP) -->
-            <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público">
+            <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público" style="display: flex; flex-direction: column; gap: 22px;">
                 <div class="barra-conforto-leitura-moderna" role="toolbar" aria-label="Controles de conforto e navegação de leitura">
                     <div class="grupo-controle-leitura">
                         <label for="dp-select-capitulo" class="rotulo-controle-leitura">Capítulo:</label>
@@ -265,7 +289,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <div class="grupo-controle-leitura">
                         <span class="rotulo-controle-leitura">Letra:</span>
                         <button type="button" class="btn-conforto-item" id="dp-btn-fonte-menor" title="Diminuir tamanho da letra">A−</button>
-                        <span id="dp-indicador-px" class="indicador-fonte-valor">18px</span>
+                        <span id="dp-indicador-px" class="indicador-fonte-valor">19px</span>
                         <button type="button" class="btn-conforto-item" id="dp-btn-fonte-maior" title="Aumentar tamanho da letra">A+</button>
                         <button type="button" class="btn-conforto-item" id="dp-btn-alternar-fonte" title="Alternar entre fonte com serifa e sem serifa">Sem serifa</button>
                     </div>
@@ -304,7 +328,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </article>
                 </div>
 
-                <details class="aviso-licenca-discreto elemento-ocultavel-foco" style="margin-top: 14px;">
+                <details class="aviso-licenca-discreto elemento-ocultavel-foco">
                     <summary>Informações de licença autoral e aviso legal (Domínio Público — Lei nº 9.610/1998)</summary>
                     <p id="dp-referencia-legal" style="margin-top: 8px;"></p>
                 </details>
@@ -330,7 +354,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             <iframe id="leitor-embed" class="leitor-embed" title="Leitor de <?= $titulo ?>" hidden allow="fullscreen" referrerpolicy="no-referrer"></iframe>
 
             <!-- PAINEL DUPLO ALINHADO: REGISTRAR PROGRESSO + STATUS NA BIBLIOTECA -->
-            <div class="grade-painel-progresso-leitor">
+            <div class="grade-painel-progresso-leitor elemento-ocultavel-foco">
                 <form id="form-progresso" class="progresso-form form-largura-total card-progresso-nivelado">
                     <h2>Registrar progresso de páginas</h2>
                     <p class="texto-apoio-pequeno" style="margin:0;">Atualize a página em que você parou para sincronizar sua barra de leitura.</p>
@@ -626,19 +650,25 @@ $csrf = folivro_escape(folivro_csrf_token());
                     return false;
                 }
 
+                function limparTituloCap(bruto, ordemNum) {
+                    const s = String(bruto || '').replace(/^Cap[íi]tulo\s+[IVXLCDM0-9]+\s*[—\-:]\s*/iu, '').trim();
+                    return s !== '' ? s : `Capítulo ${ordemNum}`;
+                }
+
                 if (selCap.options.length !== d.totalCapitulos) {
                     selCap.innerHTML = '';
                     (d.listaCapitulos || []).forEach((c) => {
                         const opt = document.createElement('option');
                         opt.value = String(c.ordem);
-                        opt.textContent = `Cap. ${c.ordem} — ${c.titulo}`;
+                        const tLimpo = limparTituloCap(c.titulo, c.ordem);
+                        opt.textContent = `Cap. ${c.ordem} — ${tLimpo}`;
                         selCap.appendChild(opt);
                     });
                 }
                 const ordem = d.capituloAtual.ordem;
                 selCap.value = String(ordem);
                 metaCap.textContent = `CAPÍTULO ${ordem} DE ${d.totalCapitulos} · ~${d.capituloAtual.tempoMin} MIN DE LEITURA`;
-                titCap.textContent = d.capituloAtual.titulo;
+                titCap.textContent = limparTituloCap(d.capituloAtual.titulo, ordem);
                 contCap.innerHTML = d.capituloAtual.conteudoHtml;
                 fimLabel.textContent = `✦ Fim do Capítulo ${ordem} ✦`;
                 if (indPos) indPos.textContent = `${ordem} / ${d.totalCapitulos}`;
@@ -652,6 +682,15 @@ $csrf = folivro_escape(folivro_csrf_token());
                     inputPagAtual.value = String(ordem);
                     inputTotalPag.value = String(d.totalCapitulos);
                 }
+
+                // Sincroniza visualmente o cabeçalho de progresso com o capítulo atual
+                const pctCap = Math.min(100, Math.max(0, Math.round((ordem / Math.max(1, d.totalCapitulos)) * 100)));
+                const rotuloTopo = document.getElementById('progresso-rotulo-topo');
+                const pagRotuloTopo = document.getElementById('paginas-rotulo-topo');
+                const barraTopoCard = document.getElementById('progresso-barra-preenchimento');
+                if (rotuloTopo) rotuloTopo.textContent = `Progresso atual: ${pctCap}%`;
+                if (pagRotuloTopo) pagRotuloTopo.textContent = `Cap. ${ordem} de ${d.totalCapitulos}`;
+                if (barraTopoCard) barraTopoCard.style.width = `${pctCap}%`;
 
                 secaoDp.hidden = false;
                 statusBox.hidden = true;
@@ -667,7 +706,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 if (okDp) {
                     selCap.addEventListener('change', () => carregarCapituloDp(Number(selCap.value) || 1, true));
 
-                    let fontPx = Number(localStorage.getItem('folivro_fonte_tamanho')) || 18;
+                    let fontPx = Number(localStorage.getItem('folivro_fonte_tamanho')) || 19;
                     let serifa = (localStorage.getItem('folivro_fonte_familia') || 'serifa') === 'serifa';
                     let papel = localStorage.getItem('folivro_papel_leitura') || 'padrao';
                     const indPx = document.getElementById('dp-indicador-px');
@@ -683,8 +722,8 @@ $csrf = folivro_escape(folivro_csrf_token());
                             ? 'Georgia, "Newsreader", "Times New Roman", serif'
                             : 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
                         indPx.textContent = `${fontPx}px`;
-                        btnFonte.classList.toggle('ativo', !serifa);
-                        btnFonte.textContent = serifa ? 'Sem serifa' : 'Com serifa';
+                        btnFonte.classList.toggle('ativo', serifa);
+                        btnFonte.textContent = serifa ? 'Serifa ✓' : 'Sem serifa';
 
                         if (folhaCap) {
                             folhaCap.classList.remove('papel-leitura-padrao', 'papel-leitura-sepia', 'papel-leitura-noturno');

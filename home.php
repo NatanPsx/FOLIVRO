@@ -30,8 +30,8 @@ $continuando = $continua->fetchAll(PDO::FETCH_ASSOC);
 // Resumo rápido para os KPIs do início
 $stKpi = $pdo->prepare(
     "SELECT
-        (SELECT COUNT(*) FROM livraria WHERE id_usuario = ?) +
-        (SELECT COUNT(*) FROM livraria_digital ld JOIN autor_dos_livros adl2 ON adl2.id_autor_dos_livros = ld.id_autor_dos_livros WHERE ld.id_usuario = ? AND adl2.status_autor_dos_livros <> 'removido') AS total_estante,
+        (SELECT COUNT(*) FROM livraria l0 LEFT JOIN loja_produtos lp0 ON lp0.id_livro = l0.id_livro LEFT JOIN autor_dos_livros adl0 ON adl0.id_autor_dos_livros = lp0.id_autor_dos_livros WHERE l0.id_usuario = ? AND (adl0.id_autor_dos_livros IS NULL OR adl0.status_autor_dos_livros <> 'removido')) +
+        (SELECT COUNT(*) FROM livraria_digital ld JOIN autor_dos_livros adl2 ON adl2.id_autor_dos_livros = ld.id_autor_dos_livros WHERE ld.id_usuario = ? AND adl2.status_autor_dos_livros <> 'removido' AND NOT EXISTS (SELECT 1 FROM livraria l2 JOIN loja_produtos lp2 ON lp2.id_livro = l2.id_livro WHERE l2.id_usuario = ld.id_usuario AND lp2.id_autor_dos_livros = adl2.id_autor_dos_livros)) AS total_estante,
         (SELECT COUNT(*) FROM livraria WHERE id_usuario = ? AND status_livraria = 'lido') AS livros_lidos,
         (SELECT COALESCE(SUM(p.pagina_atual_progressao), 0) FROM progressao_leitura p WHERE p.id_usuario = ?) AS paginas_lidas,
         (SELECT COUNT(*)
@@ -323,7 +323,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
 
     </main>
 
-    <script src="livros.js?v=20261122_02"></script>
+    <script src="livros.js?v=20261122_04"></script>
 </body>
 
 </html>

@@ -6,6 +6,7 @@ require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/dominio_publico.php';
 
 folivro_require_login();
+session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 
 $workId = isset($_GET['work']) && is_string($_GET['work']) ? trim($_GET['work']) : '';

@@ -9,13 +9,41 @@ require_once __DIR__ . '/../config/traducao.php';
 
 $pdo = folivro_database();
 folivro_require_login();
+$maiorDeIdadeSessao = folivro_usuario_maior_de_idade();
+session_write_close();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
 $rawQuery = isset($_GET['q']) && is_string($_GET['q']) ? trim($_GET['q']) : '';
 $rawCategoria = isset($_GET['categoria']) && is_string($_GET['categoria']) ? trim($_GET['categoria']) : '';
-$isDestaques = ($rawCategoria === '') && (isset($_GET['destaques']) || !isset($_GET['q']) || in_array(mb_strtolower($rawQuery, 'UTF-8'), ['', 'destaques', 'populares', 'trending'], true));
+$aliasCategoriasTopo = [
+    'literatura nacional' => 'literatura_nacional',
+    'literatura brasileira' => 'literatura_nacional',
+    'literatura_nacional' => 'literatura_nacional',
+    'classicos' => 'classicos',
+    'clássicos' => 'classicos',
+    'grandes classicos' => 'classicos',
+    'grandes clássicos' => 'classicos',
+    'suspense' => 'suspense',
+    'drama' => 'drama',
+    'fantasia' => 'fantasia',
+    'ficcao cientifica' => 'ficcao_cientifica',
+    'ficção científica' => 'ficcao_cientifica',
+    'ficcao_cientifica' => 'ficcao_cientifica',
+    'romance' => 'romance',
+    'terror' => 'terror',
+    'misterio' => 'misterio',
+    'mistério' => 'misterio',
+    'aventura' => 'aventura',
+    'distopia' => 'distopia',
+    'poesia' => 'poesia',
+];
+$qLowerTopo = mb_strtolower($rawQuery, 'UTF-8');
+if ($rawCategoria === '' && isset($aliasCategoriasTopo[$qLowerTopo])) {
+    $rawCategoria = $aliasCategoriasTopo[$qLowerTopo];
+}
+$isDestaques = ($rawCategoria === '') && (isset($_GET['destaques']) || !isset($_GET['q']) || in_array($qLowerTopo, ['', 'destaques', 'populares', 'trending'], true));
 
 if ($isDestaques) {
     $query = 'destaques';
@@ -80,7 +108,7 @@ if (!function_exists('folivro_normalizar_titulo_chave')) {
 }
 
 if (!function_exists('folivro_executar_curl_multi')) {
-    function folivro_executar_curl_multi(array $urls, int $timeout = 10, bool $verifySsl = true): array {
+    function folivro_executar_curl_multi(array $urls, int $timeout = 4, bool $verifySsl = false): array {
         if (empty($urls)) return [];
         if (!function_exists('curl_multi_init')) {
             $results = [];
@@ -91,9 +119,6 @@ if (!function_exists('folivro_executar_curl_multi')) {
             foreach ($urls as $k => $u) {
                 $r = @file_get_contents($u, false, $ctx);
                 if ($r) $results[$k] = $r;
-            }
-            if (empty($results) && $verifySsl) {
-                return folivro_executar_curl_multi($urls, $timeout, false);
             }
             return $results;
         }
@@ -108,7 +133,8 @@ if (!function_exists('folivro_executar_curl_multi')) {
             curl_setopt_array($ch, [
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => $timeout,
-                CURLOPT_CONNECTTIMEOUT => 6,
+                CURLOPT_CONNECTTIMEOUT => 2,
+                CURLOPT_ENCODING => '',
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
                 CURLOPT_FOLLOWLOCATION => true,
@@ -167,9 +193,9 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
         // MODO 1: Catálogo de Destaques Gerais (Livros mais populares e bem avaliados)
         if ($query === 'destaques') {
             $cacheFile = $cacheDir . '/destaques_populares_' . md5($sort) . '.json';
-            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400 * 60)) {
                 $cached = json_decode((string) file_get_contents($cacheFile), true);
-                if (is_array($cached) && count($cached) >= 18) {
+                if (is_array($cached) && count($cached) >= 12) {
                     return $cached;
                 }
             }
@@ -349,7 +375,7 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
 
         if ($catConfig !== null) {
             $cacheFile = $cacheDir . '/cat_' . $catConfig['slug'] . '_' . md5($sort) . '.json';
-            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400 * 60)) {
                 $cached = json_decode((string) file_get_contents($cacheFile), true);
                 if (is_array($cached) && !empty($cached)) {
                     return $cached;
@@ -360,10 +386,10 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
             foreach ($catConfig['subjects'] as $idx => $subj) {
                 $urlsCat['s_' . $idx] = 'https://openlibrary.org/search.json?subject=' . rawurlencode($subj)
                     . '&sort=' . rawurlencode($sort)
-                    . '&limit=45'
+                    . '&limit=28'
                     . '&fields=' . rawurlencode($fields);
             }
-            $resMulti = folivro_executar_curl_multi($urlsCat, 8);
+            $resMulti = folivro_executar_curl_multi($urlsCat, 4);
             $allDocs = [];
             foreach ($resMulti as $conteudoJson) {
                 $payload = json_decode($conteudoJson, true);
@@ -372,6 +398,12 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
                 }
             }
             if (empty($allDocs)) {
+                if (file_exists($cacheFile)) {
+                    $cached = json_decode((string) file_get_contents($cacheFile), true);
+                    if (is_array($cached) && !empty($cached)) {
+                        return $cached;
+                    }
+                }
                 return [];
             }
 
@@ -452,7 +484,7 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
         $cacheKey = md5($normBusca . '_' . $sort);
         $cacheFile = $cacheDir . '/search_' . $cacheKey . '.json';
 
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400 * 60)) {
             $cached = json_decode((string) file_get_contents($cacheFile), true);
             if (is_array($cached) && !empty($cached)) {
                 return $cached;
@@ -478,16 +510,16 @@ if (!function_exists('folivro_consultar_e_filtrar_catalogo')) {
             }
         }
 
-        // Constrói URLs de consulta e busca em paralelo com curl_multi
+        // Constrói URLs de consulta e busca em paralelo com curl_multi (máx. 2 variações e limit=24 para resposta rápida)
         $urlsBusca = [];
-        foreach ($queriesParaBuscar as $idx => $qOl) {
+        foreach (array_slice($queriesParaBuscar, 0, 2) as $idx => $qOl) {
             $urlsBusca['q_' . $idx] = 'https://openlibrary.org/search.json?q=' . rawurlencode($qOl)
                 . '&sort=' . rawurlencode($sort)
-                . '&limit=40'
+                . '&limit=24'
                 . '&fields=' . rawurlencode($fields);
         }
 
-        $resMulti = folivro_executar_curl_multi($urlsBusca, 6);
+        $resMulti = folivro_executar_curl_multi($urlsBusca, 3);
         $allDocs = [];
         foreach ($resMulti as $conteudoJson) {
             $payload = json_decode($conteudoJson, true);
@@ -894,7 +926,7 @@ $allItems = array_merge($localItems, $olFiltrados);
 $total = count($allItems);
 $slice = array_slice($allItems, $offset, $limit);
 
-$maiorDeIdade = folivro_usuario_maior_de_idade();
+$maiorDeIdade = $maiorDeIdadeSessao;
 foreach ($slice as &$item) {
     if (($item['source'] ?? '') === 'folivro' || !empty($item['dominioPublico'])) {
         $classNorm = folivro_normalizar_classificacao((string) ($item['classificacao'] ?? 'livre'));

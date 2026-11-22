@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="400" height="600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d2436"/>
+      <stop offset="100%" stop-color="#0b0e17"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="38%" r="50%">
+      <stop offset="0%" stop-color="#d9a95b" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#0b0e17" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="400" height="600" fill="url(#bg)"/>
+  <rect width="400" height="600" fill="url(#glow)"/>
+  <rect x="22" y="22" width="356" height="556" rx="6" fill="none" stroke="#d9a95b" stroke-width="2" stroke-opacity="0.65"/>
+  <rect x="30" y="30" width="340" height="540" rx="4" fill="none" stroke="#d9a95b" stroke-width="1" stroke-opacity="0.35"/>
+  <path d="M22 50 L50 22 M378 50 L350 22 M22 550 L50 578 M378 550 L350 578" stroke="#d9a95b" stroke-width="1.5" stroke-opacity="0.6"/>
+  <text x="200" y="72" text-anchor="middle" fill="#d9a95b" font-family="Georgia, serif" font-size="13" font-weight="bold" letter-spacing="2.5">MACHADO DE ASSIS</text>
+  <line x1="120" y1="86" x2="280" y2="86" stroke="#d9a95b" stroke-width="1" stroke-opacity="0.5"/>
+  <g transform="translate(200, 175)" stroke="#d9a95b" fill="none">
+    <circle cx="0" cy="0" r="54" stroke-width="1.5" stroke-opacity="0.45"/>
+    <circle cx="0" cy="0" r="46" stroke-width="1" stroke-dasharray="4 3" stroke-opacity="0.4"/>
+    <path d="M-18 -24 L18 -24 L4 0 L18 24 L-18 24 L-4 0 Z" stroke-width="2"/><circle cx="0" cy="-12" r="3" fill="#d9a95b"/>
+  </g>
+  <text x="200" y="275" text-anchor="middle" fill="#fdf8f2" font-family="Georgia, serif" font-size="28" font-weight="bold" letter-spacing="0.5">Memórias</text><text x="200" y="311" text-anchor="middle" fill="#fdf8f2" font-family="Georgia, serif" font-size="28" font-weight="bold" letter-spacing="0.5">Póstumas de Brás</text><text x="200" y="347" text-anchor="middle" fill="#fdf8f2" font-family="Georgia, serif" font-size="28" font-weight="bold" letter-spacing="0.5">Cubas</text>
+  <line x1="140" y1="395" x2="260" y2="395" stroke="#d9a95b" stroke-width="1.2" stroke-opacity="0.55"/>
+  <circle cx="200" cy="395" r="3.5" fill="#d9a95b"/>
+  <text x="200" y="428" text-anchor="middle" fill="#e8dccf" font-family="Georgia, serif" font-style="italic" font-size="14" opacity="0.88">Realismo Brasileiro · 1881</text>
+  <text x="200" y="542" text-anchor="middle" fill="#d9a95b" font-family="Georgia, serif" font-size="11" letter-spacing="3" opacity="0.85">EDIÇÃO FOLIVRO</text>
+</svg>

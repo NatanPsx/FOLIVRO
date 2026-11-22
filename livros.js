@@ -173,9 +173,9 @@
             details.appendChild(blockedBtn);
         } else if (ehFolivro) {
             const linkDetalhes = document.createElement('a');
-            linkDetalhes.href = urlDestino;
+            linkDetalhes.href = book.idLivro > 0 ? `livro.php?id=${book.idLivro}` : urlDestino;
             linkDetalhes.className = 'link-ver-detalhes';
-            linkDetalhes.innerHTML = 'Ver ficha da obra &rarr;';
+            linkDetalhes.innerHTML = 'Ver críticas & ficha completa &rarr;';
             details.appendChild(linkDetalhes);
 
             const openButton = document.createElement('a');
@@ -271,7 +271,9 @@
             if (!response.ok) {
                 throw new Error(data.error || 'Não foi possível consultar o catálogo.');
             }
-            cacheBuscaEmMemoria.set(cacheKey, data);
+            if (Array.isArray(data.items) && data.items.length > 0) {
+                cacheBuscaEmMemoria.set(cacheKey, data);
+            }
             return renderizar(data);
         } catch (error) {
             if (!append) {

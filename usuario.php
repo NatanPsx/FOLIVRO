@@ -145,8 +145,8 @@ if (!$ehMeuPerfil && $user) {
 // Contadores reais do perfil (inclui seguidores, seguindo e pontos).
 $contStmt = $pdo->prepare(
     'SELECT
-        (SELECT COUNT(*) FROM livraria WHERE id_usuario = ?) +
-        (SELECT COUNT(*) FROM livraria_digital WHERE id_usuario = ?) AS livros_salvos,
+        (SELECT COUNT(*) FROM livraria l0 LEFT JOIN loja_produtos lp0 ON lp0.id_livro = l0.id_livro LEFT JOIN autor_dos_livros adl0 ON adl0.id_autor_dos_livros = lp0.id_autor_dos_livros WHERE l0.id_usuario = ? AND (adl0.id_autor_dos_livros IS NULL OR adl0.status_autor_dos_livros <> "removido")) +
+        (SELECT COUNT(*) FROM livraria_digital ld JOIN autor_dos_livros adl2 ON adl2.id_autor_dos_livros = ld.id_autor_dos_livros WHERE ld.id_usuario = ? AND adl2.status_autor_dos_livros <> "removido" AND NOT EXISTS (SELECT 1 FROM livraria l2 JOIN loja_produtos lp2 ON lp2.id_livro = l2.id_livro WHERE l2.id_usuario = ld.id_usuario AND lp2.id_autor_dos_livros = adl2.id_autor_dos_livros)) AS livros_salvos,
         (SELECT COUNT(*) FROM resenha WHERE id_usuario = ?) AS livros_avaliados,
         (SELECT COUNT(*) FROM curtidas WHERE id_usuario = ?) AS favoritos,
         (SELECT COALESCE(pontos_contador_de_pontos, 0) FROM contador_pontos WHERE id_usuario = ?) AS pontos,

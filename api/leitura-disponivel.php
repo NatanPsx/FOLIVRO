@@ -4,6 +4,8 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/dominio_publico.php';
 folivro_require_login();
+$uidSessaoDisp = (int) $_SESSION['id_usuario'];
+session_write_close();
 header('Content-Type: application/json; charset=utf-8');
 $workId = isset($_GET['work']) && is_string($_GET['work']) ? $_GET['work'] : '';
 if (!preg_match('/^OL[0-9]+W$/', $workId)) {
@@ -16,7 +18,7 @@ if (folivro_dp_encontrar_obra($workId) !== null) {
 }
 $pdo = folivro_database();
 $check = $pdo->prepare("SELECT 1 FROM livraria l JOIN livro b ON b.id_livro = l.id_livro WHERE l.id_usuario = ? AND b.id_externo_livro = ? LIMIT 1");
-$check->execute([(int) $_SESSION['id_usuario'], $workId]);
+$check->execute([$uidSessaoDisp, $workId]);
 if (!$check->fetchColumn()) {
     http_response_code(404);
     exit(json_encode(['error' => 'Adicione o livro à biblioteca antes de abrir o leitor.'], JSON_UNESCAPED_UNICODE));

@@ -23,8 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Biblioteca pessoal (livros do catálogo) + biblioteca digital (obras autorais adquiridas).
 // Obras removidas definitivamente pela moderação não são exibidas; obras sob análise refletem seu estado atual.
 $stmt = $pdo->prepare(
-    'SELECT COALESCE(adl.id_autor_dos_livros, b.id_livro) AS item_id, b.titulo_livro AS titulo, b.autor_livro AS autor, b.capa_livro AS capa,
-            l.status_livraria AS status, p.porcentagem_progressao AS progresso,
+    'SELECT COALESCE(adl.id_autor_dos_livros, b.id_livro) AS item_id, b.id_livro AS id_livro_ficha,
+            b.titulo_livro AS titulo, b.autor_livro AS autor, b.capa_livro AS capa,
+            CASE
+                WHEN adl.status_autor_dos_livros = "suspenso" THEN "suspenso"
+                WHEN adl.status_autor_dos_livros = "rascunho" THEN "rascunho"
+                WHEN adl.id_autor_dos_livros IS NOT NULL THEN "comprado"
+                ELSE l.status_livraria
+            END AS status,
+            p.porcentagem_progressao AS progresso,
             CASE WHEN adl.id_autor_dos_livros IS NOT NULL THEN 1 ELSE 0 END AS obra_autoral,
             COALESCE(adl.motivo_bloqueio_autor, "") AS motivo_bloqueio, COALESCE(b.classificacao_livro, "livre") AS classificacao,
             COALESCE(b.genero_livro, "") AS generos
@@ -36,7 +43,8 @@ $stmt = $pdo->prepare(
       WHERE l.id_usuario = ?
         AND (adl.id_autor_dos_livros IS NULL OR adl.status_autor_dos_livros <> "removido")
   UNION ALL
-     SELECT a.id_autor_dos_livros, h.titulo_historias, u.nome_usuario, h.capa_historias,
+     SELECT a.id_autor_dos_livros, COALESCE(lp3.id_livro, 0) AS id_livro_ficha,
+            h.titulo_historias, u.nome_usuario, h.capa_historias,
             CASE
                 WHEN a.status_autor_dos_livros = "suspenso" THEN "suspenso"
                 WHEN a.status_autor_dos_livros = "rascunho" THEN "rascunho"
@@ -49,6 +57,7 @@ $stmt = $pdo->prepare(
        JOIN autor_dos_livros a ON a.id_autor_dos_livros = d.id_autor_dos_livros
        JOIN historias h ON h.id_historias = a.id_historias
        JOIN usuario u ON u.id_usuario = a.id_autor
+  LEFT JOIN loja_produtos lp3 ON lp3.id_autor_dos_livros = a.id_autor_dos_livros
       WHERE d.id_usuario = ? AND a.status_autor_dos_livros <> "removido"
         AND NOT EXISTS (
             SELECT 1 FROM livraria l2
@@ -192,6 +201,10 @@ $csrf = folivro_escape(folivro_csrf_token());
                                     <?php else: ?>
                                         <a class="botao-adicionar-livro btn-card-principal" href="obra.php?id=<?= (int) $b['item_id'] ?>">Ler obra</a>
                                     <?php endif; ?>
+                                    <?php $idLivroCriticas = (int) ($b['id_livro_ficha'] ?? 0); ?>
+                                    <div class="acoes-secundarias-card">
+                                        <a class="link-ver-detalhes" href="<?= $idLivroCriticas > 0 ? 'livro.php?id=' . $idLivroCriticas : 'obra.php?id=' . (int) $b['item_id'] . '#secao-comunidade-obra' ?>">Críticas &rarr;</a>
+                                    </div>
                                 <?php else: ?>
                                     <div class="bloco-progresso-card">
                                         <div class="topo-progresso-card">

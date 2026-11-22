@@ -365,6 +365,10 @@ $comStmt = $pdo->prepare(
 $comStmt->execute([$idHistoria]);
 $comentarios = $comStmt->fetchAll();
 
+$stLivroVinc = $pdo->prepare('SELECT COALESCE(id_livro, 0) FROM loja_produtos WHERE id_autor_dos_livros = ? LIMIT 1');
+$stLivroVinc->execute([$id]);
+$idLivroVinculadoObra = (int) $stLivroVinc->fetchColumn();
+
 $csrf = folivro_escape(folivro_csrf_token());
 ?>
 <!doctype html>
@@ -396,6 +400,10 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <a href="minha-biblioteca.php" class="link-retorno-suave">← Minha Biblioteca</a>
                     <span class="separador-nav">·</span>
                     <a href="loja.php" class="link-retorno-suave">Loja Autoral</a>
+                    <?php if ($idLivroVinculadoObra > 0): ?>
+                        <span class="separador-nav">·</span>
+                        <a href="livro.php?id=<?= $idLivroVinculadoObra ?>" class="link-retorno-suave">Ver ficha completa e críticas</a>
+                    <?php endif; ?>
                 </div>
                 <?php if ($idAutor === $uid): ?>
                     <a href="gerenciar-obra.php?id=<?= (int) $id ?>" class="filtro-pilula" style="font-size:12.5px; min-height:32px; padding:4px 12px;">
