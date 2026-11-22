@@ -250,6 +250,50 @@ $csrf = folivro_escape(folivro_csrf_token());
             </header>
 
             <section id="leitor-status" class="estado-vazio" role="status">Verificando disponibilidade do leitor…</section>
+
+            <!-- LEITOR NATIVO DE CAPÍTULOS — ACERVO NACIONAL DE DOMÍNIO PÚBLICO (LEI Nº 9.610/1998) -->
+            <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público">
+                <div class="barra-ferramentas-leitura" role="toolbar" aria-label="Opções de conforto visual e navegação de capítulos">
+                    <div class="grupo-conforto seletor-capitulo-barra">
+                        <label for="dp-select-capitulo" class="rotulo-conforto">Capítulo:</label>
+                        <select id="dp-select-capitulo" class="select-capitulo-rapido"></select>
+                    </div>
+                    <div class="controles-tipografia-direita">
+                        <div class="grupo-conforto" role="group" aria-label="Tamanho e tipo de fonte">
+                            <span class="rotulo-conforto">Letra:</span>
+                            <button type="button" class="btn-conforto-item" id="dp-btn-fonte-menor" title="Diminuir fonte">A−</button>
+                            <span class="indicador-tamanho-fonte" id="dp-indicador-px">18px</span>
+                            <button type="button" class="btn-conforto-item" id="dp-btn-fonte-maior" title="Aumentar fonte">A+</button>
+                            <button type="button" class="btn-conforto-item" id="dp-btn-alternar-fonte" title="Alternar fonte com ou sem serifa">Sem serifa</button>
+                        </div>
+                        <div class="grupo-conforto" role="group" aria-label="Tema do papel">
+                            <span class="rotulo-conforto">Papel:</span>
+                            <button type="button" class="btn-conforto-item ativo" data-dp-tema="padrao">Padrão</button>
+                            <button type="button" class="btn-conforto-item" data-dp-tema="sepia">Sépia</button>
+                            <button type="button" class="btn-conforto-item" data-dp-tema="noturno">Noturno</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="painel-leitura-unificado" id="dp-painel-papel">
+                    <article class="folha-leitura-capitulo" id="dp-folha-capitulo">
+                        <header class="cabecalho-capitulo-folha">
+                            <span class="numero-capitulo-folha" id="dp-meta-capitulo">CAPÍTULO 1 · ~2 MIN DE LEITURA</span>
+                            <h2 id="dp-titulo-capitulo">Carregando capítulo…</h2>
+                        </header>
+                        <div class="texto-capitulo-formatado" id="dp-conteudo-capitulo"></div>
+                        <footer class="rodape-fim-capitulo">
+                            <span id="dp-fim-capitulo-label">✦ Fim do Capítulo 1 ✦</span>
+                            <div style="display:flex; justify-content:center; gap:12px; margin-top:16px; flex-wrap:wrap;">
+                                <button type="button" class="filtro-pilula" id="dp-btn-cap-anterior" disabled>← Capítulo anterior</button>
+                                <button type="button" class="botao-adicionar-livro" id="dp-btn-cap-proximo" disabled>Próximo capítulo →</button>
+                            </div>
+                            <p id="dp-referencia-legal" style="margin-top:16px; font-size:12px; opacity:0.78;"></p>
+                        </footer>
+                    </article>
+                </div>
+            </section>
+
             <section id="leitor-pdf-container" class="leitor-pdf-container" hidden aria-label="Leitor FOLIVRO">
                 <div class="leitor-pdf-barra">
                     <div class="leitor-pdf-controles">
@@ -373,6 +417,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
     <script>
         const workId = <?= json_encode($book['id_externo_livro'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        const tituloLivro = <?= json_encode((string) ($book['titulo_livro'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const idLivro = <?= (int) $book['id_livro'] ?>;
         const produtoLoja = <?= json_encode($produtoLoja ? [
             'idProduto' => (int) $produtoLoja['id_produto'],
@@ -522,27 +567,126 @@ $csrf = folivro_escape(folivro_csrf_token());
                     statusBox.append(' ', linkInterno(`loja-download.php?id=${produtoLoja.idProduto}`, 'Baixar arquivo', 'filtro-pilula'));
                 }
             }
-        } else if (workId && /^OL[0-9]+W$/.test(workId)) {
-            // Consulta se a Open Library/Internet Archive libera leitura online desta obra.
-            fetch(`api/leitura-disponivel.php?work=${encodeURIComponent(workId)}`)
-                .then((r) => r.json())
-                .then((data) => {
-                    if (data.availability === 'full_access') {
-                        const frame = document.getElementById('leitor-embed');
-                        frame.src = data.readerUrl;
-                        frame.hidden = false;
-                        statusBox.textContent = 'Leitura online disponível.';
-                    } else if (data.availability === 'borrow') {
-                        statusBox.textContent = 'Esta edição requer empréstimo. Abra o registro da Open Library para verificar as opções de acesso.';
-                        statusBox.append(' ', linkExterno(data.externalUrl, 'Ver opções de leitura/empréstimo'));
-                    } else {
-                        statusBox.textContent = 'A Open Library não disponibiliza um leitor online para esta edição. Você pode consultar a obra no catálogo.';
-                        statusBox.append(' ', linkExterno('https://openlibrary.org/works/' + encodeURIComponent(workId), 'Abrir catálogo'));
-                    }
-                })
-                .catch(() => { statusBox.textContent = 'Não foi possível consultar a disponibilidade agora.'; });
         } else {
-            statusBox.textContent = 'Este livro não possui conteúdo de leitura online disponível no momento.';
+            // Tenta primeiro carregar do Acervo Nacional de Domínio Público (Lei nº 9.610/1998 — Wikisource PT) para leitura nativa no FOLIVRO.
+            iniciarLeitorDominioPublico(workId || '', tituloLivro || '');
+        }
+
+        async function iniciarLeitorDominioPublico(wId, tit) {
+            const secaoDp = document.getElementById('leitor-dominio-publico');
+            const selCap = document.getElementById('dp-select-capitulo');
+            const metaCap = document.getElementById('dp-meta-capitulo');
+            const titCap = document.getElementById('dp-titulo-capitulo');
+            const contCap = document.getElementById('dp-conteudo-capitulo');
+            const fimLabel = document.getElementById('dp-fim-capitulo-label');
+            const refLegal = document.getElementById('dp-referencia-legal');
+            const btnAnt = document.getElementById('dp-btn-cap-anterior');
+            const btnProx = document.getElementById('dp-btn-cap-proximo');
+            const inputPagAtual = document.getElementById('pagina_atual');
+            const inputTotalPag = document.getElementById('total_paginas');
+
+            let capInicial = Math.max(1, Number(inputPagAtual?.value) || 1);
+
+            async function carregarCapituloDp(numCap) {
+                statusBox.textContent = 'Carregando capítulo do acervo de Domínio Público…';
+                const r = await fetch(`api/dominio-publico.php?work=${encodeURIComponent(wId)}&titulo=${encodeURIComponent(tit)}&cap=${numCap}`);
+                const d = await r.json();
+                if (!d || !d.disponivel) {
+                    return false;
+                }
+
+                if (selCap.options.length !== d.totalCapitulos) {
+                    selCap.innerHTML = '';
+                    (d.listaCapitulos || []).forEach((c) => {
+                        const opt = document.createElement('option');
+                        opt.value = String(c.ordem);
+                        opt.textContent = c.titulo;
+                        selCap.appendChild(opt);
+                    });
+                }
+                const ordem = d.capituloAtual.ordem;
+                selCap.value = String(ordem);
+                metaCap.textContent = `CAPÍTULO ${ordem} DE ${d.totalCapitulos} · ~${d.capituloAtual.tempoMin} MIN DE LEITURA`;
+                titCap.textContent = d.capituloAtual.titulo;
+                contCap.innerHTML = d.capituloAtual.conteudoHtml;
+                fimLabel.textContent = `✦ Fim do Capítulo ${ordem} ✦`;
+                refLegal.textContent = `${d.baseLegal} (${d.edicaoReferencia})`;
+                btnAnt.disabled = ordem <= 1;
+                btnProx.disabled = ordem >= d.totalCapitulos;
+                btnAnt.onclick = () => { if (ordem > 1) carregarCapituloDp(ordem - 1); };
+                btnProx.onclick = () => { if (ordem < d.totalCapitulos) carregarCapituloDp(ordem + 1); };
+
+                if (inputPagAtual && inputTotalPag) {
+                    inputPagAtual.value = String(ordem);
+                    inputTotalPag.value = String(d.totalCapitulos);
+                }
+
+                secaoDp.hidden = false;
+                statusBox.textContent = `${d.baseLegal}`;
+                return true;
+            }
+
+            try {
+                const okDp = await carregarCapituloDp(capInicial);
+                if (okDp) {
+                    selCap.addEventListener('change', () => carregarCapituloDp(Number(selCap.value) || 1));
+
+                    // Controles de fonte e tema iguais ao leitor original (obra.php)
+                    let fontPx = 18;
+                    let semSerifa = false;
+                    const indPx = document.getElementById('dp-indicador-px');
+                    const btnMenor = document.getElementById('dp-btn-fonte-menor');
+                    const btnMaior = document.getElementById('dp-btn-fonte-maior');
+                    const btnFonte = document.getElementById('dp-btn-alternar-fonte');
+                    const painelPapel = document.getElementById('dp-painel-papel');
+
+                    function aplicarTipografiaDp() {
+                        contCap.style.fontSize = `${fontPx}px`;
+                        contCap.style.fontFamily = semSerifa ? 'system-ui, -apple-system, sans-serif' : 'Georgia, "Times New Roman", serif';
+                        indPx.textContent = `${fontPx}px`;
+                        btnFonte.textContent = semSerifa ? 'Com serifa' : 'Sem serifa';
+                    }
+                    btnMenor.addEventListener('click', () => { fontPx = Math.max(14, fontPx - 2); aplicarTipografiaDp(); });
+                    btnMaior.addEventListener('click', () => { fontPx = Math.min(26, fontPx + 2); aplicarTipografiaDp(); });
+                    btnFonte.addEventListener('click', () => { semSerifa = !semSerifa; aplicarTipografiaDp(); });
+
+                    document.querySelectorAll('[data-dp-tema]').forEach((btn) => {
+                        btn.addEventListener('click', () => {
+                            document.querySelectorAll('[data-dp-tema]').forEach((b) => b.classList.remove('ativo'));
+                            btn.classList.add('ativo');
+                            const tema = btn.getAttribute('data-dp-tema');
+                            painelPapel.classList.remove('tema-papel-sepia', 'tema-papel-noturno');
+                            if (tema === 'sepia') painelPapel.classList.add('tema-papel-sepia');
+                            if (tema === 'noturno') painelPapel.classList.add('tema-papel-noturno');
+                        });
+                    });
+                    aplicarTipografiaDp();
+                    return;
+                }
+            } catch (_) {}
+
+            // Fallback: consulta disponibilidade na Open Library / Internet Archive
+            if (wId && /^OL[0-9]+W$/.test(wId)) {
+                fetch(`api/leitura-disponivel.php?work=${encodeURIComponent(wId)}`)
+                    .then((r) => r.json())
+                    .then((data) => {
+                        if (data.availability === 'full_access') {
+                            const frame = document.getElementById('leitor-embed');
+                            frame.src = data.readerUrl;
+                            frame.hidden = false;
+                            statusBox.textContent = 'Leitura online disponível.';
+                        } else if (data.availability === 'borrow') {
+                            statusBox.textContent = 'Esta edição requer empréstimo. Abra o registro da Open Library para verificar as opções de acesso.';
+                            statusBox.append(' ', linkExterno(data.externalUrl, 'Ver opções de leitura/empréstimo'));
+                        } else {
+                            statusBox.textContent = 'A Open Library não disponibiliza um leitor online para esta edição. Você pode consultar a obra no catálogo.';
+                            statusBox.append(' ', linkExterno('https://openlibrary.org/works/' + encodeURIComponent(wId), 'Abrir catálogo'));
+                        }
+                    })
+                    .catch(() => { statusBox.textContent = 'Não foi possível consultar a disponibilidade agora.'; });
+            } else {
+                statusBox.textContent = 'Este livro não possui conteúdo de leitura online disponível no momento.';
+            }
         }
 
         // Salva o progresso informado pelo usuário (api/progresso.php) e atualiza a barra visual.

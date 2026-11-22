@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
 require_once __DIR__ . '/../config/loja.php';
+require_once __DIR__ . '/../config/dominio_publico.php';
 require_once __DIR__ . '/../config/traducao.php';
 
 $pdo = folivro_database();
@@ -803,6 +804,27 @@ if (!function_exists('folivro_buscar_obras_locais')) {
                 'generos' => folivro_generos_lista((string) ($r['generos_historias'] ?? '')),
                 '_searchBlob' => mb_strtolower(folivro_remover_acentos(
                     $titulo . ' ' . $r['autor_nome'] . ' ' . ($r['generos_historias'] ?? '') . ' ' . ($r['sinopse_historias'] ?? '')
+                ), 'UTF-8'),
+            ];
+        }
+
+        foreach (folivro_dp_catalogo() as $dp) {
+            $candidatos[] = [
+                'source' => 'openlibrary',
+                'sourceLabel' => 'Domínio Público · Lei 9.610/98',
+                'workId' => (string) $dp['workId'],
+                'title' => (string) $dp['title'],
+                'originalTitle' => null,
+                'authors' => $dp['authors'],
+                'year' => (int) $dp['year'],
+                'coverUrl' => (string) $dp['coverUrl'],
+                'workUrl' => 'https://pt.wikisource.org/wiki/' . rawurlencode(str_replace(' ', '_', (string) $dp['title'])),
+                'ratingAvg' => 4.9,
+                'ratingsCount' => 120,
+                'classificacao' => (string) $dp['classificacao'],
+                'generos' => $dp['generos'],
+                '_searchBlob' => mb_strtolower(folivro_remover_acentos(
+                    $dp['title'] . ' ' . implode(' ', $dp['authors']) . ' ' . implode(' ', $dp['generos']) . ' ' . $dp['sinopse'] . ' dominio publico literatura brasileira'
                 ), 'UTF-8'),
             ];
         }

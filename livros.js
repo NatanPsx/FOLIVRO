@@ -94,7 +94,7 @@
 
         const origemBadge = document.createElement('span');
         origemBadge.className = ehFolivro ? 'selo-status selo-lido selo-origem-folivro' : 'selo-status selo-origem-openlibrary';
-        origemBadge.textContent = ehFolivro ? (book.sourceLabel || 'Publicado no FOLIVRO') : 'Open Library';
+        origemBadge.textContent = book.sourceLabel || (ehFolivro ? 'Publicado no FOLIVRO' : 'Open Library');
         badgesRow.appendChild(origemBadge);
 
         if (book.ratingAvg && book.ratingsCount > 0) {
