@@ -195,7 +195,7 @@
             const addButton = document.createElement('button');
             addButton.type = 'button';
             addButton.className = 'botao-adicionar-livro';
-            addButton.textContent = 'Salvar na biblioteca';
+            addButton.textContent = book.dominioPublico ? 'Ler no FOLIVRO' : 'Salvar na biblioteca';
             addButton.addEventListener('click', async () => {
                 addButton.disabled = true;
                 addButton.textContent = 'Adicionando…';

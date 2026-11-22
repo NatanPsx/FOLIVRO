@@ -2,12 +2,17 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../config/auth.php';
+require_once __DIR__ . '/../config/dominio_publico.php';
 folivro_require_login();
 header('Content-Type: application/json; charset=utf-8');
 $workId = isset($_GET['work']) && is_string($_GET['work']) ? $_GET['work'] : '';
 if (!preg_match('/^OL[0-9]+W$/', $workId)) {
     http_response_code(400);
     exit(json_encode(['error' => 'Identificador da obra inválido.'], JSON_UNESCAPED_UNICODE));
+}
+if (folivro_dp_encontrar_obra($workId) !== null) {
+    echo json_encode(['availability' => 'full_access', 'dominioPublico' => true], JSON_UNESCAPED_SLASHES);
+    exit;
 }
 $pdo = folivro_database();
 $check = $pdo->prepare("SELECT 1 FROM livraria l JOIN livro b ON b.id_livro = l.id_livro WHERE l.id_usuario = ? AND b.id_externo_livro = ? LIMIT 1");

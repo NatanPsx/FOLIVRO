@@ -812,13 +812,14 @@ if (!function_exists('folivro_buscar_obras_locais')) {
             $candidatos[] = [
                 'source' => 'openlibrary',
                 'sourceLabel' => 'Domínio Público · Lei 9.610/98',
+                'dominioPublico' => true,
                 'workId' => (string) $dp['workId'],
                 'title' => (string) $dp['title'],
                 'originalTitle' => null,
                 'authors' => $dp['authors'],
                 'year' => (int) $dp['year'],
-                'coverUrl' => (string) $dp['coverUrl'],
-                'workUrl' => 'https://pt.wikisource.org/wiki/' . rawurlencode(str_replace(' ', '_', (string) $dp['title'])),
+                'coverUrl' => $dp['coverUrl'],
+                'workUrl' => null,
                 'ratingAvg' => 4.9,
                 'ratingsCount' => 120,
                 'classificacao' => (string) $dp['classificacao'],
@@ -895,7 +896,7 @@ $slice = array_slice($allItems, $offset, $limit);
 
 $maiorDeIdade = folivro_usuario_maior_de_idade();
 foreach ($slice as &$item) {
-    if (($item['source'] ?? '') === 'folivro') {
+    if (($item['source'] ?? '') === 'folivro' || !empty($item['dominioPublico'])) {
         $classNorm = folivro_normalizar_classificacao((string) ($item['classificacao'] ?? 'livre'));
     } else {
         $textoClass = (string) ($item['title'] ?? '') . ' ' . (string) ($item['originalTitle'] ?? '');

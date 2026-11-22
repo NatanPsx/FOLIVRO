@@ -323,7 +323,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
 
     </main>
 
-    <script src="livros.js?v=20261122_01"></script>
+    <script src="livros.js?v=20261122_02"></script>
 </body>
 
 </html>
