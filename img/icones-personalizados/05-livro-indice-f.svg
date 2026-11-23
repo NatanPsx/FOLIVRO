@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-livro-indice-f">
+<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M20 30 Q34 24 46 37 V73 Q34 61 20 63 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="40,67 46,37 49,77" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="50" y="36" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="54" y="36" width="26" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="50" y="47.5" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="54" y="47.5" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="50" y="58" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="54" y="58" width="19" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="50" y="69" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="54" y="69" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
+</svg>

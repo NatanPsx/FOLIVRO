@@ -6,6 +6,7 @@
  * $menuAtivo = 'inicio' | 'pesquisar' | 'biblioteca' | 'perfil' | 'estatisticas' | 'moderacao' | 'loja' | 'escrever' | 'biblioteca-autor' | ''
  */
 $menuAtivo = $menuAtivo ?? '';
+require_once __DIR__ . '/icones-folivro.php';
 $_buscaRaw = isset($_GET['busca']) && is_string($_GET['busca']) ? trim($_GET['busca']) : '';
 $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_buscaRaw) : '');
 ?>
@@ -14,7 +15,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
 
     <div class="menu-topo-marca">
         <a href="home.php" class="marca-folivro" title="FOLIVRO — Página inicial">
-            <img src="img/livro icon.png" alt="">
+            <?= folivro_icone('emblema-f') ?>
             <span>FOLIVRO</span>
         </a>
     </div>
@@ -24,7 +25,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'inicio' ? ' ativo' : '' ?>"
            title="Início"
            <?= $menuAtivo === 'inicio' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><img src="img/Botao casinha.png" alt=""></span>
+            <span class="icone-menu"><?= folivro_icone('livro-aberto-f') ?></span>
             <span class="rotulo-menu">Início</span>
         </a>
 
@@ -32,7 +33,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'pesquisar' ? ' ativo' : '' ?>"
            title="Pesquisar no catálogo"
            <?= $menuAtivo === 'pesquisar' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><img src="img/Botao pesquisar.png" alt=""></span>
+            <span class="icone-menu"><?= folivro_icone('folhas-voando-f') ?></span>
             <span class="rotulo-menu">Buscar</span>
         </a>
 
@@ -40,7 +41,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'biblioteca' ? ' ativo' : '' ?>"
            title="Minha biblioteca"
            <?= $menuAtivo === 'biblioteca' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><img src="img/Botao Pasta.png" alt=""></span>
+            <span class="icone-menu"><?= folivro_icone('pasta-biblioteca') ?></span>
             <span class="rotulo-menu">Biblioteca</span>
         </a>
 
@@ -48,7 +49,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'estatisticas' ? ' ativo' : '' ?>"
            title="Estatísticas e metas"
            <?= $menuAtivo === 'estatisticas' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><img src="img/Botao de monitoramento.png" alt=""></span>
+            <span class="icone-menu"><?= folivro_icone('folha-metas-f') ?></span>
             <span class="rotulo-menu">Metas</span>
         </a>
 
@@ -57,9 +58,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            title="Chat literário seguro"
            <?= $menuAtivo === 'chat' ? 'aria-current="page"' : '' ?>>
             <span class="icone-menu icone-menu-chat" aria-hidden="true">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                </svg>
+                <?= folivro_icone('folha-lista-f') ?>
                 <span class="badge-chat-notificacao" id="badge-chat-notificacao" hidden aria-label="Mensagens não lidas">0</span>
             </span>
             <span class="rotulo-menu">Chat</span>
@@ -69,7 +68,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'perfil' ? ' ativo' : '' ?>"
            title="Meu perfil"
            <?= $menuAtivo === 'perfil' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><img src="img/Botao Usuario.png" alt=""></span>
+            <span class="icone-menu"><?= folivro_icone('pagina-marcador') ?></span>
             <span class="rotulo-menu">Perfil</span>
         </a>
     </nav>

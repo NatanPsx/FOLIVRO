@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-notebook-livros">
+<polygon points="18,12 22,12 31,52 27,52" fill="var(--icone-traco-escuro, #230907)"/>
+                    <polygon points="21.5,14 24.5,14 32,50 29,50" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="32" y="49" width="36" height="3.2" rx="1" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="28" y="52" width="40" height="4.2" rx="1" fill="var(--icone-traco-escuro, #230907)"/>
+                    <path d="M29 56.5 H78 V73.5 H29 V69.8 H72 V60.2 H29 Z" fill="var(--icone-primaria, #5c0000)"/>
+                    <rect x="30" y="60.2" width="42" height="9.6" fill="var(--icone-papel, #ffffff)"/>
+                    <line x1="33" y1="63.5" x2="55" y2="63.5" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
+                    <line x1="33" y1="66.8" x2="65" y2="66.8" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
+                    <path d="M24 74.5 H76 V92 H24 V88.2 H70 V78.2 H24 Z" fill="var(--icone-traco-escuro, #230907)"/>
+                    <rect x="25" y="78.2" width="45" height="10" fill="#d9d5d2"/>
+                    <line x1="28" y1="81.8" x2="51" y2="81.8" stroke="#9e9a97" stroke-width="1.8"/>
+                    <line x1="28" y1="85.2" x2="61" y2="85.2" stroke="#9e9a97" stroke-width="1.8"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-livro-abrindo">
+<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M19 30 L45 64 L48 61 L23 27 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <path d="M26 25 Q39 35 49 58 L46 60 Q36 38 23 28 Z" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <path d="M49 59 Q63 50 80 57 L81 61 Q63 55 49 62 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="49" y="64" width="32" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/>
+</svg>

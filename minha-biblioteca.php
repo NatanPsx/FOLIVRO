@@ -77,9 +77,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Minha biblioteca digital | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="home.css?v=20261104_20">
-    <link rel="stylesheet" href="estante.css?v=20261117_4">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261123_01">
 </head>
 
 <body>
@@ -89,7 +89,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <?php require __DIR__ . '/includes/menu-autor.php'; ?>
 
     <main class="conteudo" id="conteudo-principal">
-        <h1>Minha biblioteca digital</h1>
+        <h1 class="titulo-com-icone-folivro"><?= folivro_icone('pasta-biblioteca', 'folivro-icon-lg') ?> Minha biblioteca digital</h1>
         <p>Livros salvos e obras independentes adquiridas. <a href="loja.php">Visitar a loja</a></p>
 
         <?php if ($msgAviso): ?>
@@ -120,15 +120,12 @@ $csrf = folivro_escape(folivro_csrf_token());
                     $labelIdade = folivro_aviso_conteudo_label($classNorm);
                     $bloqueadoIdade = !$maiorDeIdade && folivro_classificacao_eh_maior18($classNorm);
                     $urlDestino = $ehAutoral ? 'obra.php?id=' . (int) $b['item_id'] : 'livro.php?id=' . (int) $b['item_id'];
+                    $capaUrlBib = folivro_capa_url($b['capa'] ?? '', (string) $b['titulo'], (string) $b['autor']);
                     ?>
                     <article class="livro-card <?= $bloqueadoIdade ? 'livro-card-bloqueado-idade' : '' ?>" data-status="<?= folivro_escape($statusRaw) ?>">
                         <div class="livro-capa <?= $bloqueadoIdade ? 'capa-bloqueada-18' : '' ?>">
                             <?php if ($bloqueadoIdade): ?>
-                                <?php if ($b['capa']): ?>
-                                    <img src="<?= folivro_escape($b['capa']) ?>" alt="Capa bloqueada por classificação indicativa +18" loading="lazy">
-                                <?php else: ?>
-                                    <div class="capa-fallback">Obra +18</div>
-                                <?php endif; ?>
+                                <img src="<?= folivro_escape($capaUrlBib) ?>" alt="Capa bloqueada por classificação indicativa +18" loading="lazy">
                                 <div class="capa-bloqueio-idade-overlay" role="img" aria-label="Conteúdo bloqueado: exclusivo para maiores de 18 anos">
                                     <span class="icone-olho-bloqueado-circulo">
                                         <?= folivro_icone_olho_bloqueado_svg(32) ?>
@@ -138,11 +135,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 </div>
                             <?php else: ?>
                                 <a href="<?= folivro_escape($urlDestino) ?>" class="link-livro-capa" title="Ver detalhes de <?= folivro_escape($b['titulo']) ?>">
-                                    <?php if ($b['capa']): ?>
-                                        <img src="<?= folivro_escape($b['capa']) ?>" alt="Capa de <?= folivro_escape($b['titulo']) ?>" loading="lazy">
-                                    <?php else: ?>
-                                        <div class="capa-fallback"><?= folivro_escape($b['titulo']) ?></div>
-                                    <?php endif; ?>
+                                    <img src="<?= folivro_escape($capaUrlBib) ?>" alt="Capa de <?= folivro_escape($b['titulo']) ?>" loading="lazy">
                                 </a>
                             <?php endif; ?>
                             <span class="selo-classificacao-idade selo-classificacao-capa selo-idade-<?= folivro_escape($classNorm) ?>" title="<?= folivro_escape($labelIdade) ?>">

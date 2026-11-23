@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-circulo-gradiente-f">
+<defs>
+                        <linearGradient id="folivroGradIcon15" x1="0" y1="0" x2="0.8" y2="1">
+                            <stop offset="0%" stop-color="var(--icone-acento-claro, #b81d13)"/>
+                            <stop offset="48%" stop-color="var(--icone-primaria, #5c0000)"/>
+                            <stop offset="100%" stop-color="var(--icone-circulo-fundo, #190504)"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradIcon15)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <rect x="35" y="26" width="27" height="8.8" rx="4.4" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="35" y="38" width="13.5" height="8.2" rx="4.1" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="35" y="49.5" width="30" height="8.8" rx="4.4" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="35" y="61.5" width="13.5" height="8.8" rx="4.4" fill="var(--icone-papel, #ffffff)"/>
+</svg>

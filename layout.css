@@ -41,6 +41,16 @@
     --fundo-sidebar-gradiente: linear-gradient(180deg, #5c0000 0%, #460905 55%, #8a542c 100%);
     --fundo-atalhos-gradiente: linear-gradient(180deg, rgba(70, 9, 5, 0) 0%, #460905 22%, #3a0603 100%);
     --fundo-atalhos-mobile: linear-gradient(90deg, #460905 0%, #5c0000 50%, #7a3e18 100%);
+
+    /* Variáveis dinâmicas do Sistema de Ícones Personalizados FOLIVRO (acompanham todos os temas) */
+    --icone-circulo-fundo: var(--cor-vinho-escuro, #230907);
+    --icone-circulo-borda: transparent;
+    --icone-primaria: var(--cor-vinho, #5c0000);
+    --icone-acento: var(--cor-vermelho-acao, #8d1b12);
+    --icone-acento-claro: var(--cor-vermelho-hover, #c22519);
+    --icone-traco-escuro: var(--cor-vinho-escuro, #230907);
+    --icone-papel: #ffffff;
+    --icone-sombra-papel: #b8b3b0;
 }
 
 body.tema-escuro,
@@ -75,6 +85,24 @@ body.tema-escuro,
     --fundo-sidebar-gradiente: linear-gradient(180deg, #241412 0%, #170b0a 55%, #2d1a16 100%);
     --fundo-atalhos-gradiente: linear-gradient(180deg, rgba(23, 11, 10, 0) 0%, #170b0a 22%, #100605 100%);
     --fundo-atalhos-mobile: linear-gradient(90deg, #170b0a 0%, #241412 50%, #2d1a16 100%);
+
+    /* Contraste elevado dos ícones circulares e traços em tema escuro */
+    --icone-circulo-fundo: #4a100b;
+    --icone-circulo-borda: rgba(243, 200, 121, 0.45);
+    --icone-primaria: #7d1b13;
+    --icone-acento: #b8251a;
+    --icone-acento-claro: #e64d3d;
+    --icone-traco-escuro: #f3c879;
+}
+
+body.tema-meianoite,
+.tema-meianoite {
+    --icone-circulo-fundo: #152b48;
+    --icone-circulo-borda: rgba(124, 184, 255, 0.45);
+    --icone-primaria: #1f406b;
+    --icone-acento: #2d5f9a;
+    --icone-acento-claro: #5c9ce6;
+    --icone-traco-escuro: #9ac5f4;
 }
 
 * {
@@ -276,10 +304,10 @@ body {
     filter: brightness(0);
 }
 
-.menu-lateral .item-menu svg,
-.menu-lateral > .item-menu svg,
-.atalho-loja .icone-menu svg,
-.menu-autor a .icone-menu svg {
+.menu-lateral .item-menu svg:not(.folivro-icon),
+.menu-lateral > .item-menu svg:not(.folivro-icon),
+.atalho-loja .icone-menu svg:not(.folivro-icon),
+.menu-autor a .icone-menu svg:not(.folivro-icon) {
     width: 20px;
     height: 20px;
     fill: none;
@@ -287,6 +315,63 @@ body {
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
+}
+
+/* ==========================================================================
+   SISTEMA DE ÍCONES PERSONALIZADOS (.folivro-icon)
+   ========================================================================== */
+.folivro-icon {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    vertical-align: middle;
+    flex-shrink: 0;
+    overflow: visible;
+    user-select: none;
+    transition: transform 0.18s ease;
+}
+
+.folivro-icon-xs { width: 18px; height: 18px; }
+.folivro-icon-sm { width: 22px; height: 22px; }
+.folivro-icon-md { width: 28px; height: 28px; }
+.folivro-icon-lg { width: 36px; height: 36px; }
+.folivro-icon-xl { width: 48px; height: 48px; }
+
+.marca-folivro .folivro-icon {
+    --icone-circulo-borda: rgba(255, 255, 255, 0.65);
+    width: 34px !important;
+    height: 34px !important;
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.28));
+}
+
+.menu-lateral .item-menu .icone-menu:has(.folivro-icon),
+.atalho-loja .icone-menu:has(.folivro-icon),
+.menu-autor a .icone-menu:has(.folivro-icon) {
+    --icone-traco-escuro: var(--cor-vinho-escuro, #230907);
+    --icone-circulo-borda: transparent;
+    padding: 1.5px;
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.menu-lateral .item-menu.ativo .icone-menu:has(.folivro-icon),
+.atalho-loja.ativo .icone-menu:has(.folivro-icon),
+.menu-autor a.ativo .icone-menu:has(.folivro-icon) {
+    background: #f3c879;
+    box-shadow: 0 0 0 2px #f3c879, 0 3px 8px rgba(0, 0, 0, 0.28);
+}
+
+.menu-lateral .item-menu .icone-menu .folivro-icon,
+.atalho-loja .icone-menu .folivro-icon,
+.menu-autor a .icone-menu .folivro-icon {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.titulo-com-icone-folivro {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* Pesquisa rápida embutida no menu lateral */
@@ -1519,13 +1604,38 @@ body {
 
 @media (max-height: 820px) and (min-width: 701px) {
     .menu-lateral {
-        gap: 6px;
-        padding: 12px 6px 230px;
+        gap: 4px;
+        padding: 10px 6px 205px;
+    }
+    .menu-links-principais {
+        gap: 4px;
     }
     .menu-lateral .item-menu,
     .menu-lateral .pesquisa-lateral,
     .menu-lateral .pesquisa-lateral button {
-        min-height: 52px;
+        min-height: 46px;
+        padding: 4px;
+    }
+    .menu-lateral .item-menu .icone-menu,
+    .menu-lateral .pesquisa-lateral button .icone-menu {
+        width: 32px;
+        height: 32px;
+    }
+    .atalhos-extra {
+        padding: 6px 6px 8px;
+        gap: 2px;
+    }
+    .atalho-loja,
+    .menu-autor a {
+        min-height: 44px;
+        padding: 3px 4px;
+    }
+    .atalho-loja .icone-menu,
+    .atalho-loja span:first-child,
+    .menu-autor a .icone-menu,
+    .menu-autor a span:first-child {
+        width: 28px;
+        height: 28px;
     }
 }
 
@@ -1543,8 +1653,8 @@ body {
         min-height: auto;
         flex-direction: row;
         justify-content: space-between;
-        padding: 8px 12px;
-        gap: 8px;
+        padding: 8px 54px 8px 10px;
+        gap: 6px;
         overflow-x: auto;
         overflow-y: visible;
     }
@@ -5447,7 +5557,7 @@ body.tema-escuro .atalhos-extra {
 }
 
 .select-capitulo-leitura {
-    max-width: 240px;
+    max-width: min(240px, 62vw);
     height: 34px;
     padding: 0 10px;
     border-radius: 8px;

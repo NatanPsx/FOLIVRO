@@ -93,8 +93,8 @@ if (folivro_classificacao_eh_maior18($classLivroLeitor) && !folivro_usuario_maio
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Leitura Bloqueada (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261104_19">
-        <link rel="stylesheet" href="home.css?v=20261104_19">
+        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
         <?php $menuAtivo = 'biblioteca'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -214,8 +214,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= $csrf ?>">
     <title><?= $titulo ?> | Leitor · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261122_01">
-    <link rel="stylesheet" href="home.css?v=20261104_20">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
 <body>
@@ -245,11 +245,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
             <header class="cabecalho-leitor-livro elemento-ocultavel-foco">
                 <div class="livro-capa">
-                    <?php if (!empty($book['capa_livro'])): ?>
-                        <img src="<?= folivro_escape($book['capa_livro']) ?>" alt="Capa de <?= $titulo ?>">
-                    <?php else: ?>
-                        <div class="capa-fallback"><?= $titulo ?></div>
-                    <?php endif; ?>
+                    <img src="<?= folivro_escape(folivro_capa_url($book['capa_livro'] ?? '', (string) $book['titulo_livro'], (string) $book['autor_livro'])) ?>" alt="Capa de <?= $titulo ?>">
                 </div>
                 <div class="cabecalho-leitor-info">
                     <div class="linha-selos-leitura">
@@ -302,7 +298,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </div>
 
                     <button type="button" class="btn-conforto-item btn-modo-foco-leitura" id="dp-btn-modo-foco" title="Ocultar menus e distrações (Atalho: tecla F)">
-                        <img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco
+                        <?= folivro_icone('livro-aberto-seta', 'folivro-icon-xs') ?> Modo Foco
                     </button>
                 </div>
 
@@ -356,7 +352,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             <!-- PAINEL DUPLO ALINHADO: REGISTRAR PROGRESSO + STATUS NA BIBLIOTECA -->
             <div class="grade-painel-progresso-leitor elemento-ocultavel-foco">
                 <form id="form-progresso" class="progresso-form form-largura-total card-progresso-nivelado">
-                    <h2>Registrar progresso de páginas</h2>
+                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-sm') ?> <span>Registrar progresso de páginas</span></h2>
                     <p class="texto-apoio-pequeno" style="margin:0;">Atualize a página em que você parou para sincronizar sua barra de leitura.</p>
                     <div class="grade-campos-dupla">
                         <label for="pagina_atual">Página atual
@@ -375,7 +371,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <form method="post" class="progresso-form form-largura-total card-progresso-nivelado">
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="alterar_status">
-                    <h2>Status na biblioteca</h2>
+                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('pasta-biblioteca', 'folivro-icon-sm') ?> <span>Status na biblioteca</span></h2>
                     <p class="texto-apoio-pequeno" style="margin:0;">Organize em qual estante este livro fica na sua biblioteca pessoal.</p>
                     <label for="status_livraria">Situação atual da leitura
                         <select id="status_livraria" name="status_livraria">
@@ -394,7 +390,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <form method="post" class="progresso-form form-largura-total">
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="resenha">
-                    <h2 id="titulo-avaliacao" style="margin:0;">Avaliar e resenhar livro</h2>
+                    <h2 id="titulo-avaliacao" class="titulo-com-icone-folivro" style="margin:0;"><?= folivro_icone('folha-lista-f', 'folivro-icon-sm') ?> <span>Avaliar e resenhar livro</span></h2>
 
                     <?php if ($erroResenha): ?>
                         <p class="estado-vazio estado-erro" role="alert"><?= folivro_escape($erroResenha) ?></p>
@@ -750,12 +746,13 @@ $csrf = folivro_escape(folivro_csrf_token());
                     });
 
                     if (btnFocoDp) {
+                        const iconeFocoDp = <?= json_encode(folivro_icone('livro-aberto-seta', 'folivro-icon-xs')) ?>;
                         btnFocoDp.addEventListener('click', () => {
                             const focoAtivo = document.body.classList.toggle('modo-leitura-foco');
                             btnFocoDp.classList.toggle('ativo', focoAtivo);
                             btnFocoDp.innerHTML = focoAtivo
-                                ? '<img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Sair do Foco'
-                                : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco';
+                                ? `${iconeFocoDp} Sair do Foco`
+                                : `${iconeFocoDp} Modo Foco`;
                         });
                     }
 
@@ -821,12 +818,13 @@ $csrf = folivro_escape(folivro_csrf_token());
 
         const btnFocoCatalogo = document.getElementById('btn-modo-foco-catalogo');
         if (btnFocoCatalogo) {
+            const iconeFocoCat = <?= json_encode(folivro_icone('livro-aberto-seta', 'folivro-icon-xs')) ?>;
             btnFocoCatalogo.addEventListener('click', () => {
                 const focoAtivo = document.body.classList.toggle('modo-leitura-foco');
                 btnFocoCatalogo.classList.toggle('ativo', focoAtivo);
                 btnFocoCatalogo.innerHTML = focoAtivo
-                    ? '<img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Sair do Foco'
-                    : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco';
+                    ? `${iconeFocoCat} Sair do Foco`
+                    : `${iconeFocoCat} Modo Foco`;
             });
         }
     </script>

@@ -547,8 +547,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gerenciar obra | FOLIVRO</title>
-    <link rel="stylesheet" href="home.css?v=20261104_20">
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
 </head>
 
 <body>
@@ -567,7 +567,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
             <header class="cabecalho-gerenciar-obra">
                 <div class="cabecalho-gerenciar-info">
-                    <h1><?= folivro_escape($work['titulo_autor_dos_livros']) ?></h1>
+                    <h1 class="titulo-com-icone-folivro"><?= folivro_icone('livro-indice-f', 'folivro-icon-lg') ?> <?= folivro_escape($work['titulo_autor_dos_livros']) ?></h1>
                     <?php $classifAtualWork = folivro_normalizar_classificacao($work['aviso_conteudo_historias'] ?? 'livre'); ?>
                     <div class="grade-selos-obra-gerenciar">
                         <span class="selo-status <?= $work['status_autor_dos_livros'] === 'a_venda' ? 'selo-comprado' : '' ?>">
@@ -934,7 +934,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                             </div>
                             <div class="acoes-rodape-estudio-cap">
                                 <button type="button" id="btn-zen-continuacao" class="botao-zen-toggle" title="Expandir área de escrita">
-                                    <img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Silencioso
+                                    <?= folivro_icone('livro-aberto-seta', 'folivro-icon-xs') ?> Modo Silencioso
                                 </button>
                                 <button class="botao-adicionar-livro botao-salvar-obra" type="submit" style="width:auto; padding: 11px 26px;">
                                     Salvar e publicar capítulo <?= $proximoNumeroCap ?>
@@ -1162,11 +1162,12 @@ $csrf = folivro_escape(folivro_csrf_token());
             const btnZenCont = document.getElementById('btn-zen-continuacao');
             const boxNovoCap = document.getElementById('estudio-novo-capitulo-box');
             if (btnZenCont && boxNovoCap) {
+                const iconeZenCont = <?= json_encode(folivro_icone('livro-aberto-seta', 'folivro-icon-xs')) ?>;
                 btnZenCont.addEventListener('click', () => {
                     const ativo = boxNovoCap.classList.toggle('estudio-tela-cheia');
                     btnZenCont.innerHTML = ativo
-                        ? '<img src="img/icones/book.png" alt="" class="icone-btn-png"> Sair do Modo Silencioso'
-                        : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Silencioso';
+                        ? `${iconeZenCont} Sair do Modo Silencioso`
+                        : `${iconeZenCont} Modo Silencioso`;
                 });
             }
 

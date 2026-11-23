@@ -54,8 +54,8 @@ if (folivro_classificacao_eh_maior18($classObra) && !folivro_usuario_maior_de_id
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Conteúdo Bloqueado (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261104_19">
-        <link rel="stylesheet" href="home.css?v=20261104_19">
+        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
         <?php $menuAtivo = 'loja'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -378,8 +378,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= folivro_escape($obra['titulo_historias']) ?> | Leitura Confortável · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="home.css?v=20261104_20">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
 <body>
@@ -470,7 +470,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 </button>
                             </form>
                             <a class="filtro-pilula btn-acao-compacto" href="chat.php?usuario=<?= (int) $idAutor ?>">
-                                <img src="img/icones/chat.png" alt="" class="icone-btn-png"> Conversar
+                                <?= folivro_icone('folha-lista-f', 'folivro-icon-xs') ?> Conversar
                             </a>
                         <?php endif; ?>
 
@@ -586,7 +586,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         </div>
 
                         <button type="button" class="btn-conforto-item btn-modo-foco-leitura" id="btn-modo-foco-leitura" title="Ocultar menus e distrações (Atalho: tecla F)">
-                            <img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco
+                            <?= folivro_icone('livro-aberto-seta', 'folivro-icon-xs') ?> Modo Foco
                         </button>
                     </div>
 
@@ -816,12 +816,13 @@ $csrf = folivro_escape(folivro_csrf_token());
             });
 
             if (btnModoFoco) {
+                const iconeModoFoco = <?= json_encode(folivro_icone('livro-aberto-seta', 'folivro-icon-xs')) ?>;
                 btnModoFoco.addEventListener('click', () => {
                     const focoAtivo = document.body.classList.toggle('modo-leitura-foco');
                     btnModoFoco.classList.toggle('ativo', focoAtivo);
                     btnModoFoco.innerHTML = focoAtivo
-                        ? '<img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Sair do Foco'
-                        : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Foco';
+                        ? `${iconeModoFoco} Sair do Foco`
+                        : `${iconeModoFoco} Modo Foco`;
                 });
             }
 

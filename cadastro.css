@@ -34,6 +34,8 @@ body {
 }
 
 .logo {
+    --icone-traco-escuro: #240705;
+    --icone-papel: #ffffff;
     position: absolute;
     top: -52px;
     left: 50%;
@@ -47,6 +49,12 @@ body {
     background: #ffffff;
     border: 3px solid #6b130d;
     box-shadow: 0 6px 18px rgba(45, 22, 12, 0.16);
+}
+
+.logo svg.folivro-icon {
+    width: 58px;
+    height: 58px;
+    display: block;
 }
 
 h1 {
@@ -306,6 +314,8 @@ a:focus-visible,
 
     .logo {
         background: #231c19;
+        --icone-traco-escuro: #f5efe9;
+        --icone-papel: #2d2420;
     }
 
     .logo img {

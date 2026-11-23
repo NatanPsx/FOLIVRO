@@ -253,8 +253,8 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Escrever | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="home.css?v=20261104_20">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
 <body>
@@ -265,7 +265,7 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
 
     <main id="conteudo-principal" class="conteudo">
         <div class="cabecalho-estudio">
-            <h1>Estúdio de Escrita &amp; Publicação</h1>
+            <h1 class="titulo-com-icone-folivro"><?= folivro_icone('notebook-livros', 'folivro-icon-lg') ?> Estúdio de Escrita &amp; Publicação</h1>
             <p>Escreva seus capítulos com foco, personalize a capa e publique diretamente na loja e na comunidade.</p>
         </div>
 
@@ -395,7 +395,7 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                             <span id="tempo-leitura" class="selo-metrica">~0 min de leitura</span>
                             <span class="selo-status-rascunho">● Rascunho privado seguro</span>
                         </div>
-                        <button type="button" id="btn-zen" class="botao-zen-toggle" title="Alternar modo silencioso/foco"><img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Silencioso</button>
+                        <button type="button" id="btn-zen" class="botao-zen-toggle" title="Alternar modo silencioso/foco"><?= folivro_icone('livro-aberto-seta', 'folivro-icon-xs') ?> Modo Silencioso</button>
                     </footer>
                 </section>
 
@@ -643,11 +643,12 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
 
             // Alternância suave do Modo Silencioso / Foco
             if (btnZen && estudioLayout) {
+                const iconeZenEstudio = <?= json_encode(folivro_icone('livro-aberto-seta', 'folivro-icon-xs')) ?>;
                 btnZen.addEventListener('click', () => {
                     const modoZen = estudioLayout.classList.toggle('modo-zen');
                     btnZen.innerHTML = modoZen
-                        ? '<img src="img/icones/book.png" alt="" class="icone-btn-png"> Ver Painel'
-                        : '<img src="img/icones/leaf.png" alt="" class="icone-btn-png"> Modo Silencioso';
+                        ? `${iconeZenEstudio} Ver Painel`
+                        : `${iconeZenEstudio} Modo Silencioso`;
                 });
             }
 

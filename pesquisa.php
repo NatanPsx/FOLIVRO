@@ -16,8 +16,8 @@ folivro_require_login();
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="pesquisa.css?v=20261117_2">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="pesquisa.css?v=20261123_01">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 

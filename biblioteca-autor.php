@@ -58,9 +58,9 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Minhas Obras | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="home.css?v=20261104_20">
-    <link rel="stylesheet" href="estante.css?v=20261117_4">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261123_01">
 </head>
 
 <body>
@@ -71,7 +71,7 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
     <main class="conteudo" id="conteudo-principal">
         <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:14px;">
             <div>
-                <h1 style="margin:0 0 6px;">Minhas Obras</h1>
+                <h1 class="titulo-com-icone-folivro" style="margin:0 0 6px;"><?= folivro_icone('livro-indice-f', 'folivro-icon-lg') ?> Minhas Obras</h1>
                 <p style="margin:0; color:var(--texto-secundario);">Gerencie seus livros escritos, acompanhe capítulos, vendas e publique diretamente na loja.</p>
             </div>
             <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">

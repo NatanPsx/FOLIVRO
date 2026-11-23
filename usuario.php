@@ -222,9 +222,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meu perfil | FOLIVRO</title>
-    <link rel="stylesheet" href="usuario.css?v=20261117_2">
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="estante.css?v=20261117_4">
+    <link rel="stylesheet" href="usuario.css?v=20261123_01">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="estante.css?v=20261123_01">
 </head>
 
 <body>
@@ -242,11 +242,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <?php if (!empty($user['foto_usuario'])): ?>
                             <img src="<?= folivro_escape($user['foto_usuario']) ?>" alt="Foto de perfil">
                         <?php else: ?>
-                            <svg viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="50" fill="#555" />
-                                <circle cx="50" cy="35" r="19" fill="#ccc" />
-                                <path d="M15 88 Q18 57 50 57 Q82 57 85 88 Q68 100 50 100 Q32 100 15 88" fill="#ccc" />
-                            </svg>
+                            <?= folivro_icone('emblema-f', 'folivro-icon-xl') ?>
                         <?php endif; ?>
                     </div>
 
@@ -388,14 +384,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                             $pctPrev = max(0, min(100, (int) round((float) $pl['porcentagem'])));
                             $classifPl = folivro_normalizar_classificacao($pl['classificacao_livro'] ?? 'livre');
                             $bloqueadoPl = (!$maiorDeIdadePerfil && folivro_classificacao_eh_maior18($classifPl));
+                            $capaUrlPl = folivro_capa_url($pl['capa_livro'] ?? '', (string) $pl['titulo_livro'], (string) $pl['autor_livro']);
                             ?>
                             <article class="livro-card <?= $bloqueadoPl ? 'livro-card-bloqueado-idade' : '' ?>">
                                 <div class="livro-capa <?= $bloqueadoPl ? 'capa-bloqueada-18' : '' ?>">
-                                    <?php if (!empty($pl['capa_livro'])): ?>
-                                        <img src="<?= folivro_escape($pl['capa_livro']) ?>" alt="<?= $bloqueadoPl ? 'Capa bloqueada (+18)' : 'Capa de ' . folivro_escape($pl['titulo_livro']) ?>" loading="lazy">
-                                    <?php else: ?>
-                                        <div class="capa-fallback"><?= $bloqueadoPl ? 'Conteúdo +18' : folivro_escape($pl['titulo_livro']) ?></div>
-                                    <?php endif; ?>
+                                    <img src="<?= folivro_escape($capaUrlPl) ?>" alt="<?= $bloqueadoPl ? 'Capa bloqueada (+18)' : 'Capa de ' . folivro_escape($pl['titulo_livro']) ?>" loading="lazy">
                                     <?php if ($bloqueadoPl): ?>
                                         <div class="capa-bloqueio-idade-overlay" role="img" aria-label="Conteúdo bloqueado para menores de 18 anos">
                                             <div class="icone-olho-bloqueado-circulo">

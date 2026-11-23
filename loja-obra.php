@@ -99,9 +99,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $produto && !$bloqueadoIdade ? folivro_escape($produto['titulo_produto']) . ' | Loja FOLIVRO' : 'Obra | Loja FOLIVRO' ?></title>
-    <link rel="stylesheet" href="layout.css?v=20261117_1">
-    <link rel="stylesheet" href="home.css?v=20261117_1">
-    <link rel="stylesheet" href="loja.css?v=20261117_1">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="loja.css?v=20261123_01">
 </head>
 <body>
     <?php $menuAtivo = 'loja'; require __DIR__ . '/includes/menu-lateral.php'; ?>

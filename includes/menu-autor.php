@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/loja.php';
+require_once __DIR__ . '/icones-folivro.php';
 $menuAtivo = $menuAtivo ?? '';
 $pagamentosAtivosMenu = folivro_pagamentos_ativos();
 ?>
@@ -9,11 +10,7 @@ $pagamentosAtivosMenu = folivro_pagamentos_ativos();
        title="Loja de obras independentes"
        <?= $menuAtivo === 'loja' ? 'aria-current="page"' : '' ?>>
         <span class="icone-menu" aria-hidden="true">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-                <path d="M3 6h18"></path>
-                <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
+            <?= folivro_icone('livro-lombada') ?>
         </span>
         <span class="rotulo-menu">Loja</span>
     </a>
@@ -24,10 +21,7 @@ $pagamentosAtivosMenu = folivro_pagamentos_ativos();
            title="Escrever e autopublicar uma obra"
            <?= $menuAtivo === 'escrever' ? 'aria-current="page"' : '' ?>>
             <span class="icone-menu" aria-hidden="true">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 20h9"></path>
-                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                </svg>
+                <?= folivro_icone('notebook-livros') ?>
             </span>
             <span class="rotulo-menu">Escrever</span>
         </a>
@@ -36,11 +30,7 @@ $pagamentosAtivosMenu = folivro_pagamentos_ativos();
            title="Livros escritos no estúdio"
            <?= $menuAtivo === 'biblioteca-autor' ? 'aria-current="page"' : '' ?>>
             <span class="icone-menu" aria-hidden="true">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
-                    <path d="M8 7h6"></path>
-                    <path d="M8 11h8"></path>
-                </svg>
+                <?= folivro_icone('livro-indice-f') ?>
             </span>
             <span class="rotulo-menu">Obras</span>
         </a>
@@ -50,10 +40,7 @@ $pagamentosAtivosMenu = folivro_pagamentos_ativos();
            title="Painel de vendas, repasses e obras na loja"
            <?= in_array($menuAtivo, ['painel-vendas', 'loja-autor'], true) ? 'aria-current="page"' : '' ?>>
             <span class="icone-menu" aria-hidden="true">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M3 3v18h18"></path>
-                    <path d="m19 9-5 5-4-4-3 3"></path>
-                </svg>
+                <?= folivro_icone('etiqueta-f') ?>
             </span>
             <span class="rotulo-menu">Vendas</span>
         </a>

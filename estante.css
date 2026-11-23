@@ -183,3 +183,10 @@
         gap: 44px 14px !important;
     }
 }
+
+@media (max-width: 420px) {
+    .biblioteca-lista.estante-biblioteca {
+        grid-template-columns: 1fr !important;
+        padding: 18px 14px 36px;
+    }
+}

@@ -35,10 +35,10 @@ $infoModo = folivro_loja_info_modo();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Loja de Autores | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261117_1">
-    <link rel="stylesheet" href="home.css?v=20261117_1">
-    <link rel="stylesheet" href="loja.css?v=20261117_1">
-    <link rel="stylesheet" href="estante.css?v=20261117_4">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="loja.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261123_01">
 </head>
 
 <body>
@@ -50,7 +50,7 @@ $infoModo = folivro_loja_info_modo();
         <div class="loja-topo-cabecalho">
             <div>
                 <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:6px;">
-                    <h1 style="margin:0;">Loja de Obras Independentes</h1>
+                    <h1 class="titulo-com-icone-folivro" style="margin:0;"><?= folivro_icone('livro-lombada', 'folivro-icon-lg') ?> Loja de Obras Independentes</h1>
                     <?= folivro_loja_selo_modo_html() ?>
                 </div>
                 <p><?= folivro_pagamentos_ativos()

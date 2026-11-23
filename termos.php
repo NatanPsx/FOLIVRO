@@ -10,7 +10,7 @@ folivro_start_session();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Termos de uso e privacidade | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261022_11">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
 </head>
 
 <body>

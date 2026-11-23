@@ -805,8 +805,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Moderação de denúncias | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261022_11">
-    <link rel="stylesheet" href="home.css?v=20261022_11">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
 <body>
@@ -817,7 +817,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
     <main class="conteudo" id="conteudo-principal">
         <p><a href="usuario.php">← Voltar ao perfil</a></p>
-        <h1>Painel de moderação, triagem e direitos autorais</h1>
+        <h1 class="titulo-com-icone-folivro"><?= folivro_icone('emblema-f', 'folivro-icon-lg') ?> Painel de moderação, triagem e direitos autorais</h1>
         <p>Gerencie a fila de denúncias com prioridade para suspeitas de violação de direitos autorais e segurança no chat, aplique suspensão preventiva, analise contestações de autores e registre decisões proporcionais e fundamentadas.</p>
         <p><small><strong>Aviso institucional e privacidade:</strong> As ferramentas deste painel apoiam a governança da comunidade (<em>Notice and Takedown</em>), mas não substituem assessoria jurídica habilitada. O acesso a trechos denunciados do chat é restrito à moderação e retido por 180 dias apenas para auditoria de segurança e direitos autorais.</small></p>
 

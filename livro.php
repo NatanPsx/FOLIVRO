@@ -50,7 +50,7 @@ if ($idLivro === null && $workId === '') {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Livro não encontrado | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261022_17">
+        <link rel="stylesheet" href="layout.css?v=20261123_03">
     </head>
     <body>
         <?php $menuAtivo = 'pesquisar'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -391,8 +391,8 @@ if (folivro_classificacao_eh_maior18($classLivro) && !folivro_usuario_maior_de_i
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Livro Bloqueado (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261104_19">
-        <link rel="stylesheet" href="home.css?v=20261104_19">
+        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
         <?php $menuAtivo = 'pesquisar'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -688,8 +688,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261022_17">
-    <link rel="stylesheet" href="pesquisa.css?v=20261022_17">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="pesquisa.css?v=20261123_01">
     <meta name="csrf-token" content="<?= $csrf ?>">
 </head>
 
@@ -719,11 +719,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             <!-- Coluna Esquerda: Capa, Ações de Leitura e Ficha Técnica Bibliográfica -->
             <aside class="livro-coluna-lateral">
                 <div class="livro-capa-destaque">
-                    <?php if ($capaLivro): ?>
-                        <img src="<?= folivro_escape($capaLivro) ?>" alt="Capa de <?= folivro_escape($tituloLivro) ?>" class="capa-imagem-alta" loading="lazy">
-                    <?php else: ?>
-                        <div class="capa-fallback grande"><?= folivro_escape($tituloLivro) ?></div>
-                    <?php endif; ?>
+                    <img src="<?= folivro_escape(folivro_capa_url($capaLivro, (string) $tituloLivroRaw, (string) $autorLivro)) ?>" alt="Capa de <?= folivro_escape($tituloLivro) ?>" class="capa-imagem-alta" loading="lazy">
                 </div>
 
                 <!-- Painel de Ações do Leitor -->
@@ -756,11 +752,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['id_autor_dos_livros'])): ?>
                                     <a href="obra.php?id=<?= (int) $produtoLojaLivro['id_autor_dos_livros'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
-                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar / Continuar Leitura
+                                        <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Iniciar / Continuar Leitura
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto']) && ($produtoLojaLivro['arquivo_tipo'] ?? '') === 'pdf'): ?>
                                     <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
-                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Continuar Leitura no Leitor
+                                        <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Continuar Leitura no Leitor
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto'])): ?>
                                     <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
@@ -772,7 +768,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <?php elseif ($workId !== ''): ?>
                                 <div id="acao-leitor-ol" data-work-id="<?= folivro_escape($workId) ?>">
                                     <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
-                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Continuar Leitura no Leitor
+                                        <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Continuar Leitura no Leitor
                                     </a>
                                 </div>
                             <?php else: ?>
@@ -801,11 +797,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <?php if ($temAcessoLojaLivro): ?>
                                 <?php if (!empty($produtoLojaLivro['id_autor_dos_livros'])): ?>
                                     <a href="obra.php?id=<?= (int) $produtoLojaLivro['id_autor_dos_livros'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
-                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
+                                        <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Iniciar Leitura
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto']) && ($produtoLojaLivro['arquivo_tipo'] ?? '') === 'pdf'): ?>
                                     <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
-                                        <img src="img/icones/book.png" alt="" class="icone-btn-png icone-btn-branco"> Iniciar Leitura
+                                        <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Iniciar Leitura
                                     </a>
                                 <?php elseif (!empty($produtoLojaLivro['arquivo_produto'])): ?>
                                     <a href="loja-download.php?id=<?= (int) $produtoLojaLivro['id_produto'] ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 10px;">
@@ -824,7 +820,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <input type="hidden" name="acao" value="adicionar_biblioteca">
                             <input type="hidden" name="status_livraria" value="quero_ler">
                             <button type="submit" class="botao-adicionar-livro botao-destaque-leitor" style="width:100%; font-size: 15px; padding: 12px 18px; margin-bottom: 10px; display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-                                <img src="img/icones/add.png" alt="" class="icone-btn-png icone-btn-branco"> Salvar na Minha Biblioteca
+                                <?= folivro_icone('pasta-biblioteca', 'folivro-icon-sm') ?> Salvar na Minha Biblioteca
                             </button>
                         </form>
                     <?php endif; ?>
@@ -975,7 +971,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
                     <?php if ($totalComunidade > 0): ?>
                         <div class="resumo-folivro-comunidade-banner">
-                            <span class="icone-comunidade"><img src="img/icones/library.png" alt="" class="icone-comunidade-png"></span>
+                            <span class="icone-comunidade"><?= folivro_icone('folhas-voando-f', 'folivro-icon-md') ?></span>
                             <div>
                                 <strong>Comunidade FOLIVRO:</strong> Média de <strong><?= $mediaComunidade ?> <img src="img/icones/star.png" alt="" class="icone-btn-png" style="width:14px; height:14px; vertical-align:text-bottom; filter: invert(75%) sepia(85%) saturate(550%) hue-rotate(350deg);"></strong> baseada em <?= $totalComunidade ?> resenha(s) de leitores da nossa plataforma.
                             </div>
@@ -1105,7 +1101,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     </div>
 
                     <div class="card-aviso-recomendacao-ia">
-                        <div class="icone-ia-box"><img src="img/icones/lightbulb.png" alt="" class="icone-ia-png"></div>
+                        <div class="icone-ia-box"><?= folivro_icone('circulo-gradiente-f', 'folivro-icon-lg') ?></div>
                         <div class="texto-ia-box">
                             <h3>Motor de Recomendação Literária (Em Breve)</h3>
                             <p>

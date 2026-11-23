@@ -97,9 +97,9 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Minhas Obras na Loja | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261117_1">
-    <link rel="stylesheet" href="home.css?v=20261117_1">
-    <link rel="stylesheet" href="loja.css?v=20261117_1">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="loja.css?v=20261123_01">
 </head>
 <body>
     <?php $menuAtivo = 'loja-autor'; require __DIR__ . '/includes/menu-lateral.php'; ?>

@@ -82,9 +82,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel de Vendas | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261117_1">
-    <link rel="stylesheet" href="home.css?v=20261117_1">
-    <link rel="stylesheet" href="loja.css?v=20261117_1">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="loja.css?v=20261123_01">
 </head>
 <body>
     <?php $menuAtivo = 'painel-vendas'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -94,7 +94,7 @@ $csrf = folivro_escape(folivro_csrf_token());
         <div class="loja-topo-cabecalho">
             <div>
                 <div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px;">
-                    <h1 style="margin:0;">Painel de Vendas do Autor</h1>
+                    <h1 class="titulo-com-icone-folivro" style="margin:0;"><?= folivro_icone('etiqueta-f', 'folivro-icon-lg') ?> Painel de Vendas do Autor</h1>
                     <?= folivro_loja_selo_modo_html() ?>
                 </div>
                 <p>Acompanhe suas vendas na loja, receita bruta e líquida, pedidos, estornos e repasses.</p>

@@ -78,11 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Criar conta — FOLIVRO</title>
-    <link rel="stylesheet" href="cadastro.css?v=20261122_01">
+    <link rel="stylesheet" href="cadastro.css?v=20261123_01">
 </head>
 <body>
     <main class="container">
-        <div class="logo"><img src="img/livro icon.png" height="60" alt="FOLIVRO"></div>
+        <div class="logo"><?= folivro_icone('livro-fechado-f', 'folivro-icon-xl', 'FOLIVRO') ?></div>
         <h1>Criar conta</h1>
         <p>Cadastre-se para ler, organizar e publicar obras.</p>
 

@@ -40,6 +40,16 @@ function folivro_seed_gepeto_obras(PDO $pdo): void
             ->execute([$dp['title'], $dp['authors'][0], $dp['coverUrl'], $dp['classificacao'], count($dp['capitulos']), $wId]);
     }
 
+    // Garante capas locais cacheadas para os livros clássicos iniciais do seed 007
+    $capasLocaisSeed = [
+        'OL66554W' => 'uploads/capas/cache_ol/14348537-M.jpg',
+        'OL18020194W' => 'uploads/capas/cache_ol/10473609-M.jpg',
+        'OL138052W' => 'uploads/capas/cache_ol/10527843-L.jpg',
+    ];
+    foreach ($capasLocaisSeed as $extId => $capaLocal) {
+        $pdo->prepare('UPDATE livro SET capa_livro = ? WHERE id_externo_livro = ?')->execute([$capaLocal, $extId]);
+    }
+
     $capsObservatorio = [
         [
             'titulo' => 'A Cúpula sob a Geada',

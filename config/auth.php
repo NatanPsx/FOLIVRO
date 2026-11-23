@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . '/../includes/icones-folivro.php';
+
 /** Versão vigente dos termos de uso/privacidade (registrada em termos_aceitos.versao_termos). */
 const FOLIVRO_TERMOS_VERSAO = '1.0';
 
@@ -903,6 +905,45 @@ function folivro_aprovacao_automatica_obras_ativa(PDO $pdo): bool
 {
     return folivro_sistema_config_obter($pdo, 'aprovacao_automatica_obras', '0') === '1';
 }
+
+/**
+ * Normaliza a URL da capa de um livro para garantir carregamento local rápido e fallback editorial SVG:
+ * - Se for um arquivo local existente (uploads/ ou img/), retorna o caminho direto.
+ * - Se for uma URL da Open Library (covers.openlibrary.org/b/id/XXXX-M.jpg), retorna o cache local em disco
+ *   (uploads/capas/cache_ol/XXXX-M.jpg) ou a rota de cache/fallback local (api/capa.php).
+ * - Se estiver vazia ou ausente, retorna a capa editorial SVG gerada localmente por api/capa.php.
+ */
+function folivro_capa_url(?string $capa, string $titulo = '', string $autor = ''): string
+{
+    $capa = trim((string) $capa);
+    $rootDir = dirname(__DIR__);
+
+    if ($capa !== '') {
+        if (str_starts_with($capa, 'api/capa.php')) {
+            return $capa;
+        }
+        if (!preg_match('#^https?://#i', $capa)) {
+            $rel = ltrim($capa, '/\\');
+            if (is_file($rootDir . '/' . $rel)) {
+                return $rel;
+            }
+        } elseif (preg_match('#covers\.openlibrary\.org/b/id/([0-9]+)-([SML])\.jpg#i', $capa, $m)) {
+            $cid = $m[1];
+            $sz = strtoupper($m[2]);
+            $cachedRel = 'uploads/capas/cache_ol/' . $cid . '-' . $sz . '.jpg';
+            if (is_file($rootDir . '/' . $cachedRel) && filesize($rootDir . '/' . $cachedRel) > 800) {
+                return $cachedRel;
+            }
+            return 'api/capa.php?id=' . $cid . '&s=' . $sz
+                . '&t=' . rawurlencode($titulo !== '' ? $titulo : 'Obra Literária')
+                . '&a=' . rawurlencode($autor !== '' ? $autor : 'Acervo FOLIVRO');
+        }
+    }
+
+    return 'api/capa.php?t=' . rawurlencode($titulo !== '' ? $titulo : 'Obra Literária')
+        . '&a=' . rawurlencode($autor !== '' ? $autor : 'Acervo FOLIVRO');
+}
+
 
 
 

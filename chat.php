@@ -601,8 +601,8 @@ $statusDenunciaLabels = [
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Literário | FOLIVRO</title>
-    <link rel="stylesheet" href="home.css?v=20261022_11">
-    <link rel="stylesheet" href="layout.css?v=20261022_11">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 
@@ -616,7 +616,7 @@ $statusDenunciaLabels = [
         <header class="chat-cabecalho-pagina">
             <div>
                 <span class="selo-status">Comunidade literária · Segurança, privacidade e direitos autorais</span>
-                <h1>Chat Literário do FOLIVRO</h1>
+                <h1 class="titulo-com-icone-folivro"><?= folivro_icone('folha-lista-f', 'folivro-icon-lg') ?> Chat Literário do FOLIVRO</h1>
                 <p>Converse sobre leituras, processos criativos e obras autorais com proteção contra assédio, spam e compartilhamento não autorizado de obras protegidas.</p>
             </div>
             <div class="acoes-obra">

@@ -44,9 +44,16 @@ function folivro_database(): PDO
         throw new RuntimeException('Serviço de banco de dados temporariamente indisponível.');
     }
 
+    // Garante compatibilidade idêntica entre MariaDB (XAMPP) e MySQL 8+ (Laragon)
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes')")->fetchColumn();
-        if ($appliedCount === 18) {
+        $pdo->exec("SET SESSION sql_mode = REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY', '')");
+    } catch (PDOException $e) {
+        // Ignora caso o servidor não suporte alteração dinâmica de sql_mode
+    }
+
+    try {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes', '019_gepeto_obras_completas_e_capas')")->fetchColumn();
+        if ($appliedCount === 19) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -306,7 +313,7 @@ function folivro_database(): PDO
                     'Orgulho e Preconceito',
                     'Jane Austen',
                     "Orgulho e Preconceito é um romance de maneiras de 1813 escrito por Jane Austen. O romance segue o desenvolvimento da personagem de Elizabeth Bennet, a protagonista dinâmica do livro que aprende sobre as repercussões de julgamentos precipitados e passa a apreciar a diferença entre bondade superficial e bondade real.\n\nO Sr. Bennet, proprietário da propriedade Longbourn em Hertfordshire, tem cinco filhas, mas sua propriedade está vinculada e só pode ser passada para um herdeiro do sexo masculino. Sua esposa também não tem uma herança, então sua família enfrenta se tornar muito pobre após sua morte. Assim, é imperativo que pelo menos uma das meninas se case bem para apoiar as outras, o que é uma motivação que impulsiona a trama.",
-                    'https://covers.openlibrary.org/b/id/14348537-M.jpg',
+                    'uploads/capas/cache_ol/14348537-M.jpg',
                     351,
                     '1813-01-01',
                     'OL66554W',
@@ -317,7 +324,7 @@ function folivro_database(): PDO
                     'É Assim que Acaba',
                     'Colleen Hoover',
                     "Lily nem sempre teve uma vida fácil, mas isso nunca a impediu de trabalhar duro pela vida que quer. Ela percorreu um longo caminho desde a pequena cidade onde cresceu - ela se formou na faculdade, mudou-se para Boston e começou seu próprio negócio. E quando ela sente uma faísca com um lindo neurocirurgião chamado Ryle Kincaid, tudo na vida de Lily parece bom demais para ser verdade.\n\nRyle é assertivo, teimoso, talvez até um pouco arrogante. Ele também é sensível, brilhante e tem um fraquinho total por Lily. E a maneira como ele fica de uniforme certamente não dói. Lily não consegue tirá-lo da cabeça. Mas a completa aversão de Ryle aos relacionamentos é perturbadora. Mesmo quando Lily se vê se tornando a exceção à sua regra de \"não namorar\", ela não pode deixar de se perguntar o que o fez assim em primeiro lugar.\n\nÀ medida que as perguntas sobre seu novo relacionamento a dominam, o mesmo acontece com os pensamentos de Atlas Corrigan - seu primeiro amor e uma ligação com o passado que ela deixou para trás. Ele era sua alma gêmea, seu protetor. Quando Atlas reaparece de repente, tudo o que Lily construiu com Ryle é ameaçado.\n\nCom este romance ousado e profundamente pessoal, It Ends With Us é uma história de partir o coração e um conto inesquecível de amor que tem o preço final.",
-                    'https://covers.openlibrary.org/b/id/10473609-M.jpg',
+                    'uploads/capas/cache_ol/10473609-M.jpg',
                     384,
                     '2012-01-01',
                     'OL18020194W',
@@ -328,7 +335,7 @@ function folivro_database(): PDO
                     'Alice no País das Maravilhas',
                     'Lewis Carroll',
                     "Alice no País das Maravilhas (geralmente Alice no País das Maravilhas) é um romance infantil inglês de 1865 de Lewis Carroll. Uma jovem chamada Alice cai em um buraco de coelho em um mundo de fantasia de criaturas antropomórficas. É visto como um exemplo do gênero literário sem sentido.\n\nUma das obras mais conhecidas da literatura vitoriana, sua narrativa, estrutura, personagens e imagens tiveram enorme influência na cultura popular e na literatura, especialmente no gênero fantasia.",
-                    'https://covers.openlibrary.org/b/id/10527843-L.jpg',
+                    'uploads/capas/cache_ol/10527843-L.jpg',
                     null,
                     '1869-01-01',
                     'OL138052W',

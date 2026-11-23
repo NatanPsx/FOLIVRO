@@ -51,12 +51,18 @@
 
 .destaque-principal .imagem {
     flex: 0 0 185px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .destaque-principal .imagem img {
     display: block;
     width: 100%;
-    max-width: 210px;
+    max-width: 190px;
+    max-height: 275px;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
     border-radius: 10px;
     box-shadow: 0 8px 20px rgba(35, 15, 8, 0.22);
 }
@@ -234,7 +240,16 @@
     line-height: 1.25 !important;
 }
 
-@media (max-width: 1300px) {
+@media (max-width: 1520px) {
+    .livros-destaque .lista-livros,
+    #catalogo-destaque,
+    .grade-livros-duplo {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: 16px !important;
+    }
+}
+
+@media (max-width: 1180px) {
     .livros-destaque .lista-livros,
     #catalogo-destaque,
     .grade-livros-duplo {
@@ -243,12 +258,21 @@
     }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 720px) {
     .livros-destaque .lista-livros,
     #catalogo-destaque,
     .grade-livros-duplo {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         gap: 12px !important;
+    }
+}
+
+@media (max-width: 420px) {
+    .livros-destaque .lista-livros,
+    #catalogo-destaque,
+    .grade-livros-duplo {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
     }
 }
 

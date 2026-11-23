@@ -928,6 +928,9 @@ $slice = array_slice($allItems, $offset, $limit);
 
 $maiorDeIdade = $maiorDeIdadeSessao;
 foreach ($slice as &$item) {
+    $tituloOriginalCapa = (string) ($item['title'] ?? '');
+    $autorOriginalCapa = (string) ($item['authors'][0] ?? '');
+    $item['coverUrl'] = folivro_capa_url($item['coverUrl'] ?? '', $tituloOriginalCapa, $autorOriginalCapa);
     if (($item['source'] ?? '') === 'folivro' || !empty($item['dominioPublico'])) {
         $classNorm = folivro_normalizar_classificacao((string) ($item['classificacao'] ?? 'livre'));
     } else {

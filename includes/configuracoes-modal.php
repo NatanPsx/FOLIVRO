@@ -136,10 +136,9 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
 }
 
 .icone-barras-config {
-    width: 32px !important;
-    height: 32px !important;
+    width: 38px !important;
+    height: 38px !important;
     display: block !important;
-    stroke: currentColor !important;
 }
 
 .ponto-notificacao-admin {
@@ -879,7 +878,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
 }
 </style>
 
-<!-- Botão de Configurações no Canto Superior Direito (Símbolo das 3 Barrinhas no Círculo) -->
+<!-- Botão de Configurações no Canto Superior Direito (Símbolo Institucional FOLIVRO) -->
 <div class="folivro-topo-fixo-acoes" aria-label="Ações de configuração e preferências">
     <button type="button" 
             class="botao-configuracoes-topo" 
@@ -889,13 +888,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
             aria-haspopup="dialog" 
             aria-expanded="false" 
             aria-controls="modalConfiguracoes">
-        <!-- Ícone idêntico ao modelo: círculo com 3 barras horizontais -->
-        <svg class="icone-barras-config" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="50" cy="50" r="44" stroke-width="7" />
-            <line x1="26" y1="36" x2="74" y2="36" stroke-width="8" />
-            <line x1="26" y1="50" x2="74" y2="50" stroke-width="8" />
-            <line x1="26" y1="64" x2="74" y2="64" stroke-width="8" />
-        </svg>
+        <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'icone-barras-config') : '' ?>
         <?php if ($cfgIsAdmin && $cfgTotalPendencias > 0): ?>
             <span class="ponto-notificacao-admin" title="<?= $cfgTotalPendencias ?> pendência(s) na moderação">
                 <?= $cfgTotalPendencias > 99 ? '99+' : $cfgTotalPendencias ?>
@@ -910,13 +903,8 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
         <!-- Cabeçalho do Modal -->
         <header class="modal-configuracoes-cabecalho">
             <div class="modal-config-titulo-bloco">
-                <div class="icone-modal-emblema" aria-hidden="true">
-                    <svg viewBox="0 0 100 100" width="22" height="22" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="50" cy="50" r="44" stroke-width="7" />
-                        <line x1="26" y1="36" x2="74" y2="36" stroke-width="8" />
-                        <line x1="26" y1="50" x2="74" y2="50" stroke-width="8" />
-                        <line x1="26" y1="64" x2="74" y2="64" stroke-width="8" />
-                    </svg>
+                <div class="icone-modal-emblema" aria-hidden="true" style="background:transparent !important; box-shadow:none !important;">
+                    <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'folivro-icon-lg') : '' ?>
                 </div>
                 <div>
                     <h2 id="tituloModalConfiguracoes">Configurações</h2>
@@ -934,29 +922,17 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
         <!-- Navegação por Abas -->
         <nav class="abas-config-nav" role="tablist" aria-label="Abas de configuração">
             <button type="button" role="tab" class="aba-config-btn ativa" id="abaBtnPerfil" aria-selected="true" aria-controls="painelConfigPerfil">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="12" cy="7" r="4"></circle>
-                </svg>
+                <?= function_exists('folivro_icone') ? folivro_icone('pagina-marcador', 'folivro-icon-xs') : '' ?>
                 <span>Perfil</span>
             </button>
             <button type="button" role="tab" class="aba-config-btn" id="abaBtnTemas" aria-selected="false" aria-controls="painelConfigTemas">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
-                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
-                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z"></path>
-                </svg>
+                <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'folivro-icon-xs') : '' ?>
                 <span>Temas de Cores</span>
             </button>
             <?php if ($cfgIsAdmin): ?>
             <!-- ABA DE MODERAÇÃO: RENDERIZADA EXCLUSIVAMENTE PARA ADMINISTRADORES (ÚNICO PONTO DE ACESSO) -->
             <button type="button" role="tab" class="aba-config-btn aba-config-admin" id="abaBtnModeracao" aria-selected="false" aria-controls="painelConfigModeracao">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                    <path d="m9 12 2 2 4-4"></path>
-                </svg>
+                <?= function_exists('folivro_icone') ? folivro_icone('emblema-f', 'folivro-icon-xs') : '' ?>
                 <span>Moderação</span>
                 <span class="selo-badge-admin">Admin</span>
                 <?php if ($cfgTotalPendencias > 0): ?>
@@ -976,11 +952,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                         <?php if (!empty($cfgFoto)): ?>
                             <img src="<?= folivro_escape($cfgFoto) ?>" alt="Foto de perfil">
                         <?php else: ?>
-                            <svg viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="50" fill="#555" />
-                                <circle cx="50" cy="35" r="19" fill="#ccc" />
-                                <path d="M15 88 Q18 57 50 57 Q82 57 85 88 Q68 100 50 100 Q32 100 15 88" fill="#ccc" />
-                            </svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('emblema-f', 'folivro-icon-xl') : '' ?>
                         <?php endif; ?>
                     </div>
                     <div class="dados-usuario-modal">
@@ -1007,25 +979,25 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                     <h4>Atalhos Rápidos de Perfil</h4>
                     <div class="grade-atalhos-perfil-modal">
                         <a href="usuario.php" class="atalho-perfil-btn">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('pagina-marcador', 'folivro-icon-xs') : '' ?>
                             <span>Meu Perfil Completo</span>
                         </a>
                         <a href="minha-biblioteca.php" class="atalho-perfil-btn">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('pasta-biblioteca', 'folivro-icon-xs') : '' ?>
                             <span>Minha Biblioteca</span>
                         </a>
                         <?php if ($cfgNivelUsuario === 'autor' || $cfgIsAdmin): ?>
                             <a href="biblioteca-autor.php" class="atalho-perfil-btn">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                                <?= function_exists('folivro_icone') ? folivro_icone('notebook-livros', 'folivro-icon-xs') : '' ?>
                                 <span>Painel do Autor</span>
                             </a>
                         <?php endif; ?>
                         <a href="estatisticas.php" class="atalho-perfil-btn">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('folha-metas-f', 'folivro-icon-xs') : '' ?>
                             <span>Metas & Estatísticas</span>
                         </a>
                         <a href="termos.php" class="atalho-perfil-btn">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('livro-fechado-f', 'folivro-icon-xs') : '' ?>
                             <span>Termos & Privacidade</span>
                         </a>
                     </div>
@@ -1196,10 +1168,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                 
                 <div class="aviso-admin-moderacao">
                     <div class="icone-alerta-admin" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                            <path d="m9 12 2 2 4-4"></path>
-                        </svg>
+                        <?= function_exists('folivro_icone') ? folivro_icone('emblema-f', 'folivro-icon-sm') : '' ?>
                     </div>
                     <div>
                         <strong>Painel Administrativo de Moderação Ativa</strong>
@@ -1229,11 +1198,11 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                     <h4>Acesso ao Painel de Moderação</h4>
                     <div class="grade-atalhos-perfil-modal">
                         <a href="moderacao.php" class="atalho-perfil-btn destaque-admin">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('emblema-f', 'folivro-icon-xs') : '' ?>
                             <span>Abrir Painel Geral de Moderação</span>
                         </a>
                         <a href="moderacao.php#titulo-fila-revisao-publicacao" class="atalho-perfil-btn">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            <?= function_exists('folivro_icone') ? folivro_icone('livro-indice-f', 'folivro-icon-xs') : '' ?>
                             <span>Fila de Revisão de Obras</span>
                         </a>
                     </div>
@@ -1549,6 +1518,26 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                 }
             });
         }
+        // Fallback global automático para qualquer imagem de capa que falhe no navegador
+        function aplicarFallbackCapaImg(img) {
+            if (!img || img.tagName !== 'IMG' || img.dataset.capaFallbackAplicado === '1') return;
+            if (!img.closest('.livro-capa, .destaque-principal .imagem, .livro-capa-destaque, .cabecalho-leitor-livro, .loja-obra-capa')) return;
+            img.dataset.capaFallbackAplicado = '1';
+            const altRaw = (img.getAttribute('alt') || '').replace(/^Capa\s+de\s+/i, '').trim() || 'Obra Literária';
+            img.src = 'api/capa.php?t=' + encodeURIComponent(altRaw);
+        }
+
+        window.addEventListener('error', function (ev) {
+            if (ev && ev.target && ev.target.tagName === 'IMG') {
+                aplicarFallbackCapaImg(ev.target);
+            }
+        }, true);
+
+        document.querySelectorAll('.livro-capa img, .destaque-principal .imagem img, .livro-capa-destaque img').forEach(function (img) {
+            if (img.complete && img.naturalWidth === 0) {
+                aplicarFallbackCapaImg(img);
+            }
+        });
     });
 })();
 </script>

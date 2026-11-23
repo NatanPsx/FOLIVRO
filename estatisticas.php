@@ -176,11 +176,11 @@ $metasExtras = $extrasStmt->fetchAll(PDO::FETCH_ASSOC);
 // Conquistas de leitura
 $totalAcervoReal = (int) $stats['livros_na_biblioteca'] + (int) $stats['obras_adquiridas'];
 $conquistas = [
-    ['icone' => '📖', 'titulo' => 'Primeiro Passo', 'desc' => 'Adicione 1+ livro na biblioteca', 'ok' => $totalAcervoReal >= 1],
-    ['icone' => '🏁', 'titulo' => 'Leitor Finalizador', 'desc' => 'Conclua pelo menos 1 livro', 'ok' => (int) $stats['livros_lidos'] >= 1],
-    ['icone' => '🔥', 'titulo' => 'Maratonista (500+)', 'desc' => 'Leia 500 páginas registradas', 'ok' => (int) $stats['paginas_lidas'] >= 500],
-    ['icone' => '✍️', 'titulo' => 'Crítico Literário', 'desc' => 'Escreva 1+ resenha na comunidade', 'ok' => (int) $stats['total_resenhas'] >= 1],
-    ['icone' => '📚', 'titulo' => 'Colecionador', 'desc' => 'Reúna 5+ títulos na estante', 'ok' => $totalAcervoReal >= 5],
+    ['icone' => folivro_icone('livro-abrindo', 'folivro-icon-lg'), 'titulo' => 'Primeiro Passo', 'desc' => 'Adicione 1+ livro na biblioteca', 'ok' => $totalAcervoReal >= 1],
+    ['icone' => folivro_icone('pagina-marcador', 'folivro-icon-lg'), 'titulo' => 'Leitor Finalizador', 'desc' => 'Conclua pelo menos 1 livro', 'ok' => (int) $stats['livros_lidos'] >= 1],
+    ['icone' => folivro_icone('folha-metas-f', 'folivro-icon-lg'), 'titulo' => 'Maratonista (500+)', 'desc' => 'Leia 500 páginas registradas', 'ok' => (int) $stats['paginas_lidas'] >= 500],
+    ['icone' => folivro_icone('folha-lista-f', 'folivro-icon-lg'), 'titulo' => 'Crítico Literário', 'desc' => 'Escreva 1+ resenha na comunidade', 'ok' => (int) $stats['total_resenhas'] >= 1],
+    ['icone' => folivro_icone('pasta-biblioteca', 'folivro-icon-lg'), 'titulo' => 'Colecionador', 'desc' => 'Reúna 5+ títulos na estante', 'ok' => $totalAcervoReal >= 5],
 ];
 
 $csrf = folivro_escape(folivro_csrf_token());
@@ -192,8 +192,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Metas e Estatísticas | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="estatisticas.css?v=20261117_2">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="estatisticas.css?v=20261123_02">
 </head>
 
 <body>
@@ -204,7 +204,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <main class="conteudo" id="conteudo-principal">
         <section class="painel painel-metas">
             <header class="cabecalho">
-                <h1>Metas e Estatísticas de Leitura</h1>
+                <h1 class="titulo-com-icone-folivro"><?= folivro_icone('folha-metas-f', 'folivro-icon-lg') ?> Metas e Estatísticas de Leitura</h1>
                 <p>Acompanhe seu ritmo anual, crie desafios personalizados e visualize o panorama da sua estante.</p>
             </header>
 

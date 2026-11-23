@@ -89,9 +89,9 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261104_20">
-    <link rel="stylesheet" href="home.css?v=20261117_2">
-    <link rel="stylesheet" href="estante.css?v=20261117_4">
+    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="home.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261123_01">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 
@@ -131,13 +131,13 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
             </div>
 
             <div class="imagem">
-                <?php if ($heroLivro && !empty($heroLivro['capa_livro'])): ?>
+                <?php if ($heroLivro): ?>
                     <a href="leitor.php?id=<?= (int) $heroLivro['id_livro'] ?>" title="Continuar leitura">
-                        <img src="<?= folivro_escape($heroLivro['capa_livro']) ?>" alt="Capa de <?= folivro_escape($heroLivro['titulo_livro']) ?>">
+                        <img src="<?= folivro_escape(folivro_capa_url($heroLivro['capa_livro'] ?? '', (string) $heroLivro['titulo_livro'], (string) $heroLivro['autor_livro'])) ?>" alt="Capa de <?= folivro_escape($heroLivro['titulo_livro']) ?>">
                     </a>
-                <?php elseif ($heroLoja && !empty($heroLoja['capa_produto'])): ?>
+                <?php elseif ($heroLoja): ?>
                     <a href="loja-obra.php?id=<?= (int) $heroLoja['id_produto'] ?>" title="Ver na loja">
-                        <img src="<?= folivro_escape($heroLoja['capa_produto']) ?>" alt="Capa de <?= folivro_escape($heroLoja['titulo_produto']) ?>">
+                        <img src="<?= folivro_escape(folivro_capa_url($heroLoja['capa_produto'] ?? '', (string) $heroLoja['titulo_produto'], (string) ($heroLoja['autor_nome'] ?? ''))) ?>" alt="Capa de <?= folivro_escape($heroLoja['titulo_produto']) ?>">
                     </a>
                 <?php else: ?>
                     <div class="capa-placeholder" role="img" aria-label="FOLIVRO — Sua biblioteca literária">
@@ -150,23 +150,23 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
 
         <section class="home-resumo-rapido" aria-label="Resumo rápido da sua conta">
             <a href="minha-biblioteca.php" class="home-kpi-atalho">
-                <span>Minha estante</span>
+                <span class="titulo-com-icone-folivro"><?= folivro_icone('pasta-biblioteca', 'folivro-icon-md') ?> Minha estante</span>
                 <strong><?= (int) $kpisHome['total_estante'] ?></strong>
                 <small><?= (int) $kpisHome['livros_lidos'] ?> concluído(s)</small>
             </a>
             <a href="estatisticas.php" class="home-kpi-atalho">
-                <span>Meta anual</span>
+                <span class="titulo-com-icone-folivro"><?= folivro_icone('folha-metas-f', 'folivro-icon-md') ?> Meta anual</span>
                 <strong><?= $pctMetaHome ?>%</strong>
                 <small><?= $atualHome ?> / <?= $alvoHome ?> <?= ($metaHome && $metaHome['tipo_metas'] === 'paginas') ? 'páginas' : 'livros' ?></small>
             </a>
             <a href="loja.php" class="home-kpi-atalho">
-                <span>Loja independente</span>
+                <span class="titulo-com-icone-folivro"><?= folivro_icone('livro-lombada', 'folivro-icon-md') ?> Loja independente</span>
                 <strong><?= (int) $kpisHome['total_loja'] ?></strong>
                 <small>Obras disponíveis</small>
             </a>
             <?php $totalNotifChat = (int) ($kpisHome['solicitacoes_chat'] ?? 0) + (int) ($kpisHome['mensagens_nao_lidas'] ?? 0); ?>
             <a href="chat.php" class="home-kpi-atalho">
-                <span>Chat literário</span>
+                <span class="titulo-com-icone-folivro"><?= folivro_icone('folha-lista-f', 'folivro-icon-md') ?> Chat literário</span>
                 <strong><?= $totalNotifChat > 0 ? $totalNotifChat . ' nova(s)' : 'Ativo' ?></strong>
                 <small><?= (int) ($kpisHome['mensagens_nao_lidas'] ?? 0) > 0 ? (int) $kpisHome['mensagens_nao_lidas'] . ' mensagem(ns) não lida(s)' : ((int) ($kpisHome['solicitacoes_chat'] ?? 0) > 0 ? 'Solicitação pendente' : 'Conversas e leitores') ?></small>
             </a>
@@ -175,7 +175,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
         <?php if ($continuando): ?>
             <section class="continuar-lendo">
                 <div class="home-secao-topo">
-                    <h2>Continuar lendo</h2>
+                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-md') ?> Continuar lendo</h2>
                     <a href="minha-biblioteca.php">Ver estante completa &rarr;</a>
                 </div>
                 <div class="biblioteca-lista estante-biblioteca grade-continuar-lendo">
@@ -186,15 +186,12 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
                         $siglaIdade = folivro_classificacao_sigla($classNorm);
                         $labelIdade = folivro_aviso_conteudo_label($classNorm);
                         $bloqueadoIdade = !$maiorDeIdade && folivro_classificacao_eh_maior18($classNorm);
+                        $capaLivroUrl = folivro_capa_url($livro['capa_livro'] ?? '', (string) $livro['titulo_livro'], (string) $livro['autor_livro']);
                         ?>
                         <article class="livro-card <?= $bloqueadoIdade ? 'livro-card-bloqueado-idade' : '' ?>">
                             <div class="livro-capa <?= $bloqueadoIdade ? 'capa-bloqueada-18' : '' ?>">
                                 <?php if ($bloqueadoIdade): ?>
-                                    <?php if ($livro['capa_livro']): ?>
-                                        <img src="<?= folivro_escape($livro['capa_livro']) ?>" alt="Capa bloqueada por classificação indicativa +18" loading="lazy">
-                                    <?php else: ?>
-                                        <div class="capa-fallback">Obra +18</div>
-                                    <?php endif; ?>
+                                    <img src="<?= folivro_escape($capaLivroUrl) ?>" alt="Capa bloqueada por classificação indicativa +18" loading="lazy">
                                     <div class="capa-bloqueio-idade-overlay" role="img" aria-label="Conteúdo bloqueado: exclusivo para maiores de 18 anos">
                                         <span class="icone-olho-bloqueado-circulo"><?= folivro_icone_olho_bloqueado_svg(32) ?></span>
                                         <strong class="titulo-bloqueio-capa">Classificação +18</strong>
@@ -202,11 +199,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
                                     </div>
                                 <?php else: ?>
                                     <a href="livro.php?id=<?= (int) $livro['id_livro'] ?>" class="link-livro-capa">
-                                        <?php if ($livro['capa_livro']): ?>
-                                            <img src="<?= folivro_escape($livro['capa_livro']) ?>" alt="Capa de <?= folivro_escape($livro['titulo_livro']) ?>" loading="lazy">
-                                        <?php else: ?>
-                                            <div class="capa-fallback"><?= folivro_escape($livro['titulo_livro']) ?></div>
-                                        <?php endif; ?>
+                                        <img src="<?= folivro_escape($capaLivroUrl) ?>" alt="Capa de <?= folivro_escape($livro['titulo_livro']) ?>" loading="lazy">
                                     </a>
                                 <?php endif; ?>
                                 <span class="selo-classificacao-idade selo-classificacao-capa selo-idade-<?= folivro_escape($classNorm) ?>" title="<?= folivro_escape($labelIdade) ?>">
@@ -255,7 +248,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
         <?php if ($novidadesLoja): ?>
             <section class="continuar-lendo">
                 <div class="home-secao-topo">
-                    <h2>Destaques da Loja Independente</h2>
+                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('etiqueta-f', 'folivro-icon-md') ?> Destaques da Loja Independente</h2>
                     <a href="loja.php">Ver toda a loja &rarr;</a>
                 </div>
                 <div class="biblioteca-lista estante-biblioteca">
@@ -304,7 +297,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
 
         <section class="livros-destaque">
             <div class="home-secao-topo">
-                <h2>Livros mais populares e bem avaliados (Catálogo aberto)</h2>
+                <h2 class="titulo-com-icone-folivro"><?= folivro_icone('folhas-voando-f', 'folivro-icon-md') ?> Livros mais populares e bem avaliados (Catálogo aberto)</h2>
                 <a href="pesquisa.php">Explorar categorias &rarr;</a>
             </div>
             <div class="lista-livros grade-livros-duplo" id="catalogo-destaque" aria-live="polite">
