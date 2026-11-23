@@ -166,7 +166,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
             </a>
             <?php $totalNotifChat = (int) ($kpisHome['solicitacoes_chat'] ?? 0) + (int) ($kpisHome['mensagens_nao_lidas'] ?? 0); ?>
             <a href="chat.php" class="home-kpi-atalho">
-                <span class="titulo-com-icone-folivro"><?= folivro_icone('folha-lista-f', 'folivro-icon-md') ?> Chat literário</span>
+                <span class="titulo-com-icone-folivro"><?= folivro_icone('chat-folivro', 'folivro-icon-md') ?> Chat literário</span>
                 <strong><?= $totalNotifChat > 0 ? $totalNotifChat . ' nova(s)' : 'Ativo' ?></strong>
                 <small><?= (int) ($kpisHome['mensagens_nao_lidas'] ?? 0) > 0 ? (int) $kpisHome['mensagens_nao_lidas'] . ' mensagem(ns) não lida(s)' : ((int) ($kpisHome['solicitacoes_chat'] ?? 0) > 0 ? 'Solicitação pendente' : 'Conversas e leitores') ?></small>
             </a>

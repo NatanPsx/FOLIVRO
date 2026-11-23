@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-perfil-folivro">
+<circle cx="50" cy="50" r="46" fill="var(--icone-papel, #ffffff)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M14 79 A46 46 0 1 1 86 79 Q50 54 14 79 Z" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <circle cx="50" cy="43" r="16.5" fill="var(--icone-papel, #ffffff)"/>
+</svg>

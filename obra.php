@@ -470,7 +470,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 </button>
                             </form>
                             <a class="filtro-pilula btn-acao-compacto" href="chat.php?usuario=<?= (int) $idAutor ?>">
-                                <?= folivro_icone('folha-lista-f', 'folivro-icon-xs') ?> Conversar
+                                <?= folivro_icone('chat-folivro', 'folivro-icon-xs') ?> Conversar
                             </a>
                         <?php endif; ?>
 

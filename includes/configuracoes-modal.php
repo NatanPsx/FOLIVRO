@@ -922,7 +922,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
         <!-- Navegação por Abas -->
         <nav class="abas-config-nav" role="tablist" aria-label="Abas de configuração">
             <button type="button" role="tab" class="aba-config-btn ativa" id="abaBtnPerfil" aria-selected="true" aria-controls="painelConfigPerfil">
-                <?= function_exists('folivro_icone') ? folivro_icone('pagina-marcador', 'folivro-icon-xs') : '' ?>
+                <?= function_exists('folivro_icone') ? folivro_icone('perfil-folivro', 'folivro-icon-xs') : '' ?>
                 <span>Perfil</span>
             </button>
             <button type="button" role="tab" class="aba-config-btn" id="abaBtnTemas" aria-selected="false" aria-controls="painelConfigTemas">
@@ -952,7 +952,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                         <?php if (!empty($cfgFoto)): ?>
                             <img src="<?= folivro_escape($cfgFoto) ?>" alt="Foto de perfil">
                         <?php else: ?>
-                            <?= function_exists('folivro_icone') ? folivro_icone('emblema-f', 'folivro-icon-xl') : '' ?>
+                            <?= function_exists('folivro_icone') ? folivro_icone('perfil-folivro', 'folivro-icon-xl') : '' ?>
                         <?php endif; ?>
                     </div>
                     <div class="dados-usuario-modal">
@@ -979,7 +979,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                     <h4>Atalhos Rápidos de Perfil</h4>
                     <div class="grade-atalhos-perfil-modal">
                         <a href="usuario.php" class="atalho-perfil-btn">
-                            <?= function_exists('folivro_icone') ? folivro_icone('pagina-marcador', 'folivro-icon-xs') : '' ?>
+                            <?= function_exists('folivro_icone') ? folivro_icone('perfil-folivro', 'folivro-icon-xs') : '' ?>
                             <span>Meu Perfil Completo</span>
                         </a>
                         <a href="minha-biblioteca.php" class="atalho-perfil-btn">

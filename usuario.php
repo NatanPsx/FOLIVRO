@@ -242,7 +242,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <?php if (!empty($user['foto_usuario'])): ?>
                             <img src="<?= folivro_escape($user['foto_usuario']) ?>" alt="Foto de perfil">
                         <?php else: ?>
-                            <?= folivro_icone('emblema-f', 'folivro-icon-xl') ?>
+                            <?= folivro_icone('perfil-folivro', 'folivro-icon-xl') ?>
                         <?php endif; ?>
                     </div>
 

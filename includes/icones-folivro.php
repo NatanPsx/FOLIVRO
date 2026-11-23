@@ -235,6 +235,56 @@ if (!function_exists('folivro_icones_definicoes')) {
                     <rect x="35" y="61.5" width="13.5" height="8.8" rx="4.4" fill="var(--icone-papel, #ffffff)"/>
                 ',
             ],
+
+            // 16. Novo Ícone de Chat (círculo com página dupla inclinada e ondas de diálogo/voz)
+            'chat-folivro' => [
+                'titulo' => 'Chat Literário FOLIVRO',
+                'uso' => 'Menu Chat, conversas e mensagens literárias',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="26,27 65,18 73,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <path d="M24 27 Q43 32 67 22 L78 72 Q54 78 35 77 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <rect x="28" y="42" width="9" height="19" rx="4.5" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <rect x="41" y="34" width="9.5" height="34" rx="4.7" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <rect x="54.5" y="44" width="9" height="16" rx="4.5" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <rect x="66.5" y="49" width="9.5" height="6.5" rx="3.2" fill="var(--icone-circulo-fundo, #230907)"/>
+                ',
+            ],
+
+            // 17. Novo Ícone de Início (círculo com telhado geométrico em V e casa estilizada)
+            'inicio-folivro' => [
+                'titulo' => 'Início FOLIVRO',
+                'uso' => 'Menu Início e página principal',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="44,18 50,22 25,68 18,64" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="56,18 50,22 75,68 82,64" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="50,29 36,56 33,74 41,74 45,57 49,74 53,74 57,57 62,74 75,74" fill="var(--icone-papel, #ffffff)"/>
+                ',
+            ],
+
+            // 18. Novo Ícone de Perfil (silhueta circular com cabeça branca e arco de ombros)
+            'perfil-folivro' => [
+                'titulo' => 'Perfil do Leitor FOLIVRO',
+                'uso' => 'Menu Perfil, avatar padrão e configurações de conta',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-papel, #ffffff)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M14 79 A46 46 0 1 1 86 79 Q50 54 14 79 Z" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <circle cx="50" cy="43" r="16.5" fill="var(--icone-papel, #ffffff)"/>
+                ',
+            ],
+
+            // 19. Novo Ícone de Pesquisar (círculo com página inclinada e ponteiro triangular)
+            'pesquisar-folivro' => [
+                'titulo' => 'Pesquisar no Catálogo FOLIVRO',
+                'uso' => 'Menu Buscar e pesquisa de obras',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="27,27 66,18 74,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <path d="M25 27 Q44 32 67 22 L77 72 Q54 78 35 77 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="40,75 53,44 66,73 53,67" fill="var(--icone-circulo-fundo, #230907)"/>
+                ',
+            ],
         ];
     }
 }

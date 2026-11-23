@@ -616,7 +616,7 @@ $statusDenunciaLabels = [
         <header class="chat-cabecalho-pagina">
             <div>
                 <span class="selo-status">Comunidade literária · Segurança, privacidade e direitos autorais</span>
-                <h1 class="titulo-com-icone-folivro"><?= folivro_icone('folha-lista-f', 'folivro-icon-lg') ?> Chat Literário do FOLIVRO</h1>
+                <h1 class="titulo-com-icone-folivro"><?= folivro_icone('chat-folivro', 'folivro-icon-lg') ?> Chat Literário do FOLIVRO</h1>
                 <p>Converse sobre leituras, processos criativos e obras autorais com proteção contra assédio, spam e compartilhamento não autorizado de obras protegidas.</p>
             </div>
             <div class="acoes-obra">

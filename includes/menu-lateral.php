@@ -25,7 +25,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'inicio' ? ' ativo' : '' ?>"
            title="Início"
            <?= $menuAtivo === 'inicio' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><?= folivro_icone('livro-aberto-f') ?></span>
+            <span class="icone-menu"><?= folivro_icone('inicio-folivro') ?></span>
             <span class="rotulo-menu">Início</span>
         </a>
 
@@ -33,7 +33,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'pesquisar' ? ' ativo' : '' ?>"
            title="Pesquisar no catálogo"
            <?= $menuAtivo === 'pesquisar' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><?= folivro_icone('folhas-voando-f') ?></span>
+            <span class="icone-menu"><?= folivro_icone('pesquisar-folivro') ?></span>
             <span class="rotulo-menu">Buscar</span>
         </a>
 
@@ -58,7 +58,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            title="Chat literário seguro"
            <?= $menuAtivo === 'chat' ? 'aria-current="page"' : '' ?>>
             <span class="icone-menu icone-menu-chat" aria-hidden="true">
-                <?= folivro_icone('folha-lista-f') ?>
+                <?= folivro_icone('chat-folivro') ?>
                 <span class="badge-chat-notificacao" id="badge-chat-notificacao" hidden aria-label="Mensagens não lidas">0</span>
             </span>
             <span class="rotulo-menu">Chat</span>
@@ -68,7 +68,7 @@ $_hrefBusca = 'pesquisa.php' . ($_buscaRaw !== '' ? '?busca=' . rawurlencode($_b
            class="item-menu<?= $menuAtivo === 'perfil' ? ' ativo' : '' ?>"
            title="Meu perfil"
            <?= $menuAtivo === 'perfil' ? 'aria-current="page"' : '' ?>>
-            <span class="icone-menu"><?= folivro_icone('pagina-marcador') ?></span>
+            <span class="icone-menu"><?= folivro_icone('perfil-folivro') ?></span>
             <span class="rotulo-menu">Perfil</span>
         </a>
     </nav>

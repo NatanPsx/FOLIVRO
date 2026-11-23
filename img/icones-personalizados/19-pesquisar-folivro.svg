@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-pesquisar-folivro">
+<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="27,27 66,18 74,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <path d="M25 27 Q44 32 67 22 L77 72 Q54 78 35 77 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="40,75 53,44 66,73 53,67" fill="var(--icone-circulo-fundo, #230907)"/>
+</svg>
