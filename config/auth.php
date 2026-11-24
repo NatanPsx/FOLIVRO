@@ -412,11 +412,105 @@ function folivro_sanitizar_html_capitulo(?string $html): string
     if ($html === strip_tags($html)) {
         return nl2br(folivro_escape($html));
     }
+
+    // Remove blocos perigosos por completo (incluindo seu conteúdo interno)
+    $limpo = (string) preg_replace('#<(script|style|iframe|object|embed|svg|math|form|textarea|input|button|link|meta)\b[^>]*>.*?</\1>#is', '', $html);
     $permitidas = '<p><br><b><strong><i><em><u><s><strike><h1><h2><h3><h4><h5><h6><ul><ol><li><blockquote><span><hr><font><div>';
-    $sanitizado = strip_tags($html, $permitidas);
-    // Remove eventos de script perigosos (onerror, onclick, etc.) e links javascript:
-    $sanitizado = preg_replace('/\s*(on[a-z]+|javascript:|data:)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $sanitizado);
-    return $sanitizado;
+    $limpo = strip_tags($limpo, $permitidas);
+
+    if (!class_exists('DOMDocument')) {
+        $limpo = (string) preg_replace('/<([a-z0-9]+)\b[^>]*>/i', '<$1>', $limpo);
+        return $limpo;
+    }
+
+    $tagsPermitidas = [
+        'p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'strike',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'span', 'hr', 'font', 'div',
+    ];
+
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    $prevErrors = libxml_use_internal_errors(true);
+    $dom->loadHTML('<?xml encoding="UTF-8"><div id="folivro-root">' . $limpo . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    libxml_use_internal_errors($prevErrors);
+
+    $root = $dom->getElementById('folivro-root');
+    if (!$root) {
+        return nl2br(folivro_escape(strip_tags($html)));
+    }
+
+    $sanitizarNo = static function (DOMNode $node) use (&$sanitizarNo, $tagsPermitidas): void {
+        if (!$node->hasChildNodes()) {
+            return;
+        }
+        $filhos = [];
+        foreach ($node->childNodes as $child) {
+            $filhos[] = $child;
+        }
+        foreach ($filhos as $child) {
+            if ($child->nodeType === XML_ELEMENT_NODE && $child instanceof DOMElement) {
+                $tag = strtolower($child->tagName);
+                if (!in_array($tag, $tagsPermitidas, true)) {
+                    $node->removeChild($child);
+                    continue;
+                }
+                // Filtra atributos: mantém apenas alinhamento e formatação segura do editor
+                $attrs = [];
+                foreach ($child->attributes as $attr) {
+                    $attrs[$attr->nodeName] = $attr->nodeValue;
+                }
+                foreach (array_keys($attrs) as $attrName) {
+                    $child->removeAttribute($attrName);
+                }
+                if (isset($attrs['align']) && in_array(strtolower(trim($attrs['align'])), ['left', 'right', 'center', 'justify'], true)) {
+                    $child->setAttribute('align', strtolower(trim($attrs['align'])));
+                }
+                if ($tag === 'font' && isset($attrs['size']) && preg_match('/^[1-7]$/', trim($attrs['size']))) {
+                    $child->setAttribute('size', trim($attrs['size']));
+                }
+                if (isset($attrs['style'])) {
+                    $estilosSeguros = [];
+                    foreach (explode(';', $attrs['style']) as $decl) {
+                        $partes = explode(':', $decl, 2);
+                        if (count($partes) !== 2) {
+                            continue;
+                        }
+                        $prop = strtolower(trim($partes[0]));
+                        $val  = trim($partes[1]);
+                        if (preg_match('/url\s*\(|expression\s*\(|javascript:|data:/i', $val)) {
+                            continue;
+                        }
+                        if ($prop === 'text-align' && in_array(strtolower($val), ['left', 'right', 'center', 'justify'], true)) {
+                            $estilosSeguros[] = 'text-align:' . strtolower($val);
+                        } elseif ($prop === 'font-size' && preg_match('/^(1[0-9]|2[0-9]|3[0-6])px$|^(small|medium|large|x-large|xx-large)$/i', $val)) {
+                            $estilosSeguros[] = 'font-size:' . strtolower($val);
+                        } elseif ($prop === 'font-weight' && in_array(strtolower($val), ['normal', 'bold', '600', '700'], true)) {
+                            $estilosSeguros[] = 'font-weight:' . strtolower($val);
+                        } elseif ($prop === 'font-style' && in_array(strtolower($val), ['normal', 'italic'], true)) {
+                            $estilosSeguros[] = 'font-style:' . strtolower($val);
+                        } elseif ($prop === 'text-decoration' && in_array(strtolower($val), ['none', 'underline', 'line-through'], true)) {
+                            $estilosSeguros[] = 'text-decoration:' . strtolower($val);
+                        }
+                    }
+                    if ($estilosSeguros) {
+                        $child->setAttribute('style', implode('; ', $estilosSeguros));
+                    }
+                }
+                $sanitizarNo($child);
+            } elseif ($child->nodeType === XML_COMMENT_NODE) {
+                $node->removeChild($child);
+            }
+        }
+    };
+
+    $sanitizarNo($root);
+
+    $out = '';
+    foreach ($root->childNodes as $child) {
+        $out .= $dom->saveHTML($child);
+    }
+    return $out;
 }
 
 /**

@@ -35,10 +35,10 @@ $infoModo = folivro_loja_info_modo();
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Loja de Autores | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261124_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
     <link rel="stylesheet" href="loja.css?v=20261123_01">
-    <link rel="stylesheet" href="estante.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261124_01">
 </head>
 
 <body>

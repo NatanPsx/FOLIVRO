@@ -92,16 +92,32 @@ $paletas = [
 $hash = abs(crc32(mb_strtolower($titulo, 'UTF-8')));
 $pal = $paletas[$hash % count($paletas)];
 
-// Quebra o título em até 4 linhas equilibradas
-$palavras = preg_split('/\s+/u', $titulo) ?: [$titulo];
+// Quebra o título em até 4 linhas equilibradas (incluindo palavras muito longas sem espaços)
+$palavrasBrutas = preg_split('/\s+/u', $titulo) ?: [$titulo];
+$palavras = [];
+foreach ($palavrasBrutas as $pb) {
+    if ($pb === '') {
+        continue;
+    }
+    while (mb_strlen($pb, 'UTF-8') > 15) {
+        $palavras[] = mb_substr($pb, 0, 15, 'UTF-8');
+        $pb = mb_substr($pb, 15, null, 'UTF-8');
+    }
+    if ($pb !== '') {
+        $palavras[] = $pb;
+    }
+}
 $linhas = [];
 $linhaAtual = '';
-foreach ($palavras as $p) {
+$truncado = false;
+foreach ($palavras as $idx => $p) {
     $teste = $linhaAtual === '' ? $p : $linhaAtual . ' ' . $p;
-    if (mb_strlen($teste, 'UTF-8') > 17 && $linhaAtual !== '') {
+    if (mb_strlen($teste, 'UTF-8') > 16 && $linhaAtual !== '') {
         $linhas[] = $linhaAtual;
         $linhaAtual = $p;
-        if (count($linhas) >= 3) {
+        if (count($linhas) >= 4) {
+            $truncado = true;
+            $linhaAtual = '';
             break;
         }
     } else {
@@ -109,13 +125,17 @@ foreach ($palavras as $p) {
     }
 }
 if ($linhaAtual !== '' && count($linhas) < 4) {
-    if (mb_strlen($linhaAtual, 'UTF-8') > 20) {
-        $linhaAtual = mb_substr($linhaAtual, 0, 18, 'UTF-8') . '…';
-    }
     $linhas[] = $linhaAtual;
 }
+if ($truncado && !empty($linhas)) {
+    $ultima = $linhas[count($linhas) - 1];
+    $linhas[count($linhas) - 1] = mb_substr($ultima, 0, 14, 'UTF-8') . '…';
+}
 
-$autorCurto = mb_strtoupper(mb_substr($autor, 0, 28, 'UTF-8'), 'UTF-8');
+$autorCurto = mb_strtoupper(mb_substr($autor, 0, 22, 'UTF-8'), 'UTF-8');
+if (mb_strlen($autor, 'UTF-8') > 22) {
+    $autorCurto = mb_substr($autorCurto, 0, 21, 'UTF-8') . '…';
+}
 $esc = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_XML1, 'UTF-8');
 
 $yBase = 235 - (count($linhas) - 1) * 16;

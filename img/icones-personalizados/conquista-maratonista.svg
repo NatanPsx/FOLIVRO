@@ -1,0 +1,11 @@
+<svg class="folivro-icon folivro-icon-conquista-maratonista" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs>
+                        <linearGradient id="folivroGradMarat" x1="0.5" y1="0" x2="0.5" y2="1">
+                            <stop offset="0%" stop-color="#6e0704"/>
+                            <stop offset="50%" stop-color="#9e0e08"/>
+                            <stop offset="100%" stop-color="#450302"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradMarat)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <text x="50" y="34" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1">500</text>
+                    <path d="M16 44 Q33 38 49 50 V82 Q34 68 16 69 Z" fill="#ffffff"/>
+                    <path d="M51 50 Q67 38 84 44 V53 L68 58 L84 62 V69 Q66 68 51 82 Z" fill="#ffffff"/></svg>

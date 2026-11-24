@@ -58,7 +58,8 @@
 
 .dados-usuario {
     flex: 1;
-    min-width: 220px;
+    min-width: 0;
+    max-width: 100%;
     padding-top: 52px;
 }
 
@@ -68,6 +69,8 @@
     align-items: center;
     gap: 10px;
     margin-bottom: 4px;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .dados-usuario h1 {
@@ -76,6 +79,9 @@
     font-family: var(--fonte-literaria, Georgia, serif);
     font-size: clamp(23px, 2.7vw, 30px);
     font-weight: 700;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .selo-papel-perfil {
@@ -103,6 +109,8 @@
     font-size: 15px;
     line-height: 1.5;
     max-width: 72ch;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .membro {
@@ -186,11 +194,17 @@
     border-radius: var(--raio-card, 12px);
     padding: 16px;
     box-shadow: var(--sombra-card);
+    min-width: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .perfil-resenha-card h3 {
     margin: 6px 0 6px;
     font-size: 15.5px;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .perfil-resenha-card p {
@@ -198,6 +212,8 @@
     color: var(--texto-secundario);
     font-size: 14px;
     line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .botao-sair {

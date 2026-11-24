@@ -1,9 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-chat-folivro">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+<svg class="folivro-icon folivro-icon-chat-folivro" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
                     <polygon points="26,27 65,18 73,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
                     <path d="M24 27 Q43 32 67 22 L78 72 Q54 78 35 77 Z" fill="var(--icone-papel, #ffffff)"/>
                     <rect x="28" y="42" width="9" height="19" rx="4.5" fill="var(--icone-circulo-fundo, #230907)"/>
                     <rect x="41" y="34" width="9.5" height="34" rx="4.7" fill="var(--icone-circulo-fundo, #230907)"/>
                     <rect x="54.5" y="44" width="9" height="16" rx="4.5" fill="var(--icone-circulo-fundo, #230907)"/>
-                    <rect x="66.5" y="49" width="9.5" height="6.5" rx="3.2" fill="var(--icone-circulo-fundo, #230907)"/>
-</svg>
+                    <rect x="66.5" y="49" width="9.5" height="6.5" rx="3.2" fill="var(--icone-circulo-fundo, #230907)"/></svg>

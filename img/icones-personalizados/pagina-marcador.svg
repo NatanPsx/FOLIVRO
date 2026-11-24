@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-pagina-marcador">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+<svg class="folivro-icon folivro-icon-pagina-marcador" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
                     <polygon points="27,27 66,18 74,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
                     <polygon points="25,27 67,22 77,72 35,77" fill="var(--icone-papel, #ffffff)"/>
-                    <polygon points="41,76 53,44 66,73 53,67" fill="var(--icone-circulo-fundo, #230907)"/>
-</svg>
+                    <polygon points="41,76 53,44 66,73 53,67" fill="var(--icone-circulo-fundo, #230907)"/></svg>

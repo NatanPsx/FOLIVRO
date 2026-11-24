@@ -52,9 +52,12 @@ if ($obraDpLeitor !== null) {
 
 $stProdLeitor = $pdo->prepare(
     'SELECT p.id_produto, p.id_autor, p.id_autor_dos_livros, p.preco_centavos, p.arquivo_produto, p.arquivo_tipo, p.status_produto,
-            a.status_autor_dos_livros AS estudio_status
+            p.classificacao_produto,
+            a.status_autor_dos_livros AS estudio_status,
+            h.aviso_conteudo_historias AS historia_classificacao
        FROM loja_produtos p
   LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+  LEFT JOIN historias h ON h.id_historias = a.id_historias
       WHERE p.id_livro = ? LIMIT 1'
 );
 $stProdLeitor->execute([$id]);
@@ -80,9 +83,17 @@ if ($produtoLoja) {
     }
 }
 
-$classLivroLeitor = !empty($book['classificacao_livro']) && $book['classificacao_livro'] !== 'livre'
-    ? folivro_normalizar_classificacao((string) $book['classificacao_livro'])
-    : folivro_estimar_classificacao_catalogo((string) ($book['titulo_livro'] ?? ''), (string) ($book['id_externo_livro'] ?? ''));
+$ehLivroInternoLeitor = (($book['fonte_livro'] ?? '') === 'local')
+    || str_starts_with((string) ($book['id_externo_livro'] ?? ''), 'LOJA-');
+if ($produtoLoja && (!empty($produtoLoja['historia_classificacao']) || !empty($produtoLoja['classificacao_produto']))) {
+    $classLivroLeitor = folivro_normalizar_classificacao((string) ($produtoLoja['historia_classificacao'] ?: $produtoLoja['classificacao_produto']));
+} elseif ($ehLivroInternoLeitor) {
+    $classLivroLeitor = folivro_normalizar_classificacao((string) ($book['classificacao_livro'] ?? 'livre'));
+} else {
+    $classLivroLeitor = !empty($book['classificacao_livro']) && $book['classificacao_livro'] !== 'livre'
+        ? folivro_normalizar_classificacao((string) $book['classificacao_livro'])
+        : folivro_estimar_classificacao_catalogo((string) ($book['titulo_livro'] ?? ''), (string) ($book['id_externo_livro'] ?? ''));
+}
 
 if (folivro_classificacao_eh_maior18($classLivroLeitor) && !folivro_usuario_maior_de_idade($pdo, $uid)) {
     http_response_code(403);

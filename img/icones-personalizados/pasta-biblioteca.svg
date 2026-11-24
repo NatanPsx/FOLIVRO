@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-pasta-biblioteca">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <rect x="32" y="35" width="44" height="36" rx="6" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <path d="M24 35 Q24 28 31 28 H44 Q49 28 51 33 H53 V47 L60 41 L67 47 V33 Q73 33 73 39 V65 Q73 71 67 71 H30 Q24 71 24 65 Z" fill="var(--icone-papel, #ffffff)"/>
-</svg>
+<svg class="folivro-icon folivro-icon-pasta-biblioteca" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <rect x="24" y="28" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,28 80,24 80,36 68,40" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="44" width="46" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="70,44 82,40 82,52 70,56" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="60" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,60 80,56 80,68 68,72" fill="var(--icone-sombra-papel, #b8b3b0)"/></svg>

@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <main class="container">
-        <div class="logo"><?= folivro_icone('livro-fechado-f', 'folivro-icon-xl', 'FOLIVRO') ?></div>
+        <div class="logo"><?= folivro_icone('emblema-f', 'folivro-icon-xl', 'FOLIVRO') ?></div>
         <h1>FOLIVRO</h1>
         <p>Leia, organize e compartilhe livros em um só lugar.</p>
         <?php if ($erro !== ''): ?><p class="mensagem-erro" role="alert"><?= folivro_escape($erro) ?></p><?php endif; ?>
@@ -66,7 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit">Entrar</button>
             </div>
         </form>
-        <p class="links-rodape-login"><a href="termos.php">Termos de Uso, Direitos Autorais e Privacidade (LGPD)</a></p>
     </main>
 </body>
 </html>

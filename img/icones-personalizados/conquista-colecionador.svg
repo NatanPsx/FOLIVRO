@@ -1,0 +1,9 @@
+<svg class="folivro-icon folivro-icon-conquista-colecionador" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs>
+                        <radialGradient id="folivroGradColec" cx="40%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#ff3300"/>
+                            <stop offset="100%" stop-color="#c40000"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradColec)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M18 37 Q34 31 46 43 V74 Q34 62 18 64 Z" fill="#ffffff"/>
+                    <text x="67" y="68" text-anchor="middle" fill="#ffffff" stroke="#3b0502" stroke-width="2" paint-order="stroke" font-family="Georgia, serif" font-size="44" font-weight="900">5</text></svg>

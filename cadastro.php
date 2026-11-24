@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <main class="container">
-        <div class="logo"><?= folivro_icone('livro-fechado-f', 'folivro-icon-xl', 'FOLIVRO') ?></div>
+        <div class="logo"><?= folivro_icone('emblema-f', 'folivro-icon-xl', 'FOLIVRO') ?></div>
         <h1>Criar conta</h1>
         <p>Cadastre-se para ler, organizar e publicar obras.</p>
 
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="bloco-data-nascimento">
-                    <label class="rotulo-data-nascimento" for="data_nascimento">Data de nascimento (classificação indicativa)</label>
+                    <label class="rotulo-data-nascimento" for="data_nascimento">Data de nascimento</label>
                     <div class="campo">
                         <span aria-hidden="true">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

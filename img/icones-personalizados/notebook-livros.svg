@@ -1,14 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-notebook-livros">
-<polygon points="18,12 22,12 31,52 27,52" fill="var(--icone-traco-escuro, #230907)"/>
-                    <polygon points="21.5,14 24.5,14 32,50 29,50" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="32" y="49" width="36" height="3.2" rx="1" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="28" y="52" width="40" height="4.2" rx="1" fill="var(--icone-traco-escuro, #230907)"/>
-                    <path d="M29 56.5 H78 V73.5 H29 V69.8 H72 V60.2 H29 Z" fill="var(--icone-primaria, #5c0000)"/>
-                    <rect x="30" y="60.2" width="42" height="9.6" fill="var(--icone-papel, #ffffff)"/>
-                    <line x1="33" y1="63.5" x2="55" y2="63.5" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
-                    <line x1="33" y1="66.8" x2="65" y2="66.8" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
-                    <path d="M24 74.5 H76 V92 H24 V88.2 H70 V78.2 H24 Z" fill="var(--icone-traco-escuro, #230907)"/>
-                    <rect x="25" y="78.2" width="45" height="10" fill="#d9d5d2"/>
-                    <line x1="28" y1="81.8" x2="51" y2="81.8" stroke="#9e9a97" stroke-width="1.8"/>
-                    <line x1="28" y1="85.2" x2="61" y2="85.2" stroke="#9e9a97" stroke-width="1.8"/>
-</svg>
+<svg class="folivro-icon folivro-icon-notebook-livros" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="25,28 65,20 75,70 35,78" fill="var(--icone-papel, #ffffff)"/>
+                    <g transform="rotate(-11 50 50)" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="3.2" stroke-linecap="round">
+                        <line x1="34" y1="36" x2="62" y2="36"/>
+                        <line x1="34" y1="45" x2="60" y2="45"/>
+                        <line x1="34" y1="54" x2="54" y2="54"/>
+                        <line x1="34" y1="63" x2="48" y2="63"/>
+                    </g>
+                    <g transform="rotate(42 64 52)">
+                        <rect x="59" y="27" width="10" height="36" rx="2" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                        <polygon points="59,63 69,63 64,74" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                    </g></svg>

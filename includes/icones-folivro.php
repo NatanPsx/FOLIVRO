@@ -58,32 +58,35 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 4. (Linha 2, Col 1) Círculo com letra F em formato de fita marcadora de página
+            // 4. Logo Principal do Site (Frame 25: círculo em degradê vermelho-escuro com página aberta + F)
             'emblema-f' => [
-                'titulo' => 'Emblema FOLIVRO',
-                'uso' => 'Logotipo principal, favoritos e identidade da plataforma',
+                'titulo' => 'Logotipo Oficial FOLIVRO',
+                'uso' => 'Logotipo principal do site, login, cadastro e identidade da plataforma',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <path d="M35 23 H66 V37 H50 V44 H65 V58 H50 V79 L42.5 71.5 L35 79 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <defs>
+                        <linearGradient id="folivroGradLogo25" x1="0.5" y1="0" x2="0.5" y2="1">
+                            <stop offset="0%" stop-color="#9e1108"/>
+                            <stop offset="48%" stop-color="#3b0502"/>
+                            <stop offset="100%" stop-color="#0d0202"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradLogo25)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M23 32 Q37 26 48 39 V73 Q37 61 23 63 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <path d="M53 33 H77 V44 H63 V50 H74 V60 H63 V74 L58 69 L53 74 Z" fill="var(--icone-papel, #ffffff)"/>
                 ',
             ],
 
-            // 5. (Linha 2, Col 2) Círculo com página aberta à esquerda e 4 barras formando F à direita
+            // 5. Obras / Biblioteca de Livros em Pé (dois livros em pé com marcador de página)
             'livro-indice-f' => [
-                'titulo' => 'Índice de Capítulos e Obras',
-                'uso' => 'Minhas obras, lista de capítulos e sumário',
+                'titulo' => 'Obras e Biblioteca Vertical',
+                'uso' => 'Minhas obras, estante de obras e lista de capítulos',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <path d="M20 30 Q34 24 46 37 V73 Q34 61 20 63 Z" fill="var(--icone-papel, #ffffff)"/>
-                    <polygon points="40,67 46,37 49,77" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="50" y="36" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="36" width="26" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="47.5" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="47.5" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="58" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="58" width="19" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="69" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="69" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="27,31 54,23 58,69 31,74" fill="var(--icone-sombra-papel, #a8a29e)"/>
+                    <polygon points="27,31 33,33 36,74 31,74" fill="#78716c"/>
+                    <polygon points="41,37 68,28 70,72 43,78" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="41,37 46,39 47,78 43,78" fill="#d6d3d1"/>
+                    <path d="M51 34 L58 31.5 V49 L54.5 46 L51 50 Z" fill="var(--icone-circulo-fundo, #1f0605)"/>
                 ',
             ],
 
@@ -117,20 +120,17 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 8. (Linha 3, Col 2) Círculo com folha inclinada e 4 barras em degradê do tema formando F
+            // 8. Metas (círculo com alvo concêntrico e flecha apontando para o centro)
             'folha-metas-f' => [
-                'titulo' => 'Folha de Metas e Estatísticas',
+                'titulo' => 'Metas e Estatísticas de Leitura',
                 'uso' => 'Metas anuais, estatísticas e indicadores de desempenho',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <polygon points="28,27 66,18 73,66 34,71" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <polygon points="26,27 68,22 77,72 35,77" fill="var(--icone-papel, #ffffff)"/>
-                    <g transform="rotate(-6 50 50)">
-                        <rect x="35" y="30" width="27" height="8.2" rx="4" fill="var(--icone-circulo-fundo, #230907)"/>
-                        <rect x="35" y="41" width="13.5" height="7.8" rx="3.8" fill="var(--icone-primaria, #5c0000)"/>
-                        <rect x="35" y="51.5" width="24" height="8.2" rx="4" fill="var(--icone-acento, #9e1b12)"/>
-                        <rect x="35" y="62" width="13.5" height="7.8" rx="3.8" fill="var(--icone-acento-claro, #d92316)"/>
-                    </g>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <circle cx="50" cy="50" r="32" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="21" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <circle cx="50" cy="50" r="10.5" fill="var(--icone-papel, #ffffff)"/>
+                    <line x1="27" y1="73" x2="50" y2="50" stroke="var(--icone-circulo-fundo, #1f0605)" stroke-width="6" stroke-linecap="round"/>
+                    <polyline points="37,50 50,50 50,63" fill="none" stroke="var(--icone-circulo-fundo, #1f0605)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
                 ',
             ],
 
@@ -185,34 +185,38 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 13. (Linha 5, Col 1) Notebook aberto sobre pilha de dois livros
+            // 13. Escrever (círculo com folha pautada inclinada e lápis escuro)
             'notebook-livros' => [
                 'titulo' => 'Estúdio de Escrita Digital',
                 'uso' => 'Escrever livro, estúdio do autor e publicação digital',
                 'svg' => '
-                    <polygon points="18,12 22,12 31,52 27,52" fill="var(--icone-traco-escuro, #230907)"/>
-                    <polygon points="21.5,14 24.5,14 32,50 29,50" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="32" y="49" width="36" height="3.2" rx="1" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="28" y="52" width="40" height="4.2" rx="1" fill="var(--icone-traco-escuro, #230907)"/>
-                    <path d="M29 56.5 H78 V73.5 H29 V69.8 H72 V60.2 H29 Z" fill="var(--icone-primaria, #5c0000)"/>
-                    <rect x="30" y="60.2" width="42" height="9.6" fill="var(--icone-papel, #ffffff)"/>
-                    <line x1="33" y1="63.5" x2="55" y2="63.5" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
-                    <line x1="33" y1="66.8" x2="65" y2="66.8" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="1.8"/>
-                    <path d="M24 74.5 H76 V92 H24 V88.2 H70 V78.2 H24 Z" fill="var(--icone-traco-escuro, #230907)"/>
-                    <rect x="25" y="78.2" width="45" height="10" fill="#d9d5d2"/>
-                    <line x1="28" y1="81.8" x2="51" y2="81.8" stroke="#9e9a97" stroke-width="1.8"/>
-                    <line x1="28" y1="85.2" x2="61" y2="85.2" stroke="#9e9a97" stroke-width="1.8"/>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="25,28 65,20 75,70 35,78" fill="var(--icone-papel, #ffffff)"/>
+                    <g transform="rotate(-11 50 50)" stroke="var(--icone-sombra-papel, #b8b3b0)" stroke-width="3.2" stroke-linecap="round">
+                        <line x1="34" y1="36" x2="62" y2="36"/>
+                        <line x1="34" y1="45" x2="60" y2="45"/>
+                        <line x1="34" y1="54" x2="54" y2="54"/>
+                        <line x1="34" y1="63" x2="48" y2="63"/>
+                    </g>
+                    <g transform="rotate(42 64 52)">
+                        <rect x="59" y="27" width="10" height="36" rx="2" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                        <polygon points="59,63 69,63 64,74" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                    </g>
                 ',
             ],
 
-            // 14. (Linha 5, Col 2) Círculo com pasta/estante arredondada e recorte de marcador
+            // 14. Biblioteca (círculo com pilha de três livros horizontais)
             'pasta-biblioteca' => [
                 'titulo' => 'Minha Biblioteca Digital',
                 'uso' => 'Biblioteca pessoal, estante e coleções salvas',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <rect x="32" y="35" width="44" height="36" rx="6" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <path d="M24 35 Q24 28 31 28 H44 Q49 28 51 33 H53 V47 L60 41 L67 47 V33 Q73 33 73 39 V65 Q73 71 67 71 H30 Q24 71 24 65 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <rect x="24" y="28" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,28 80,24 80,36 68,40" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="44" width="46" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="70,44 82,40 82,52 70,56" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="60" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,60 80,56 80,68 68,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
                 ',
             ],
 
@@ -274,15 +278,123 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 19. Novo Ícone de Pesquisar (círculo com página inclinada e ponteiro triangular)
+            // 19. Buscar (círculo com lupa limpa branca)
             'pesquisar-folivro' => [
                 'titulo' => 'Pesquisar no Catálogo FOLIVRO',
                 'uso' => 'Menu Buscar e pesquisa de obras',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <polygon points="27,27 66,18 74,67 34,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <path d="M25 27 Q44 32 67 22 L77 72 Q54 78 35 77 Z" fill="var(--icone-papel, #ffffff)"/>
-                    <polygon points="40,75 53,44 66,73 53,67" fill="var(--icone-circulo-fundo, #230907)"/>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <circle cx="55" cy="45" r="20" fill="none" stroke="var(--icone-papel, #ffffff)" stroke-width="7"/>
+                    <line x1="40" y1="60" x2="21" y2="79" stroke="var(--icone-papel, #ffffff)" stroke-width="7.5" stroke-linecap="round"/>
+                ',
+            ],
+
+            // 20. Configurações (círculo com engrenagem cinza e anel central branco)
+            'configuracoes-folivro' => [
+                'titulo' => 'Configurações do FOLIVRO',
+                'uso' => 'Botão flutuante de configurações e preferências da conta',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <g fill="var(--icone-sombra-papel, #9e9a97)">
+                        <rect x="44" y="16" width="12" height="68" rx="3.5"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(45 50 50)"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(90 50 50)"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(135 50 50)"/>
+                        <circle cx="50" cy="50" r="26"/>
+                    </g>
+                    <circle cx="50" cy="50" r="18" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="10.5" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                ',
+            ],
+
+            // 21. Conquista: Primeiro Passo (pilha de livros com número 1 ao centro)
+            'conquista-primeiro-passo' => [
+                'titulo' => 'Conquista Primeiro Passo',
+                'uso' => 'Conquista de leitura: adicione 1+ livro na biblioteca',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <rect x="24" y="28" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,28 80,24 80,36 68,40" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="44" width="46" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="70,44 82,40 82,52 70,56" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <rect x="24" y="60" width="44" height="12" rx="2.5" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="68,60 80,56 80,68 68,72" fill="var(--icone-sombra-papel, #b8b3b0)"/>
+                    <text x="48" y="66" text-anchor="middle" fill="var(--icone-circulo-fundo, #1f0605)" font-family="Georgia, serif" font-size="48" font-weight="900">1</text>
+                ',
+            ],
+
+            // 22. Conquista: Leitor Finalizador (alvo claro com 1° ao centro)
+            'conquista-finalizador' => [
+                'titulo' => 'Conquista Leitor Finalizador',
+                'uso' => 'Conquista de leitura: conclua pelo menos 1 livro',
+                'svg' => '
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <circle cx="50" cy="50" r="32" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="21" fill="#d6d3d1"/>
+                    <text x="51" y="62" text-anchor="middle" fill="var(--icone-circulo-fundo, #1f0605)" font-family="Arial, sans-serif" font-size="36" font-weight="900">1°</text>
+                ',
+            ],
+
+            // 23. Conquista: Maratonista (+500) (círculo vinho com 500 e livro aberto)
+            'conquista-maratonista' => [
+                'titulo' => 'Conquista Maratonista (+500)',
+                'uso' => 'Conquista de leitura: leia 500 páginas registradas',
+                'svg' => '
+                    <defs>
+                        <linearGradient id="folivroGradMarat" x1="0.5" y1="0" x2="0.5" y2="1">
+                            <stop offset="0%" stop-color="#6e0704"/>
+                            <stop offset="50%" stop-color="#9e0e08"/>
+                            <stop offset="100%" stop-color="#450302"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradMarat)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <text x="50" y="34" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="22" font-weight="800" letter-spacing="1">500</text>
+                    <path d="M16 44 Q33 38 49 50 V82 Q34 68 16 69 Z" fill="#ffffff"/>
+                    <path d="M51 50 Q67 38 84 44 V53 L68 58 L84 62 V69 Q66 68 51 82 Z" fill="#ffffff"/>
+                ',
+            ],
+
+            // 24. Conquista: Crítico Literário (círculo vermelho com folha, chama e lápis)
+            'conquista-critico' => [
+                'titulo' => 'Conquista Crítico Literário',
+                'uso' => 'Conquista de leitura: escreva 1+ resenha na comunidade',
+                'svg' => '
+                    <defs>
+                        <linearGradient id="folivroGradCritico" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#e3190e"/>
+                            <stop offset="100%" stop-color="#8c0603"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradCritico)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="25,28 65,20 74,69 34,77" fill="#ffffff"/>
+                    <g transform="rotate(-11 50 50)" stroke="#c7c2be" stroke-width="3" stroke-linecap="round">
+                        <line x1="33" y1="37" x2="60" y2="37"/>
+                        <line x1="33" y1="46" x2="56" y2="46"/>
+                        <line x1="33" y1="55" x2="48" y2="55"/>
+                    </g>
+                    <path d="M55 68 C45 64 44 51 52 43 C51 49 55 51 56 46 C59 38 64 36 65 31 C71 40 73 53 67 62 C64 67 59 69 55 68 Z" fill="#e6200e"/>
+                    <path d="M57 66 C52 63 52 55 57 50 C59 54 63 52 63 58 C63 63 60 66 57 66 Z" fill="#ff7a1a"/>
+                    <g transform="rotate(42 66 49)">
+                        <rect x="62" y="25" width="9" height="35" rx="2" fill="#1a0504"/>
+                        <polygon points="62,60 71,60 66.5,70" fill="#1a0504"/>
+                    </g>
+                ',
+            ],
+
+            // 25. Conquista: Colecionador (círculo vermelho vibrante com página aberta e número 5)
+            'conquista-colecionador' => [
+                'titulo' => 'Conquista Colecionador',
+                'uso' => 'Conquista de leitura: reúna 5+ títulos na estante',
+                'svg' => '
+                    <defs>
+                        <radialGradient id="folivroGradColec" cx="40%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#ff3300"/>
+                            <stop offset="100%" stop-color="#c40000"/>
+                        </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradColec)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M18 37 Q34 31 46 43 V74 Q34 62 18 64 Z" fill="#ffffff"/>
+                    <text x="67" y="68" text-anchor="middle" fill="#ffffff" stroke="#3b0502" stroke-width="2" paint-order="stroke" font-family="Georgia, serif" font-size="44" font-weight="900">5</text>
                 ',
             ],
         ];

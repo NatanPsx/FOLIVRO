@@ -89,9 +89,9 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261124_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
-    <link rel="stylesheet" href="estante.css?v=20261123_01">
+    <link rel="stylesheet" href="estante.css?v=20261124_01">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 

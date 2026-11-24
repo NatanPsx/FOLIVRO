@@ -1,13 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-livro-indice-f">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <path d="M20 30 Q34 24 46 37 V73 Q34 61 20 63 Z" fill="var(--icone-papel, #ffffff)"/>
-                    <polygon points="40,67 46,37 49,77" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="50" y="36" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="36" width="26" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="47.5" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="47.5" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="58" width="10" height="8.5" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="58" width="19" height="8.5" rx="4.2" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="50" y="69" width="9" height="8" rx="4" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <rect x="54" y="69" width="12" height="8" rx="4" fill="var(--icone-papel, #ffffff)"/>
-</svg>
+<svg class="folivro-icon folivro-icon-livro-indice-f" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="27,31 54,23 58,69 31,74" fill="var(--icone-sombra-papel, #a8a29e)"/>
+                    <polygon points="27,31 33,33 36,74 31,74" fill="#78716c"/>
+                    <polygon points="41,37 68,28 70,72 43,78" fill="var(--icone-papel, #ffffff)"/>
+                    <polygon points="41,37 46,39 47,78 43,78" fill="#d6d3d1"/>
+                    <path d="M51 34 L58 31.5 V49 L54.5 46 L51 50 Z" fill="var(--icone-circulo-fundo, #1f0605)"/></svg>

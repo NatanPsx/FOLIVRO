@@ -1,8 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-livro-aberto-seta">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+<svg class="folivro-icon folivro-icon-livro-aberto-seta" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
                     <polygon points="35,33 45,20 48,37 42,33" fill="var(--icone-papel, #ffffff)"/>
                     <path d="M15 58 Q32 50 48 58 L48 53.5 Q32 44.5 17 53 Z" fill="var(--icone-papel, #ffffff)"/>
                     <path d="M52 58 Q68 50 85 58 L83 53 Q68 44.5 52 53.5 Z" fill="var(--icone-papel, #ffffff)"/>
                     <rect x="15" y="62" width="33" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="52" y="62" width="33" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/>
-</svg>
+                    <rect x="52" y="62" width="33" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/></svg>

@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-emblema-f">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <path d="M35 23 H66 V37 H50 V44 H65 V58 H50 V79 L42.5 71.5 L35 79 Z" fill="var(--icone-papel, #ffffff)"/>
-</svg>
+<svg class="folivro-icon folivro-icon-emblema-f" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs>
+                        <linearGradient id="folivroGradLogo25" x1="0.5" y1="0" x2="0.5" y2="1">
+                            <stop offset="0%" stop-color="#9e1108"/>
+                            <stop offset="48%" stop-color="#3b0502"/>
+                            <stop offset="100%" stop-color="#0d0202"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradLogo25)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M23 32 Q37 26 48 39 V73 Q37 61 23 63 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <path d="M53 33 H77 V44 H63 V50 H74 V60 H63 V74 L58 69 L53 74 Z" fill="var(--icone-papel, #ffffff)"/></svg>

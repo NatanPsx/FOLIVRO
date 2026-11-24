@@ -1,0 +1,19 @@
+<svg class="folivro-icon folivro-icon-conquista-critico" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><defs>
+                        <linearGradient id="folivroGradCritico" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#e3190e"/>
+                            <stop offset="100%" stop-color="#8c0603"/>
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#folivroGradCritico)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <polygon points="25,28 65,20 74,69 34,77" fill="#ffffff"/>
+                    <g transform="rotate(-11 50 50)" stroke="#c7c2be" stroke-width="3" stroke-linecap="round">
+                        <line x1="33" y1="37" x2="60" y2="37"/>
+                        <line x1="33" y1="46" x2="56" y2="46"/>
+                        <line x1="33" y1="55" x2="48" y2="55"/>
+                    </g>
+                    <path d="M55 68 C45 64 44 51 52 43 C51 49 55 51 56 46 C59 38 64 36 65 31 C71 40 73 53 67 62 C64 67 59 69 55 68 Z" fill="#e6200e"/>
+                    <path d="M57 66 C52 63 52 55 57 50 C59 54 63 52 63 58 C63 63 60 66 57 66 Z" fill="#ff7a1a"/>
+                    <g transform="rotate(42 66 49)">
+                        <rect x="62" y="25" width="9" height="35" rx="2" fill="#1a0504"/>
+                        <polygon points="62,60 71,60 66.5,70" fill="#1a0504"/>
+                    </g></svg>

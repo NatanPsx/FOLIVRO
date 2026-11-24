@@ -54,7 +54,7 @@ if (folivro_classificacao_eh_maior18($classObra) && !folivro_usuario_maior_de_id
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Conteúdo Bloqueado (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="layout.css?v=20261124_01">
         <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
@@ -378,7 +378,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= folivro_escape($obra['titulo_historias']) ?> | Leitura Confortável · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261124_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 

@@ -375,10 +375,37 @@ if (!$anoPublicacao && !empty($livroLocal['data_publicacao_livro'])) {
 }
 $paginasEstimadas = (int) ($livroLocal['paginas_livro'] ?? 0);
 
-$classEstimada = folivro_estimar_classificacao_catalogo($tituloLivro . ' ' . ($tituloOriginal ?? ''), $workId);
-$classLivro = !empty($livroLocal['classificacao_livro']) && $livroLocal['classificacao_livro'] !== 'livre'
-    ? folivro_normalizar_classificacao((string) $livroLocal['classificacao_livro'])
-    : $classEstimada;
+$ehLivroCatalogoInterno = $livroLocal && (
+    ($livroLocal['fonte_livro'] ?? '') === 'local'
+    || str_starts_with((string) ($livroLocal['id_externo_livro'] ?? ''), 'LOJA-')
+);
+$classLojaAutoral = null;
+if ($livroLocal && $idLivro !== null) {
+    $stClassLoja = $pdo->prepare(
+        'SELECT COALESCE(NULLIF(h.aviso_conteudo_historias, ""), p.classificacao_produto)
+           FROM loja_produtos p
+      LEFT JOIN autor_dos_livros a ON a.id_autor_dos_livros = p.id_autor_dos_livros
+      LEFT JOIN historias h ON h.id_historias = a.id_historias
+          WHERE p.id_livro = ?
+          LIMIT 1'
+    );
+    $stClassLoja->execute([$idLivro]);
+    $valClassLoja = $stClassLoja->fetchColumn();
+    if ($valClassLoja !== false && $valClassLoja !== null && trim((string) $valClassLoja) !== '') {
+        $classLojaAutoral = folivro_normalizar_classificacao((string) $valClassLoja);
+        $ehLivroCatalogoInterno = true;
+    }
+}
+if ($classLojaAutoral !== null) {
+    $classLivro = $classLojaAutoral;
+} elseif ($ehLivroCatalogoInterno) {
+    $classLivro = folivro_normalizar_classificacao((string) ($livroLocal['classificacao_livro'] ?? 'livre'));
+} else {
+    $classEstimada = folivro_estimar_classificacao_catalogo($tituloLivro . ' ' . ($tituloOriginal ?? ''), $workId);
+    $classLivro = !empty($livroLocal['classificacao_livro']) && $livroLocal['classificacao_livro'] !== 'livre'
+        ? folivro_normalizar_classificacao((string) $livroLocal['classificacao_livro'])
+        : $classEstimada;
+}
 $siglaIdadeLivro = folivro_classificacao_sigla($classLivro);
 $labelIdadeLivro = folivro_aviso_conteudo_label($classLivro);
 

@@ -130,7 +130,7 @@ if (!$user || (!$ehMeuPerfil && ($user['status_usuario'] ?? '') !== 'ativo')) {
     $user = null;
 }
 $idadeUsuarioPerfil = $ehMeuPerfil && $user ? folivro_calcular_idade($user['data_nascimento_usuario'] ?? null) : null;
-$maiorDeIdadePerfil = $ehMeuPerfil ? folivro_usuario_maior_de_idade($pdo, $uid) : false;
+$maiorDeIdadePerfil = folivro_usuario_maior_de_idade($pdo, $uid);
 
 // Estado da conversa no chat quando visualizando o perfil de outro usuário
 $estadoChatPerfil = null;
@@ -222,9 +222,9 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meu perfil | FOLIVRO</title>
-    <link rel="stylesheet" href="usuario.css?v=20261123_01">
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
-    <link rel="stylesheet" href="estante.css?v=20261123_01">
+    <link rel="stylesheet" href="usuario.css?v=20261124_01">
+    <link rel="stylesheet" href="layout.css?v=20261124_01">
+    <link rel="stylesheet" href="estante.css?v=20261124_01">
 </head>
 
 <body>
@@ -426,7 +426,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                                                     <span style="width: <?= $pctPrev ?>%"></span>
                                                 </div>
                                             </div>
-                                            <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $pl['id_livro'] ?>">Continuar leitura</a>
+                                            <?php if ($ehMeuPerfil): ?>
+                                                <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $pl['id_livro'] ?>">Continuar leitura</a>
+                                            <?php else: ?>
+                                                <a class="botao-adicionar-livro btn-card-principal" href="livro.php?id=<?= (int) $pl['id_livro'] ?>">Ver livro</a>
+                                            <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -441,12 +445,25 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <h2>Obras publicadas na Loja</h2>
                     <div class="biblioteca-lista estante-biblioteca">
                         <?php foreach ($obrasLojaPerfil as $olp): ?>
-                            <article class="livro-card">
-                                <div class="livro-capa">
+                            <?php
+                            $classifOlp = folivro_normalizar_classificacao((string) ($olp['classificacao_produto'] ?? 'livre'));
+                            $bloqueadoOlp = (!$maiorDeIdadePerfil && folivro_classificacao_eh_maior18($classifOlp));
+                            ?>
+                            <article class="livro-card <?= $bloqueadoOlp ? 'livro-card-bloqueado-idade' : '' ?>">
+                                <div class="livro-capa <?= $bloqueadoOlp ? 'capa-bloqueada-18' : '' ?>">
                                     <?php if (!empty($olp['capa_produto'])): ?>
-                                        <img src="<?= folivro_escape($olp['capa_produto']) ?>" alt="Capa de <?= folivro_escape($olp['titulo_produto']) ?>" loading="lazy">
+                                        <img src="<?= folivro_escape($olp['capa_produto']) ?>" alt="<?= $bloqueadoOlp ? 'Capa bloqueada (+18)' : 'Capa de ' . folivro_escape($olp['titulo_produto']) ?>" loading="lazy">
                                     <?php else: ?>
-                                        <div class="capa-fallback"><?= folivro_escape($olp['titulo_produto']) ?></div>
+                                        <div class="capa-fallback"><?= $bloqueadoOlp ? 'Conteúdo Restrito +18' : folivro_escape($olp['titulo_produto']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($bloqueadoOlp): ?>
+                                        <div class="capa-bloqueio-idade-overlay" role="img" aria-label="Conteúdo bloqueado para menores de 18 anos">
+                                            <div class="icone-olho-bloqueado-circulo">
+                                                <?= folivro_icone_olho_bloqueado_svg(30) ?>
+                                            </div>
+                                            <strong class="titulo-bloqueio-capa">Classificação +18</strong>
+                                            <span class="motivo-bloqueio-capa">Bloqueado: conteúdo exclusivo para maiores de 18 anos</span>
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="livro-info">
@@ -454,9 +471,17 @@ $csrf = folivro_escape(folivro_csrf_token());
                                         <span class="selo-status selo-comprado">
                                             <?= (int) $olp['preco_centavos'] === 0 ? 'Gratuita' : 'R$ ' . number_format(((int) $olp['preco_centavos']) / 100, 2, ',', '.') ?>
                                         </span>
+                                        <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifOlp) ?>" title="<?= folivro_escape(folivro_aviso_conteudo_label($classifOlp)) ?>">
+                                            <?= folivro_escape(folivro_classificacao_sigla($classifOlp)) ?>
+                                        </span>
                                     </div>
-                                    <h3><a href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>" class="link-titulo-livro"><?= folivro_escape($olp['titulo_produto']) ?></a></h3>
-                                    <a class="botao-adicionar-livro btn-card-principal" href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>">Ver na loja</a>
+                                    <?php if ($bloqueadoOlp): ?>
+                                        <h3><span class="titulo-oculto-idade" title="Título oculto para menores de 18 anos">Título oculto (+18)</span></h3>
+                                        <button class="botao-adicionar-livro botao-bloqueado-idade btn-card-principal" type="button" disabled>Bloqueado (+18)</button>
+                                    <?php else: ?>
+                                        <h3><a href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>" class="link-titulo-livro"><?= folivro_escape($olp['titulo_produto']) ?></a></h3>
+                                        <a class="botao-adicionar-livro btn-card-principal" href="loja-obra.php?id=<?= (int) $olp['id_produto'] ?>">Ver na loja</a>
+                                    <?php endif; ?>
                                 </div>
                             </article>
                         <?php endforeach; ?>

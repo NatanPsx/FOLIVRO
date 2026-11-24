@@ -1,0 +1,10 @@
+<svg class="folivro-icon folivro-icon-configuracoes-folivro" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <g fill="var(--icone-sombra-papel, #9e9a97)">
+                        <rect x="44" y="16" width="12" height="68" rx="3.5"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(45 50 50)"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(90 50 50)"/>
+                        <rect x="44" y="16" width="12" height="68" rx="3.5" transform="rotate(135 50 50)"/>
+                        <circle cx="50" cy="50" r="26"/>
+                    </g>
+                    <circle cx="50" cy="50" r="18" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="10.5" fill="var(--icone-circulo-fundo, #1f0605)"/></svg>

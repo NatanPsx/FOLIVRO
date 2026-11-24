@@ -716,16 +716,19 @@ body {
     justify-content: flex-end;
     width: 100%;
     height: 100%;
+    box-sizing: border-box;
     padding: 18px 16px;
     background:
         radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 55%),
         linear-gradient(155deg, var(--cor-vinho, #5c0000) 0%, var(--cor-vinho-escuro, #460905) 55%, var(--cor-marrom, #8a542c) 100%);
     color: #fff;
     font-family: var(--fonte-literaria);
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
     line-height: 1.25;
+    overflow: hidden;
     overflow-wrap: anywhere;
+    word-break: break-word;
     box-shadow: inset 6px 0 12px rgba(0, 0, 0, 0.25);
 }
 
@@ -733,6 +736,7 @@ body {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
     gap: 8px;
     padding: 14px 16px 16px;
 }
@@ -745,6 +749,8 @@ body {
     font-size: 16px;
     font-weight: 700;
     line-height: 1.32;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .livro-info p {
@@ -752,6 +758,8 @@ body {
     color: var(--texto-secundario);
     font-size: 13.5px;
     line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .livro-info .livro-ano {
@@ -1824,15 +1832,16 @@ body {
 
 .grade-chat-literario {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: 320px minmax(0, 1fr);
     gap: 20px;
     align-items: stretch;
     margin-bottom: 26px;
+    max-width: 100%;
 }
 
 @media (max-width: 980px) {
     .grade-chat-literario {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -1844,6 +1853,9 @@ body {
     box-shadow: var(--sombra-card);
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .bloco-iniciar-conversa {
@@ -1891,9 +1903,11 @@ body {
     margin: 0;
     padding: 6px 10px 14px;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     max-height: 460px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .item-conversa-link {
@@ -1905,6 +1919,9 @@ body {
     border-radius: 10px;
     text-decoration: none;
     color: var(--texto-principal);
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
     transition: background 0.16s ease, border-color 0.16s ease;
 }
 
@@ -2003,12 +2020,23 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: 1 1 220px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.participante-conversa-dados > div {
+    min-width: 0;
+    flex: 1;
 }
 
 .participante-conversa-dados h2 {
     margin: 0;
     font-size: 18px;
     font-family: var(--fonte-literaria);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .subtitulo-participante {
@@ -2052,16 +2080,21 @@ body {
     gap: 12px;
     min-height: 320px;
     max-height: 460px;
+    min-width: 0;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .balao-mensagem {
     max-width: min(82%, 580px);
+    min-width: 0;
     padding: 11px 15px;
     border-radius: 12px;
     border: 1px solid var(--borda-suave);
     background: var(--fundo-superficie-suave);
     align-self: flex-start;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .balao-mensagem.minha-mensagem {
@@ -2087,16 +2120,26 @@ body {
     gap: 14px;
     margin-bottom: 5px;
     font-size: 12px;
+    min-width: 0;
+}
+
+.balao-cabecalho strong {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .balao-cabecalho time {
     color: var(--texto-secundario);
+    flex-shrink: 0;
 }
 
 .balao-corpo p {
     margin: 0;
     line-height: 1.52;
+    overflow-wrap: anywhere;
     word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .texto-mensagem-removida {
@@ -2148,11 +2191,14 @@ body {
 
 .campo-mensagem-wrapper {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
 }
 
 .campo-mensagem-wrapper textarea {
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 10px 12px;
     border: 1px solid var(--borda-forte);
     border-radius: 8px;
@@ -2160,6 +2206,8 @@ body {
     color: var(--texto-principal);
     font: inherit;
     resize: vertical;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .barra-meta-envio {
@@ -2977,6 +3025,8 @@ body {
     margin: 0;
     font-weight: 600;
     color: var(--texto-principal);
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .aviso-direitos-caixa {
@@ -3017,6 +3067,9 @@ body {
     line-height: 1.22;
     margin: 0;
     letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .tema-escuro .titulo-livro-obra {
@@ -3027,11 +3080,15 @@ body {
     font-size: 1.15rem;
     color: var(--texto-secundario);
     margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .nome-autor-destaque {
     color: var(--texto-principal);
     font-weight: 600;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .ano-subtitulo {
@@ -3594,6 +3651,10 @@ body {
     border-radius: 12px;
     padding: 18px 20px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    min-width: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .tema-escuro .item-resenha-card {
@@ -3624,6 +3685,10 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
+    flex: 1;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .avatar-leitor-inicial {
@@ -5457,6 +5522,8 @@ body.tema-escuro .atalhos-extra {
     border-radius: 16px;
     background: var(--fundo-superficie);
     box-shadow: var(--sombra-card);
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .miniatura-capa-leitura {
@@ -5495,6 +5562,9 @@ body.tema-escuro .atalhos-extra {
     font-family: var(--fonte-literaria);
     font-size: clamp(24px, 3vw, 32px);
     line-height: 1.22;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .autoria-metricas-leitura {
@@ -5505,6 +5575,17 @@ body.tema-escuro .atalhos-extra {
     gap: 8px;
     font-size: 14px !important;
     color: var(--texto-secundario);
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.autoria-metricas-leitura strong {
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .acoes-cabecalho-leitura {
@@ -5611,6 +5692,8 @@ body.tema-escuro .atalhos-extra {
 .folha-leitura-capitulo {
     max-width: 100% !important;
     width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
     margin: 0 0 24px !important;
     padding: clamp(28px, 5vw, 58px) clamp(24px, 6vw, 68px) !important;
     border-radius: 18px !important;
@@ -5669,11 +5752,15 @@ body.tema-escuro .atalhos-extra {
     font-family: var(--fonte-literaria);
     font-size: clamp(24px, 3vw, 32px) !important;
     line-height: 1.28;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .conteudo-capitulo-texto {
     line-height: 1.92;
     letter-spacing: 0.012em;
+    overflow-wrap: anywhere;
     word-break: break-word;
 }
 

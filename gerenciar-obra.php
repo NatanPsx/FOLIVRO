@@ -682,15 +682,15 @@ $csrf = folivro_escape(folivro_csrf_token());
                         </label>
                     </div>
                     <div class="grade-campos-dupla">
-                        <label for="aviso_conteudo_historias">Classificação indicativa (idade)
+                        <label for="aviso_conteudo_historias">Classificação indicativa e aviso de conteúdo sensível
                             <select id="aviso_conteudo_historias" name="aviso_conteudo_historias">
                                 <?php foreach ([
-                                    'livre' => 'Livre — Para todos os públicos (L)',
-                                    '10'    => '10 anos — Não recomendado para menores de 10 anos (+10)',
-                                    '12'    => '12 anos — Não recomendado para menores de 12 anos (+12)',
-                                    '14'    => '14 anos — Não recomendado para menores de 14 anos (+14)',
-                                    '16'    => '16 anos — Não recomendado para menores de 16 anos (+16)',
-                                    '18'    => '18 anos — Proibido para menores de 18 anos (+18 — capa e título ocultos para menores)',
+                                    'livre' => 'Livre (L) — Sem conteúdo sensível',
+                                    '10'    => '+10 anos — Violência fantasiosa ou linguagem leve',
+                                    '12'    => '+12 anos — Agressões moderadas ou temas dramáticos sensíveis',
+                                    '14'    => '+14 anos — Violência mais intensa, drogas lícitas ou temas sensíveis',
+                                    '16'    => '+16 anos — Violência gráfica, drogas ou temas psicológicos intensos',
+                                    '18'    => '+18 anos — Conteúdo adulto/sensível (sexo explícito, violência extrema; capa e título ocultos para menores)',
                                 ] as $kAv => $vAv): ?>
                                     <option value="<?= $kAv ?>" <?= $classifAtualWork === $kAv ? 'selected' : '' ?>><?= $vAv ?></option>
                                 <?php endforeach; ?>
@@ -962,12 +962,12 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <p><small>Declarações de autoria ou comercialização não liberam a obra automaticamente. A obra permanecerá privada até decisão humana registrada na moderação.</small></p>
                     <label>
                         <input type="checkbox" name="declaracao" value="1" required>
-                        Declaro ser titular dos direitos autorais desta obra e de sua capa (ou possuir autorização válida para reprodução e disponibilização ao público), ciente de que a declaração não substitui comprovação legal.
+                        <strong>Declaração autoral obrigatória:</strong> Declaro ser titular dos direitos autorais desta obra e de sua capa (ou possuir autorização válida para reprodução e disponibilização ao público), ciente de que a declaração não substitui comprovação legal. <strong style="color:#8b2635;">(Obrigatório)</strong>
                     </label>
                     <?php if (($work['modalidade_distribuicao'] ?? 'venda_simulada') === 'venda_simulada'): ?>
                         <label>
                             <input type="checkbox" name="declaracao_comercializacao" value="1" required>
-                            Declaro possuir autorização específica para comercializar esta obra na loja (permissão de venda separada da permissão de publicação gratuita).
+                            <strong>Autorização comercial obrigatória:</strong> Declaro possuir autorização específica para comercializar esta obra na loja (permissão de venda separada da permissão de publicação gratuita). <strong style="color:#8b2635;">(Obrigatório)</strong>
                         </label>
                     <?php endif; ?>
                     <div>

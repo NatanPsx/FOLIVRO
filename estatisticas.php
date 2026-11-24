@@ -176,11 +176,11 @@ $metasExtras = $extrasStmt->fetchAll(PDO::FETCH_ASSOC);
 // Conquistas de leitura
 $totalAcervoReal = (int) $stats['livros_na_biblioteca'] + (int) $stats['obras_adquiridas'];
 $conquistas = [
-    ['icone' => folivro_icone('livro-abrindo', 'folivro-icon-lg'), 'titulo' => 'Primeiro Passo', 'desc' => 'Adicione 1+ livro na biblioteca', 'ok' => $totalAcervoReal >= 1],
-    ['icone' => folivro_icone('pagina-marcador', 'folivro-icon-lg'), 'titulo' => 'Leitor Finalizador', 'desc' => 'Conclua pelo menos 1 livro', 'ok' => (int) $stats['livros_lidos'] >= 1],
-    ['icone' => folivro_icone('folha-metas-f', 'folivro-icon-lg'), 'titulo' => 'Maratonista (500+)', 'desc' => 'Leia 500 páginas registradas', 'ok' => (int) $stats['paginas_lidas'] >= 500],
-    ['icone' => folivro_icone('folha-lista-f', 'folivro-icon-lg'), 'titulo' => 'Crítico Literário', 'desc' => 'Escreva 1+ resenha na comunidade', 'ok' => (int) $stats['total_resenhas'] >= 1],
-    ['icone' => folivro_icone('pasta-biblioteca', 'folivro-icon-lg'), 'titulo' => 'Colecionador', 'desc' => 'Reúna 5+ títulos na estante', 'ok' => $totalAcervoReal >= 5],
+    ['icone' => folivro_icone('conquista-primeiro-passo', 'folivro-icon-lg'), 'titulo' => 'Primeiro Passo', 'desc' => 'Adicione 1+ livro na biblioteca', 'ok' => $totalAcervoReal >= 1],
+    ['icone' => folivro_icone('conquista-finalizador', 'folivro-icon-lg'), 'titulo' => 'Leitor Finalizador', 'desc' => 'Conclua pelo menos 1 livro', 'ok' => (int) $stats['livros_lidos'] >= 1],
+    ['icone' => folivro_icone('conquista-maratonista', 'folivro-icon-lg'), 'titulo' => 'Maratonista (500+)', 'desc' => 'Leia 500 páginas registradas', 'ok' => (int) $stats['paginas_lidas'] >= 500],
+    ['icone' => folivro_icone('conquista-critico', 'folivro-icon-lg'), 'titulo' => 'Crítico Literário', 'desc' => 'Escreva 1+ resenha na comunidade', 'ok' => (int) $stats['total_resenhas'] >= 1],
+    ['icone' => folivro_icone('conquista-colecionador', 'folivro-icon-lg'), 'titulo' => 'Colecionador', 'desc' => 'Reúna 5+ títulos na estante', 'ok' => $totalAcervoReal >= 5],
 ];
 
 $csrf = folivro_escape(folivro_csrf_token());

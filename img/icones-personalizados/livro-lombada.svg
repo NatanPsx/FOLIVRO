@@ -1,7 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="folivro-icon folivro-icon-livro-lombada">
-<circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+<svg class="folivro-icon folivro-icon-livro-lombada" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
                     <polygon points="21,27 25.5,26 38,71 33.5,72" fill="var(--icone-papel, #ffffff)"/>
                     <polygon points="32,27 66,18 74,66 42,70" fill="var(--icone-sombra-papel, #b8b3b0)"/>
                     <polygon points="29,27 68,22 77,69 41,70" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="41" y="73" width="36" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/>
-</svg>
+                    <rect x="41" y="73" width="36" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/></svg>

@@ -888,7 +888,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
             aria-haspopup="dialog" 
             aria-expanded="false" 
             aria-controls="modalConfiguracoes">
-        <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'icone-barras-config') : '' ?>
+        <?= function_exists('folivro_icone') ? folivro_icone('configuracoes-folivro', 'icone-barras-config') : '' ?>
         <?php if ($cfgIsAdmin && $cfgTotalPendencias > 0): ?>
             <span class="ponto-notificacao-admin" title="<?= $cfgTotalPendencias ?> pendência(s) na moderação">
                 <?= $cfgTotalPendencias > 99 ? '99+' : $cfgTotalPendencias ?>
@@ -904,7 +904,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
         <header class="modal-configuracoes-cabecalho">
             <div class="modal-config-titulo-bloco">
                 <div class="icone-modal-emblema" aria-hidden="true" style="background:transparent !important; box-shadow:none !important;">
-                    <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'folivro-icon-lg') : '' ?>
+                    <?= function_exists('folivro_icone') ? folivro_icone('configuracoes-folivro', 'folivro-icon-lg') : '' ?>
                 </div>
                 <div>
                     <h2 id="tituloModalConfiguracoes">Configurações</h2>
@@ -926,7 +926,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                 <span>Perfil</span>
             </button>
             <button type="button" role="tab" class="aba-config-btn" id="abaBtnTemas" aria-selected="false" aria-controls="painelConfigTemas">
-                <?= function_exists('folivro_icone') ? folivro_icone('circulo-gradiente-f', 'folivro-icon-xs') : '' ?>
+                <?= function_exists('folivro_icone') ? folivro_icone('configuracoes-folivro', 'folivro-icon-xs') : '' ?>
                 <span>Temas de Cores</span>
             </button>
             <?php if ($cfgIsAdmin): ?>
@@ -1015,7 +1015,7 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                         </div>
 
                         <div class="campo-config-grupo">
-                            <label for="cfg_data_nascimento_usuario">Data de nascimento (classificação indicativa<?= $cfgIdade !== null ? ' · ' . $cfgIdade . ' anos' : '' ?>)</label>
+                            <label for="cfg_data_nascimento_usuario">Data de nascimento<?= $cfgIdade !== null ? ' (' . $cfgIdade . ' anos)' : '' ?></label>
                             <input type="date" id="cfg_data_nascimento_usuario" name="data_nascimento_usuario" value="<?= folivro_escape($cfgDataNascimento) ?>" min="1905-01-01" max="<?= date('Y-m-d') ?>">
                         </div>
                         

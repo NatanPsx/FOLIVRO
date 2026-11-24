@@ -602,7 +602,7 @@ $statusDenunciaLabels = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Literário | FOLIVRO</title>
     <link rel="stylesheet" href="home.css?v=20261123_01">
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261124_01">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
 </head>
 

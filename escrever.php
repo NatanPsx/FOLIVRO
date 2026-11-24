@@ -52,9 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($generosString === '') {
             $erro = 'Selecione pelo menos um gênero literário para a sua obra (ou informe um gênero personalizado).';
         } elseif ($publish && !$declareAutoria) {
-            $erro = 'Para disponibilizar uma obra ao público, confirme a declaração de titularidade/autoria para reprodução e publicação.';
+            $erro = 'Confirmação obrigatória: para disponibilizar uma obra ao público, marque a declaração autoral de titularidade para reprodução e publicação.';
         } elseif ($publish && $modalidade === 'venda_simulada' && !$declareComercial) {
-            $erro = 'A permissão para publicar gratuitamente é separada da permissão para vender. Para comercializar na loja, confirme também a declaração específica de comercialização.';
+            $erro = 'Confirmação obrigatória: para comercializar na loja, marque também a declaração específica de comercialização.';
         } elseif ($publish && $modalidade === 'venda_simulada' && $licenca === 'cc_by_nc_nd' && $price > 0) {
             $erro = 'A licença Creative Commons BY-NC-ND 4.0 é restrita a uso não comercial. Selecione outra licença ou publique gratuitamente.';
         } else {
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $caminhoCapa = null;
             if ($erro === '' && !empty($_FILES['capa_historias']['name'])) {
                 if (!$declareAutoria) {
-                    $erro = 'Para enviar imagem de capa, confirme que a arte é de sua autoria ou possui licença/autorização verificada.';
+                    $erro = 'Confirmação obrigatória: para enviar imagem de capa, marque a declaração autoral confirmando que a arte é de sua autoria ou possui licença/autorização verificada.';
                 } else {
                     $arqCapa = $_FILES['capa_historias'];
                     $tiposPermitidos = [
@@ -438,14 +438,14 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                         </label>
 
                         <?php $classifSelecionada = folivro_normalizar_classificacao($oldRaw('aviso_conteudo_historias') ?: 'livre'); ?>
-                        <label for="aviso_conteudo_historias">Classificação indicativa (idade)
+                        <label for="aviso_conteudo_historias">Classificação indicativa e aviso de conteúdo sensível
                             <select id="aviso_conteudo_historias" name="aviso_conteudo_historias" required>
-                                <option value="livre" <?= $classifSelecionada === 'livre' ? 'selected' : '' ?>>Livre — Para todos os públicos (L)</option>
-                                <option value="10" <?= $classifSelecionada === '10' ? 'selected' : '' ?>>10 anos — Não recomendado para menores de 10 anos (+10)</option>
-                                <option value="12" <?= $classifSelecionada === '12' ? 'selected' : '' ?>>12 anos — Não recomendado para menores de 12 anos (+12)</option>
-                                <option value="14" <?= $classifSelecionada === '14' ? 'selected' : '' ?>>14 anos — Não recomendado para menores de 14 anos (+14)</option>
-                                <option value="16" <?= $classifSelecionada === '16' ? 'selected' : '' ?>>16 anos — Não recomendado para menores de 16 anos (+16)</option>
-                                <option value="18" <?= $classifSelecionada === '18' ? 'selected' : '' ?>>18 anos — Proibido para menores de 18 anos (+18)</option>
+                                <option value="livre" <?= $classifSelecionada === 'livre' ? 'selected' : '' ?>>Livre (L) — Sem conteúdo sensível</option>
+                                <option value="10" <?= $classifSelecionada === '10' ? 'selected' : '' ?>>+10 anos — Violência fantasiosa ou linguagem leve</option>
+                                <option value="12" <?= $classifSelecionada === '12' ? 'selected' : '' ?>>+12 anos — Agressões moderadas ou temas dramáticos sensíveis</option>
+                                <option value="14" <?= $classifSelecionada === '14' ? 'selected' : '' ?>>+14 anos — Violência mais intensa, drogas lícitas ou temas sensíveis</option>
+                                <option value="16" <?= $classifSelecionada === '16' ? 'selected' : '' ?>>+16 anos — Violência gráfica, drogas ou temas psicológicos intensos</option>
+                                <option value="18" <?= $classifSelecionada === '18' ? 'selected' : '' ?>>+18 anos — Conteúdo adulto/sensível (sexo explícito, violência extrema)</option>
                             </select>
                             <div class="resumo-classificacao-seletor" id="resumo-classificacao-estudio" aria-live="polite">
                                 <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifSelecionada) ?>" id="badge-classificacao-estudio">
@@ -453,8 +453,8 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                                 </span>
                                 <span class="texto-classificacao-estudio" id="texto-classificacao-estudio">
                                     <?= $classifSelecionada === '18'
-                                        ? 'Obra +18: para leitores menores de 18 anos, a capa ficará embaçada com olhinho bloqueado e o título oculto.'
-                                        : 'Exibida de acordo com a faixa etária padrão do Ministério da Justiça (ClassInd).' ?>
+                                        ? 'Aviso de conteúdo sensível (+18): conteúdo adulto exclusivo para maiores de 18 anos (violência extrema, sexo explícito, drogas ou temas altamente sensíveis). Para menores de 18 anos, a capa fica embaçada com olhinho bloqueado e o título oculto.'
+                                        : 'Livre para todos os públicos: sem violência, linguagem imprópria, drogas ou conteúdo sexual.' ?>
                                 </span>
                             </div>
                         </label>
@@ -498,18 +498,18 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                         <?php endif; ?>
 
                         <div class="estudio-termos">
-                            <label class="termo-check">
-                                <input type="checkbox" name="declaracao_autoria" value="1">
-                                <span>Declaro ser titular dos direitos autorais da obra e da capa (Lei 9.610/98).</span>
+                            <label class="termo-check" id="bloco-declaracao-autoria">
+                                <input type="checkbox" name="declaracao_autoria" id="declaracao_autoria" value="1" <?= isset($_POST['declaracao_autoria']) ? 'checked' : '' ?>>
+                                <span><strong>Declaração autoral obrigatória:</strong> Declaro ser titular dos direitos autorais da obra e da capa (Lei 9.610/98). <strong style="color:#8b2635;">(Obrigatório para publicar ou enviar capa)</strong></span>
                             </label>
                             <?php if (folivro_pagamentos_ativos()): ?>
                             <label class="termo-check" id="bloco-declaracao-comercial">
-                                <input type="checkbox" name="declaracao_comercializacao" id="declaracao_comercializacao" value="1">
-                                <span>Autorizo a comercialização desta obra na loja.</span>
+                                <input type="checkbox" name="declaracao_comercializacao" id="declaracao_comercializacao" value="1" <?= isset($_POST['declaracao_comercializacao']) ? 'checked' : '' ?>>
+                                <span>Autorizo a comercialização desta obra na loja. <strong style="color:#8b2635;">(Obrigatório para venda)</strong></span>
                             </label>
                             <?php endif; ?>
                             <label class="termo-check termo-publicar">
-                                <input type="checkbox" name="publicar" id="checkbox-publicar-estudio" value="1">
+                                <input type="checkbox" name="publicar" id="checkbox-publicar-estudio" value="1" <?= isset($_POST['publicar']) ? 'checked' : '' ?>>
                                 <span><strong>Publicar na loja ao salvar</strong> (desmarcado salva como rascunho)</span>
                             </label>
                         </div>
@@ -652,25 +652,27 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                 });
             }
 
-            // Atualização dinâmica do selo de classificação indicativa no estúdio
+            // Atualização dinâmica do selo de classificação indicativa e aviso de conteúdo sensível no estúdio
             const selectClassif = document.getElementById('aviso_conteudo_historias');
             const badgeClassif = document.getElementById('badge-classificacao-estudio');
             const textoClassif = document.getElementById('texto-classificacao-estudio');
             if (selectClassif && badgeClassif && textoClassif) {
                 const descricoesIdade = {
-                    livre: 'Livre para todas as idades (sem restrição etária).',
-                    '10': 'Não recomendado para menores de 10 anos (linguagem ou temas leves).',
-                    '12': 'Não recomendado para menores de 12 anos (conflitos moderados ou drama).',
-                    '14': 'Não recomendado para menores de 14 anos (temas mais intensos).',
-                    '16': 'Não recomendado para menores de 16 anos (temas maduros ou violência).',
-                    '18': 'Exclusivo para maiores de 18 anos: para menores de 18 anos, a capa fica embaçada com olhinho bloqueado e o título fica oculto.'
+                    livre: 'Livre para todos os públicos: sem violência, linguagem imprópria, drogas ou conteúdo sexual.',
+                    '10': 'Aviso de conteúdo (+10): pode conter violência fantasiosa leve, linguagem levemente imprópria ou conflitos suaves.',
+                    '12': 'Aviso de conteúdo (+12): pode conter agressões moderadas, linguagem depreciativa, insinuações leves ou temas dramáticos sensíveis.',
+                    '14': 'Aviso de conteúdo (+14): pode conter violência mais intensa, uso de álcool/drogas lícitas, linguagem chula ou temas sensíveis (luto, traumas).',
+                    '16': 'Aviso de conteúdo (+16): pode conter violência gráfica moderada, drogas ilícitas, conteúdo sexual não explícito ou temas psicológicos intensos.',
+                    '18': 'Aviso de conteúdo sensível (+18): conteúdo adulto exclusivo para maiores de 18 anos (violência extrema, sexo explícito, drogas ou temas altamente sensíveis). Para menores de 18 anos, a capa fica embaçada com olhinho bloqueado e o título fica oculto.'
                 };
-                selectClassif.addEventListener('change', () => {
+                const atualizarClassifUI = () => {
                     const val = selectClassif.value || 'livre';
                     badgeClassif.className = `selo-classificacao-idade selo-idade-${val}`;
                     badgeClassif.textContent = val === 'livre' ? 'L' : `+${val}`;
                     textoClassif.textContent = descricoesIdade[val] || descricoesIdade.livre;
-                });
+                };
+                selectClassif.addEventListener('change', atualizarClassifUI);
+                atualizarClassifUI();
             }
 
             // Controle interativo de seleção de gêneros literários (máx. 5)
@@ -741,6 +743,16 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                 atualizarResumoPreco();
             }
 
+            const chkAutoria = document.getElementById('declaracao_autoria');
+            const atualizarObrigatoriedadeAutoria = () => {
+                if (!chkAutoria) return;
+                const temCapa = Boolean(inputCapa && inputCapa.files && inputCapa.files.length > 0);
+                const vaiPublicar = Boolean(chkPublicar && chkPublicar.checked);
+                chkAutoria.required = vaiPublicar || temCapa;
+            };
+            if (inputCapa) {
+                inputCapa.addEventListener('change', atualizarObrigatoriedadeAutoria);
+            }
             if (chkPublicar && btnSubmitEstudio) {
                 const atualizarTextoBotao = () => {
                     if (!chkPublicar.checked) {
@@ -748,9 +760,12 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                     } else {
                         btnSubmitEstudio.textContent = pubImediata ? 'Publicar na loja' : 'Enviar para aprovação';
                     }
+                    atualizarObrigatoriedadeAutoria();
                 };
                 chkPublicar.addEventListener('change', atualizarTextoBotao);
                 atualizarTextoBotao();
+            } else {
+                atualizarObrigatoriedadeAutoria();
             }
 
             // Auto-save local no navegador (evita perda acidental do texto)
