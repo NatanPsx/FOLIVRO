@@ -239,6 +239,225 @@ function folivro_dp_encontrar_obra(?string $workId, ?string $titulo = null): ?ar
 }
 
 /**
+ * Atualiza a ortografia arcaica do século XIX (comum em transcrições do Wikisource)
+ * para o português brasileiro contemporâneo, preservando tags HTML e expressões em itálico.
+ */
+function folivro_dp_atualizar_ortografia(string $html): string
+{
+    if ($html === '') {
+        return '';
+    }
+
+    static $dicionario = [
+        // Crase arcaica e palavras muito frequentes
+        'á' => 'à', 'ás' => 'às',
+        'logar' => 'lugar', 'logares' => 'lugares',
+        'mez' => 'mês', 'mezes' => 'meses',
+        'poz' => 'pôs', 'pôz' => 'pôs',
+        'idéa' => 'ideia', 'idéas' => 'ideias',
+        'tresentos' => 'trezentos', 'tresentas' => 'trezentas',
+        'ancias' => 'ânsias', 'ancia' => 'ânsia',
+        'emfim' => 'enfim', 'tambem' => 'também', 'porem' => 'porém',
+        'alem' => 'além', 'alguem' => 'alguém', 'ninguem' => 'ninguém',
+        'aquem' => 'aquém', 'vintem' => 'vintém', 'armazem' => 'armazém',
+        'desdem' => 'desdém', 'convem' => 'convém', 'contem' => 'contém',
+        'mantem' => 'mantém', 'detem' => 'detém', 'obtem' => 'obtém',
+        'ha' => 'há', 'tres' => 'três', 'fórma' => 'forma', 'fórmas' => 'formas',
+        'sêde' => 'sede', 'cousa' => 'coisa', 'cousas' => 'coisas',
+        'dous' => 'dois', 'ahi' => 'aí', 'alli' => 'ali',
+        'braz' => 'Brás', 'moysés' => 'Moisés', 'moyses' => 'Moisés', 'catumby' => 'Catumbi',
+        'commigo' => 'comigo', 'comtigo' => 'contigo', 'comsigo' => 'consigo',
+        'hombro' => 'ombro', 'hombros' => 'ombros',
+        'humido' => 'úmido', 'humida' => 'úmida', 'humidade' => 'umidade',
+        'hespanha' => 'Espanha', 'hespanhol' => 'espanhol', 'hespanhola' => 'espanhola',
+        // Pronomes e contrações arcaicas com consoante dupla
+        'elle' => 'ele', 'ella' => 'ela', 'elles' => 'eles', 'ellas' => 'elas',
+        'delle' => 'dele', 'della' => 'dela', 'delles' => 'deles', 'dellas' => 'delas',
+        'nelle' => 'nele', 'nella' => 'nela', 'nelles' => 'neles', 'nellas' => 'nelas',
+        'pello' => 'pelo', 'pella' => 'pela', 'pellos' => 'pelos', 'pellas' => 'pelas',
+        'aquelle' => 'aquele', 'aquella' => 'aquela', 'aquelles' => 'aqueles', 'aquellas' => 'aquelas',
+        'daquelle' => 'daquele', 'daquella' => 'daquela', 'daquelles' => 'daqueles', 'daquellas' => 'daquelas',
+        'naquelle' => 'naquele', 'naquella' => 'naquela', 'naquelles' => 'naqueles', 'naquellas' => 'naquelas',
+        'áquelle' => 'àquele', 'áquella' => 'àquela', 'áquelles' => 'àqueles', 'áquellas' => 'àquelas',
+        'àquelle' => 'àquele', 'àquella' => 'àquela', 'àquelles' => 'àqueles', 'àquellas' => 'àquelas',
+        // Acentuação moderna ausente nas edições do século XIX
+        'memorias' => 'memórias', 'memoria' => 'memória',
+        'principio' => 'princípio', 'principios' => 'princípios',
+        'chacara' => 'chácara', 'chacaras' => 'chácaras',
+        'trapezio' => 'trapézio', 'cerebro' => 'cérebro',
+        'privilegio' => 'privilégio', 'privilegios' => 'privilégios',
+        'pecuniarias' => 'pecuniárias', 'pecuniario' => 'pecuniário',
+        'remedio' => 'remédio', 'remedios' => 'remédios',
+        'gloria' => 'glória', 'glorias' => 'glórias',
+        'conego' => 'cônego', 'genuina' => 'genuína', 'genuino' => 'genuíno',
+        'prosperos' => 'prósperos', 'prospero' => 'próspero', 'prospera' => 'próspera',
+        'possuia' => 'possuía', 'possuiam' => 'possuíam',
+        'cemiterio' => 'cemitério', 'cemiterios' => 'cemitérios',
+        'ultima' => 'última', 'ultimo' => 'último', 'ultimas' => 'últimas', 'ultimos' => 'últimos',
+        'funereo' => 'funéreo', 'funerea' => 'funérea',
+        'intimas' => 'íntimas', 'intimos' => 'íntimos', 'intimo' => 'íntimo', 'intima' => 'íntima',
+        'apolices' => 'apólices', 'apolice' => 'apólice',
+        'clausula' => 'cláusula', 'clausulas' => 'cláusulas',
+        'duvidas' => 'dúvidas', 'duvida' => 'dúvida',
+        'subito' => 'súbito', 'subita' => 'súbita',
+        'lagrimas' => 'lágrimas', 'lagrima' => 'lágrima',
+        'publico' => 'público', 'publica' => 'pública', 'publicos' => 'públicos', 'publicas' => 'públicas',
+        'proprio' => 'próprio', 'propria' => 'própria', 'proprios' => 'próprios', 'proprias' => 'próprias',
+        'unico' => 'único', 'unica' => 'única', 'unicos' => 'únicos', 'unicas' => 'únicas',
+        'historia' => 'história', 'historias' => 'histórias',
+        'familia' => 'família', 'familias' => 'famílias',
+        'seculo' => 'século', 'seculos' => 'séculos',
+        'numero' => 'número', 'numeros' => 'números',
+        'silencio' => 'silêncio', 'espirito' => 'espírito', 'espiritos' => 'espíritos',
+        'capitulo' => 'capítulo', 'capitulos' => 'capítulos',
+        'pagina' => 'página', 'paginas' => 'páginas',
+        'musica' => 'música', 'medico' => 'médico', 'medicos' => 'médicos',
+        'arvore' => 'árvore', 'arvores' => 'árvores',
+        'passaro' => 'pássaro', 'passaros' => 'pássaros',
+        'rapido' => 'rápido', 'rapida' => 'rápida',
+        'palido' => 'pálido', 'palida' => 'pálida',
+        'timido' => 'tímido', 'timida' => 'tímida',
+        'estupido' => 'estúpido', 'estomago' => 'estômago',
+        'genio' => 'gênio', 'odio' => 'ódio', 'tedio' => 'tédio',
+        'varios' => 'vários', 'varias' => 'várias',
+        'necessario' => 'necessário', 'necessaria' => 'necessária',
+        'contrario' => 'contrário', 'contraria' => 'contrária',
+        'ordinario' => 'ordinário', 'extraordinario' => 'extraordinário',
+        'solitario' => 'solitário', 'diario' => 'diário',
+        'vigario' => 'vigário', 'boticario' => 'boticário',
+        'habeis' => 'hábeis', 'habil' => 'hábil',
+        'facil' => 'fácil', 'dificil' => 'difícil', 'util' => 'útil', 'inutil' => 'inútil',
+        'fragil' => 'frágil', 'agil' => 'ágil', 'docil' => 'dócil', 'debil' => 'débil',
+        'possivel' => 'possível', 'impossivel' => 'impossível',
+        'terrivel' => 'terrível', 'horrivel' => 'horrível',
+        'visivel' => 'visível', 'invisivel' => 'invisível',
+        'sensivel' => 'sensível', 'insensivel' => 'insensível',
+        'irreparavel' => 'irreparável', 'admiravel' => 'admirável',
+        'agradavel' => 'agradável', 'amavel' => 'amável',
+        'notavel' => 'notável', 'provavel' => 'provável',
+        'miseravel' => 'miserável', 'inevitavel' => 'inevitável',
+        'incomparavel' => 'incomparável', 'respeitavel' => 'respeitável',
+        'veneravel' => 'venerável', 'lamentavel' => 'lamentável',
+        'formidavel' => 'formidável', 'implacavel' => 'implacável',
+        'desprezivel' => 'desprezível', 'indescritivel' => 'indescritível',
+        'incompreensivel' => 'incompreensível',
+        // Grafias eruditas/etimológicas específicas
+        'methodo' => 'método', 'methodos' => 'métodos',
+        'hypocondriaco' => 'hipocondríaco', 'anti-hypocondriaco' => 'anti-hipocondríaco',
+        'melancholica' => 'melancólica', 'melancholico' => 'melancólico', 'melancholia' => 'melancolia',
+        'philanthropia' => 'filantropia', 'philosophia' => 'filosofia', 'philosopho' => 'filósofo',
+        'mysterio' => 'mistério', 'mysterios' => 'mistérios', 'mysterioso' => 'misterioso',
+        'sympathia' => 'simpatia', 'sympathico' => 'simpático',
+        'characteres' => 'caracteres', 'caracteres' => 'caracteres',
+        'theatro' => 'teatro', 'theoria' => 'teoria', 'thesouro' => 'tesouro',
+        'christão' => 'cristão', 'christã' => 'cristã', 'christãos' => 'cristãos',
+        'annuncio' => 'anúncio', 'annuncios' => 'anúncios',
+    ];
+
+    $aplicarCaixa = static function (string $original, string $novo): string {
+        if ($original === mb_strtoupper($original, 'UTF-8') && mb_strlen($original, 'UTF-8') > 1) {
+            return mb_strtoupper($novo, 'UTF-8');
+        }
+        $primeira = mb_substr($original, 0, 1, 'UTF-8');
+        if ($primeira === mb_strtoupper($primeira, 'UTF-8') && $primeira !== mb_strtolower($primeira, 'UTF-8')) {
+            return mb_strtoupper(mb_substr($novo, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($novo, 1, null, 'UTF-8');
+        }
+        return $novo;
+    };
+
+    $modernizarTexto = static function (string $txt) use ($dicionario, $aplicarCaixa): string {
+        $txt = str_replace('&#32;', ' ', $txt);
+
+        // 1. Ênclises arcaicas: contemplal-a -> contemplá-la, negal-o -> negá-lo, fazel-o -> fazê-lo
+        $txt = preg_replace('/\b([a-záéíóúâêôãõç]+)al-(o|a|os|as)\b/iu', '$1á-l$2', $txt) ?? $txt;
+        $txt = preg_replace('/\b([a-záéíóúâêôãõç]+)el-(o|a|os|as)\b/iu', '$1ê-l$2', $txt) ?? $txt;
+        $txt = preg_replace('/\b([a-záéíóúâêôãõç]+)il-(o|a|os|as)\b/iu', '$1i-l$2', $txt) ?? $txt;
+        $txt = preg_replace('/\b([a-záéíóúâêôãõç]+)ol-(o|a|os|as)\b/iu', '$1ô-l$2', $txt) ?? $txt;
+
+        // 2. Dicionário de palavras arcaicas exatas (antes das regras gerais)
+        $txt = preg_replace_callback('/(?<![\p{L}\p{N}_])[\p{L}\-]+(?![\p{L}\p{N}_])/u', static function (array $m) use ($dicionario, $aplicarCaixa): string {
+            $palavra = $m[0];
+            $lower = mb_strtolower($palavra, 'UTF-8');
+            if (isset($dicionario[$lower])) {
+                return $aplicarCaixa($palavra, $dicionario[$lower]);
+            }
+            return $palavra;
+        }, $txt) ?? $txt;
+
+        // 3. Plurais arcaicos em -aes -> -ais (jornaes -> jornais, animaes -> animais, quaes -> quais)
+        $txt = preg_replace('/\b([\p{L}]+)aes\b/iu', '$1ais', $txt) ?? $txt;
+
+        // 4. Grupos consonantais mudos (escripto -> escrito, adoptar -> adotar, producto -> produto, acção -> ação)
+        $regrasRaiz = [
+            '/\b(es|des|in|manu|sub|trans)cript/iu' => '$1crit',
+            '/\badopt/iu' => 'adot',
+            '/\bproduct/iu' => 'produt',
+            '/\bobject/iu' => 'objet',
+            '/\bproject/iu' => 'projet',
+            '/\bfact(o|os)\b/iu' => 'fat$1',
+            '/acç(ão|ões)/iu' => 'aç$1',
+            '/direcç(ão|ões)/iu' => 'direç$1',
+            '/afflicç(ão|ões)/iu' => 'afliç$1',
+            '/excepç(ão|ões)/iu' => 'exceç$1',
+            '/\bprompt/iu' => 'pront',
+            '/\bassumpt/iu' => 'assunt',
+            '/\bbaptis/iu' => 'batis',
+            '/\b(s|c|tr|attr|distr|extr|contr|subtr)ah(ir|iu|ia|iam|ida|idas|ido|idos)\b/iu' => '$1a$2',
+            '/\b(pro|ex|co|in)hib/iu' => '$1ib',
+            '/\b(compre|appre|surpre|repre|empre)hend/iu' => '$1end',
+        ];
+        foreach ($regrasRaiz as $padrao => $subst) {
+            $txt = preg_replace_callback($padrao, static function (array $m) use ($padrao, $subst, $aplicarCaixa): string {
+                $res = preg_replace($padrao, $subst, $m[0]) ?? $m[0];
+                return $aplicarCaixa($m[0], $res);
+            }, $txt) ?? $txt;
+        }
+
+        // 5. Dígrafos gregos arcaicos (ph -> f, th -> t, rh -> r)
+        $txt = preg_replace_callback('/\b[\p{L}]*(?:ph|th|rh)[\p{L}]*\b/iu', static function (array $m) use ($aplicarCaixa): string {
+            $w = $m[0];
+            $r = preg_replace(['/ph/i', '/th/i', '/rh/i'], ['f', 't', 'r'], $w) ?? $w;
+            return $aplicarCaixa($w, $r);
+        }, $txt) ?? $txt;
+
+        // 6. Consoantes duplas arcaicas (preserva rr e ss do português moderno)
+        $txt = preg_replace('/(b)\1|(d)\2|(f)\3|(g)\4|(l)\5|(m)\6|(n)\7|(p)\8|(t)\9/iu', '$1$2$3$4$5$6$7$8$9', $txt) ?? $txt;
+        $txt = preg_replace('/cc(?=[aouáóúâôãõrl])/iu', 'c', $txt) ?? $txt;
+        $txt = preg_replace('/\baccresc/iu', 'acresc', $txt) ?? $txt;
+        $txt = preg_replace('/\baccident/iu', 'acident', $txt) ?? $txt;
+        $txt = preg_replace('/\baccep/iu', 'ace', $txt) ?? $txt;
+
+        return $txt;
+    };
+
+    // Percorre tags e texto separadamente, evitando alterar citações em língua estrangeira dentro de <i>/<em>
+    $partes = preg_split('/(<[^>]+>)/u', $html, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$html];
+    $emItalico = false;
+    $saida = '';
+    foreach ($partes as $parte) {
+        if ($parte === '') {
+            continue;
+        }
+        if ($parte[0] === '<') {
+            if (preg_match('/^<(i|em)\b/i', $parte)) {
+                $emItalico = true;
+            } elseif (preg_match('/^<\/(i|em)>/i', $parte)) {
+                $emItalico = false;
+            }
+            $saida .= $parte;
+        } else {
+            if ($emItalico && preg_match('/\b(undiscovered|country|the|and|qui|dit|plus|ultra|hamlet)\b/i', $parte)) {
+                $saida .= str_replace('&#32;', ' ', $parte);
+            } else {
+                $saida .= $modernizarTexto($parte);
+            }
+        }
+    }
+
+    return $saida;
+}
+
+/**
  * Busca e higieniza o texto de uma página do Wikisource em Português (pt.wikisource.org/w/api.php).
  */
 function folivro_dp_buscar_html_wikisource(string $wikiPage): ?string
@@ -247,7 +466,7 @@ function folivro_dp_buscar_html_wikisource(string $wikiPage): ?string
     if (!is_dir($cacheDir)) {
         @mkdir($cacheDir, 0775, true);
     }
-    $cacheFile = $cacheDir . '/dp_ws_' . md5($wikiPage) . '.html';
+    $cacheFile = $cacheDir . '/dp_ws_v2_' . md5($wikiPage) . '.html';
     if (is_file($cacheFile) && (time() - (int) @filemtime($cacheFile)) < 86400 * 30) {
         $cached = (string) @file_get_contents($cacheFile);
         if (strlen($cached) > 80) {
@@ -310,7 +529,7 @@ function folivro_dp_buscar_html_wikisource(string $wikiPage): ?string
         return null;
     }
 
-    $resultado = implode("\n", $paragrafos);
+    $resultado = folivro_dp_atualizar_ortografia(implode("\n", $paragrafos));
     @file_put_contents($cacheFile, $resultado);
     return $resultado;
 }

@@ -613,11 +613,9 @@ $statusDenunciaLabels = [
     <?php require __DIR__ . '/includes/menu-autor.php'; ?>
 
     <main class="conteudo" id="conteudo-principal">
-        <header class="chat-cabecalho-pagina">
+        <header class="chat-cabecalho-pagina" style="align-items: center;">
             <div>
-                <span class="selo-status">Comunidade literária · Segurança, privacidade e direitos autorais</span>
-                <h1 class="titulo-com-icone-folivro"><?= folivro_icone('chat-folivro', 'folivro-icon-lg') ?> Chat Literário do FOLIVRO</h1>
-                <p>Converse sobre leituras, processos criativos e obras autorais com proteção contra assédio, spam e compartilhamento não autorizado de obras protegidas.</p>
+                <h1 class="titulo-com-icone-folivro" style="margin: 0;"><?= folivro_icone('chat-folivro', 'folivro-icon-lg') ?> Chat Literário do FOLIVRO</h1>
             </div>
             <div class="acoes-obra">
                 <a href="termos.php" class="botao-mais">Termos, Privacidade e Direitos Autorais</a>
@@ -1210,8 +1208,9 @@ $statusDenunciaLabels = [
 
             function criarElementoMensagem(item) {
                 const art = document.createElement('article');
-                const souEu = !!item.sou_eu;
-                const status = item.status || 'ativa';
+                const souEu = Boolean(item.sou_remetente ?? item.sou_eu);
+                const status = item.status_mensagem || item.status || 'ativa';
+                const dataEnvio = item.criado_em || item.data_envio || '';
                 art.className = `balao-mensagem ${souEu ? 'minha-mensagem' : 'outra-mensagem'}` + (status !== 'ativa' ? ' mensagem-sistema-status' : '');
                 art.dataset.idMensagem = String(item.id_mensagem);
 
@@ -1220,20 +1219,67 @@ $statusDenunciaLabels = [
                 const strong = document.createElement('strong');
                 strong.textContent = souEu ? 'Você' : (item.nome_remetente || 'Participante');
                 const time = document.createElement('time');
-                time.dateTime = item.data_envio || '';
-                time.textContent = formatarDataHora(item.data_envio || '');
+                time.dateTime = dataEnvio;
+                time.textContent = formatarDataHora(dataEnvio);
                 header.append(strong, time);
 
                 const corpo = document.createElement('div');
                 corpo.className = 'balao-corpo';
                 const p = document.createElement('p');
                 p.className = status === 'ativa' ? 'texto-mensagem-ativa' : 'texto-mensagem-removida';
-                p.textContent = item.conteudo || '';
+                p.textContent = status === 'ativa'
+                    ? (item.conteudo || '')
+                    : (item.aviso_sistema || item.conteudo || 'Mensagem indisponível.');
                 if (status === 'ativa') {
-                    p.style.whiteSpace = 'pre-line';
+                    p.style.whiteSpace = 'pre-wrap';
                 }
                 corpo.appendChild(p);
                 art.append(header, corpo);
+
+                if (status === 'ativa') {
+                    const footer = document.createElement('footer');
+                    footer.className = 'balao-acoes';
+                    if (souEu) {
+                        const formApagar = document.createElement('form');
+                        formApagar.method = 'post';
+                        formApagar.action = `chat.php?conversa=${encodeURIComponent(String(idConversaAtual))}`;
+                        formApagar.className = 'form-inline-chat';
+                        formApagar.addEventListener('submit', (e) => {
+                            if (!window.confirm('Apagar esta mensagem para ambos os participantes?')) {
+                                e.preventDefault();
+                            }
+                        });
+                        const hidCsrf = document.createElement('input');
+                        hidCsrf.type = 'hidden';
+                        hidCsrf.name = 'csrf_token';
+                        hidCsrf.value = csrfToken;
+                        const hidAcao = document.createElement('input');
+                        hidAcao.type = 'hidden';
+                        hidAcao.name = 'acao';
+                        hidAcao.value = 'apagar_mensagem';
+                        const hidId = document.createElement('input');
+                        hidId.type = 'hidden';
+                        hidId.name = 'id_mensagem';
+                        hidId.value = String(item.id_mensagem);
+                        const btnApagar = document.createElement('button');
+                        btnApagar.type = 'submit';
+                        btnApagar.className = 'link-acao-mensagem';
+                        btnApagar.textContent = 'Apagar';
+                        formApagar.append(hidCsrf, hidAcao, hidId, btnApagar);
+                        footer.appendChild(formApagar);
+                    } else {
+                        const btnDen = document.createElement('button');
+                        btnDen.type = 'button';
+                        btnDen.className = 'link-acao-mensagem denunciar';
+                        btnDen.textContent = 'Denunciar mensagem';
+                        btnDen.addEventListener('click', () => {
+                            abrirFormularioDenunciaChat('mensagem', Number(item.id_mensagem), `Mensagem #${item.id_mensagem}`);
+                        });
+                        footer.appendChild(btnDen);
+                    }
+                    art.appendChild(footer);
+                }
+
                 return art;
             }
 

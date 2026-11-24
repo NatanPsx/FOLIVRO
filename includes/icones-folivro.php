@@ -172,16 +172,15 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 12. (Linha 4, Col 3) Círculo com livro inclinado, lombada destacada e base
+            // 12. Loja (círculo escuro com sacola branca de compras e marcador de página)
             'livro-lombada' => [
                 'titulo' => 'Loja de Obras Independentes',
                 'uso' => 'Loja autoral, vitrine de obras e exemplares digitais',
                 'svg' => '
-                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #230907)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <polygon points="21,27 25.5,26 38,71 33.5,72" fill="var(--icone-papel, #ffffff)"/>
-                    <polygon points="32,27 66,18 74,66 42,70" fill="var(--icone-sombra-papel, #b8b3b0)"/>
-                    <polygon points="29,27 68,22 77,69 41,70" fill="var(--icone-papel, #ffffff)"/>
-                    <rect x="41" y="73" width="36" height="4.8" rx="1.6" fill="var(--icone-papel, #ffffff)"/>
+                    <circle cx="50" cy="50" r="46" fill="var(--icone-circulo-fundo, #1f0605)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
+                    <path d="M36 40 C36 22, 64 22, 64 40" fill="none" stroke="var(--icone-papel, #ffffff)" stroke-width="3.2" stroke-linecap="round"/>
+                    <path d="M31 39 H69 Q71.5 39 72 41.8 L76.5 72.5 Q77 76 73.2 76 H26.8 Q23 76 23.5 72.5 L28 41.8 Q28.5 39 31 39 Z" fill="var(--icone-papel, #ffffff)"/>
+                    <path d="M49 39 H61 V56 L55 51 L49 56 Z" fill="var(--icone-circulo-fundo, #1f0605)"/>
                 ',
             ],
 
@@ -267,14 +266,25 @@ if (!function_exists('folivro_icones_definicoes')) {
                 ',
             ],
 
-            // 18. Novo Ícone de Perfil (silhueta circular com cabeça branca e arco de ombros)
+            // 18. Perfil (círculo escuro com rosto fofo estilizado e arco de ombros brancos)
             'perfil-folivro' => [
                 'titulo' => 'Perfil do Leitor FOLIVRO',
                 'uso' => 'Menu Perfil, avatar padrão e configurações de conta',
                 'svg' => '
                     <circle cx="50" cy="50" r="46" fill="var(--icone-papel, #ffffff)" stroke="var(--icone-circulo-borda, transparent)" stroke-width="2.5"/>
-                    <path d="M14 79 A46 46 0 1 1 86 79 Q50 54 14 79 Z" fill="var(--icone-circulo-fundo, #230907)"/>
-                    <circle cx="50" cy="43" r="16.5" fill="var(--icone-papel, #ffffff)"/>
+                    <path d="M18 82 A46 46 0 1 1 82 82 C76 62, 64 58, 50 58 C36 58, 24 62, 18 82 Z" fill="var(--icone-circulo-fundo, #1f0605)"/>
+                    <ellipse cx="50" cy="76" rx="20" ry="13" fill="#f2f1f0"/>
+                    <circle cx="50" cy="40" r="19" fill="#d9d7d5"/>
+                    <circle cx="50" cy="40" r="17" fill="var(--icone-papel, #ffffff)"/>
+                    <ellipse cx="38.5" cy="42.5" rx="7.2" ry="8.8" fill="#d6d4d2"/>
+                    <ellipse cx="61.5" cy="42.5" rx="7.2" ry="8.8" fill="#d6d4d2"/>
+                    <circle cx="38" cy="44" r="3.6" fill="#524d4a"/>
+                    <circle cx="39.2" cy="42.8" r="1.4" fill="#ffffff"/>
+                    <circle cx="62" cy="44" r="3.6" fill="#524d4a"/>
+                    <circle cx="63.2" cy="42.8" r="1.4" fill="#ffffff"/>
+                    <ellipse cx="50" cy="46.5" rx="3.4" ry="2.4" fill="#c7c4c1"/>
+                    <path d="M47.8 47.4 Q50 48.8 52.2 47.4" fill="none" stroke="#8a8581" stroke-width="1.3" stroke-linecap="round"/>
+                    <line x1="43.5" y1="51.2" x2="56.5" y2="51.2" stroke="#9e9995" stroke-width="1.4" stroke-linecap="round"/>
                 ',
             ],
 

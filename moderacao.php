@@ -805,7 +805,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Moderação de denúncias | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261124_02">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
@@ -815,10 +815,59 @@ $csrf = folivro_escape(folivro_csrf_token());
 
     <?php require __DIR__ . '/includes/menu-autor.php'; ?>
 
+    <?php
+    $qtdObrasPend = 0;
+    foreach ($filaRevisao as $_rev) {
+        if (($_rev['revisao_publicacao'] ?? '') === 'pendente') {
+            $qtdObrasPend++;
+        }
+    }
+    $qtdCapsPend = 0;
+    foreach ($filaCapitulos as $_fc) {
+        if (($_fc['revisao_capitulos'] ?? 'pendente') === 'pendente') {
+            $qtdCapsPend++;
+        }
+    }
+    $listaObras = [];
+    $listaChat = [];
+    $qtdDenObrasPend = 0;
+    $qtdDenChatPend = 0;
+    foreach ($lista as $_d) {
+        $_ehChat = in_array($_d['tipo_denuncias'] ?? '', ['mensagem_chat', 'conversa_chat'], true);
+        $_ehPend = in_array($_d['status_denuncias'] ?? '', ['aberta', 'em_analise'], true);
+        if ($_ehChat) {
+            $listaChat[] = $_d;
+            if ($_ehPend) {
+                $qtdDenChatPend++;
+            }
+        } else {
+            $listaObras[] = $_d;
+            if ($_ehPend) {
+                $qtdDenObrasPend++;
+            }
+        }
+    }
+    $abasValidas = ['obras', 'capitulos', 'denuncias', 'denuncias_chat', 'autores', 'historico'];
+    $abaSolicitada = (string) ($_POST['aba_ativa'] ?? $_GET['aba'] ?? '');
+    if (in_array($abaSolicitada, $abasValidas, true)) {
+        $abaAtiva = $abaSolicitada;
+    } elseif ($qtdObrasPend > 0) {
+        $abaAtiva = 'obras';
+    } elseif ($qtdCapsPend > 0) {
+        $abaAtiva = 'capitulos';
+    } elseif ($qtdDenObrasPend > 0) {
+        $abaAtiva = 'denuncias';
+    } elseif ($qtdDenChatPend > 0) {
+        $abaAtiva = 'denuncias_chat';
+    } else {
+        $abaAtiva = 'obras';
+    }
+    ?>
+
     <main class="conteudo" id="conteudo-principal">
         <p><a href="usuario.php">← Voltar ao perfil</a></p>
         <h1 class="titulo-com-icone-folivro"><?= folivro_icone('emblema-f', 'folivro-icon-lg') ?> Painel de moderação, triagem e direitos autorais</h1>
-        <p>Gerencie a fila de denúncias com prioridade para suspeitas de violação de direitos autorais e segurança no chat, aplique suspensão preventiva, analise contestações de autores e registre decisões proporcionais e fundamentadas.</p>
+        <p>Gerencie obras, capítulos, denúncias, confiança de autores e histórico de decisões em abas separadas por contexto.</p>
         <p><small><strong>Aviso institucional e privacidade:</strong> As ferramentas deste painel apoiam a governança da comunidade (<em>Notice and Takedown</em>), mas não substituem assessoria jurídica habilitada. O acesso a trechos denunciados do chat é restrito à moderação e retido por 180 dias apenas para auditoria de segurança e direitos autorais.</small></p>
 
         <?php if ($erro): ?>
@@ -828,15 +877,111 @@ $csrf = folivro_escape(folivro_csrf_token());
             <p class="estado-vazio estado-sucesso" role="status"><?= folivro_escape($sucesso) ?></p>
         <?php endif; ?>
 
-        <!-- SEÇÃO 1: MODERAÇÃO HÍBRIDA DE CAPÍTULOS (REVISÃO HUMANA PRÉVIA E AUDITORIA DE PUBLICAÇÃO AUTOMÁTICA) -->
-        <section class="secao-perfil" aria-labelledby="titulo-fila-capitulos-hibrida">
+        <nav class="mod-abas-nav" role="tablist" aria-label="Contextos de moderação">
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'obras' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'obras' ? 'true' : 'false' ?>" data-mod-aba="obras">
+                <span>Obras para revisão</span>
+                <span class="mod-aba-badge<?= $qtdObrasPend > 0 ? ' alerta' : '' ?>"><?= $qtdObrasPend > 0 ? $qtdObrasPend : count($filaRevisao) ?></span>
+            </button>
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'capitulos' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'capitulos' ? 'true' : 'false' ?>" data-mod-aba="capitulos">
+                <span>Capítulos</span>
+                <span class="mod-aba-badge<?= $qtdCapsPend > 0 ? ' alerta' : '' ?>"><?= $qtdCapsPend > 0 ? $qtdCapsPend : count($filaCapitulos) ?></span>
+            </button>
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'denuncias' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'denuncias' ? 'true' : 'false' ?>" data-mod-aba="denuncias">
+                <span>Denúncias de Obras</span>
+                <span class="mod-aba-badge<?= $qtdDenObrasPend > 0 ? ' alerta' : '' ?>"><?= $qtdDenObrasPend > 0 ? $qtdDenObrasPend : count($listaObras) ?></span>
+            </button>
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'denuncias_chat' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'denuncias_chat' ? 'true' : 'false' ?>" data-mod-aba="denuncias_chat">
+                <span>Denúncias de Chat</span>
+                <span class="mod-aba-badge<?= $qtdDenChatPend > 0 ? ' alerta' : '' ?>"><?= $qtdDenChatPend > 0 ? $qtdDenChatPend : count($listaChat) ?></span>
+            </button>
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'autores' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'autores' ? 'true' : 'false' ?>" data-mod-aba="autores">
+                <span>Autores &amp; Confiança</span>
+                <span class="mod-aba-badge"><?= count($autoresConfianca) ?></span>
+            </button>
+            <button type="button" role="tab" class="mod-aba-btn<?= $abaAtiva === 'historico' ? ' ativa' : '' ?>"
+                    aria-selected="<?= $abaAtiva === 'historico' ? 'true' : 'false' ?>" data-mod-aba="historico">
+                <span>Histórico</span>
+                <span class="mod-aba-badge"><?= count($historicoModLogs) ?></span>
+            </button>
+        </nav>
+
+        <!-- ABA 1: REVISÃO HUMANA DE PUBLICAÇÃO DE OBRAS -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'obras' ? ' ativa' : '' ?>" data-mod-painel="obras" role="tabpanel" aria-labelledby="titulo-fila-revisao-publicacao">
+            <h2 id="titulo-fila-revisao-publicacao">Fila de revisão humana de publicação de obras autorais</h2>
+            <p>A declaração de autoria, finalidade acadêmica ou domínio público informado pelo autor não autoriza publicação automática. Verifique a base legal, os metadados e o conteúdo dos capítulos antes de aprovar qualquer disponibilização na loja ou na comunidade.</p>
+            <?php if (!$filaRevisao): ?>
+                <p class="estado-vazio">Nenhuma obra autoral cadastrada para revisão de publicação no momento.</p>
+            <?php else: ?>
+                <div class="lista-interacoes">
+                    <?php foreach ($filaRevisao as $rev): ?>
+                        <?php
+                        $statusRev = (string) ($rev['revisao_publicacao'] ?? 'nao_solicitada');
+                        $origemRev = (string) ($rev['origem_obra_historias'] ?? 'autoral_original');
+                        $bloqueadaPorOrigem = in_array($origemRev, ['fanfic_sem_autorizacao', 'dominio_publico_nao_verificado'], true);
+                        $modDist = (string) ($rev['modalidade_distribuicao'] ?? 'venda_simulada');
+                        ?>
+                        <article class="card-interacao item-moderacao">
+                            <header>
+                                <strong>Obra #<?= (int) $rev['id_autor_dos_livros'] ?> · <?= folivro_escape($rev['titulo_autor_dos_livros']) ?></strong>
+                                <span class="selo-status <?= $statusRev === 'aprovada' ? 'selo-lido' : ($statusRev === 'pendente' ? 'selo-comprado' : '') ?>">
+                                    <?= folivro_escape(folivro_status_label($statusRev)) ?>
+                                </span>
+                                <span class="selo-status">Status atual: <?= folivro_escape(folivro_status_label((string) $rev['status_autor_dos_livros'])) ?></span>
+                                <small>Autor: <?= folivro_escape($rev['nome_autor']) ?> · Capítulos: <?= (int) ($rev['total_capitulos'] ?? 0) ?></small>
+                            </header>
+                            <div class="mod-meta-linha">
+                                <span><strong>Origem / base legal:</strong> <?= folivro_escape(folivro_origem_obra_label($origemRev)) ?></span>
+                                <span><strong>Licença:</strong> <?= folivro_escape(folivro_licenca_label((string) ($rev['licenca_historias'] ?? 'direitos_reservados'))) ?></span>
+                                <span><strong>Modalidade:</strong> <?= $modDist === 'gratuita' ? 'Distribuição gratuita' : 'Venda simulada (R$ ' . number_format((float) $rev['preco_dos_livros_autor'], 2, ',', '.') . ')' ?></span>
+                            </div>
+                            <?php if ($bloqueadaPorOrigem): ?>
+                                <p class="aviso-direitos" role="alert"><strong>Bloqueio normativo:</strong> Esta obra foi declarada como derivada sem autorização ou domínio público não verificado. A aprovação para publicação ou venda está bloqueada até comprovação formal de titularidade/base legal.</p>
+                            <?php endif; ?>
+                            <?php if (!empty($rev['justificativa_revisao'])): ?>
+                                <p><strong>Parecer editorial anterior:</strong> <?= folivro_escape($rev['justificativa_revisao']) ?></p>
+                            <?php endif; ?>
+                            <p><a href="obra.php?id=<?= (int) $rev['id_autor_dos_livros'] ?>">Inspecionar obra completa e capítulos →</a></p>
+                            <details class="configurar-meta" <?= $statusRev === 'pendente' ? 'open' : '' ?>>
+                                <summary><?= $statusRev === 'pendente' ? 'Avaliar solicitação de publicação' : 'Atualizar revisão editorial de publicação' ?></summary>
+                                <form method="post" class="progresso-form">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="aba_ativa" value="obras">
+                                    <input type="hidden" name="acao" value="revisar_publicacao">
+                                    <input type="hidden" name="id_autor_dos_livros" value="<?= (int) $rev['id_autor_dos_livros'] ?>">
+                                    <label>Parecer fundamentado da revisão humana
+                                        <textarea name="justificativa_revisao" rows="2" maxlength="2000" required placeholder="Registre a verificação realizada sobre autoria, licença e conformidade do conteúdo..."><?= folivro_escape((string) ($rev['justificativa_revisao'] ?? '')) ?></textarea>
+                                    </label>
+                                    <label>Decisão editorial
+                                        <select name="decisao_revisao" required>
+                                            <?php if (!$bloqueadaPorOrigem): ?>
+                                                <option value="aprovar_publicacao">Aprovar publicação na loja e comunidade</option>
+                                            <?php endif; ?>
+                                            <option value="recusar_publicacao" <?= $bloqueadaPorOrigem ? 'selected' : '' ?>>Recusar / manter como rascunho privado</option>
+                                        </select>
+                                    </label>
+                                    <button class="botao-adicionar-livro" type="submit">Confirmar decisão editorial</button>
+                                </form>
+                            </details>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </section>
+
+        <!-- ABA 2: MODERAÇÃO HÍBRIDA DE CAPÍTULOS -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'capitulos' ? ' ativa' : '' ?>" data-mod-painel="capitulos" role="tabpanel" aria-labelledby="titulo-fila-capitulos-hibrida">
             <h2 id="titulo-fila-capitulos-hibrida">Moderação híbrida de capítulos (Revisão prévia e publicações automáticas)</h2>
             <p>Aprove capítulos enviados por autores em período de avaliação ou audite capítulos disponibilizados automaticamente por autores qualificados. Capítulos anteriores já aprovados permanecem visíveis aos leitores mesmo quando um novo capítulo está pendente.</p>
 
             <?php if ($filaCapitulos): ?>
                 <div class="filtros-biblioteca" role="toolbar" aria-label="Filtrar capítulos da moderação híbrida">
                     <button type="button" class="filtro-pilula ativo" data-filtro-cap="todos">Todos os capítulos (<?= count($filaCapitulos) ?>)</button>
-                    <button type="button" class="filtro-pilula" data-filtro-cap="pendente">Aguardando revisão humana</button>
+                    <button type="button" class="filtro-pilula" data-filtro-cap="pendente">Aguardando revisão humana (<?= $qtdCapsPend ?>)</button>
                     <button type="button" class="filtro-pilula" data-filtro-cap="automatico">Publicados automaticamente</button>
                     <button type="button" class="filtro-pilula" data-filtro-cap="oculto">Recusados / Ocultados</button>
                 </div>
@@ -868,11 +1013,12 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <?php if (!empty($fc['justificativa_revisao_capitulos'])): ?>
                                 <p><strong>Parecer anterior no capítulo:</strong> <?= folivro_escape((string) $fc['justificativa_revisao_capitulos']) ?></p>
                             <?php endif; ?>
-                            <p><a href="obra.php?id=<?= (int) $fc['id_autor_dos_livros'] ?>#capitulo-<?= (int) $fc['ordem_capitulos'] ?>">Inspecionar capítulo na página da obra</a></p>
+                            <p><a href="obra.php?id=<?= (int) $fc['id_autor_dos_livros'] ?>#capitulo-<?= (int) $fc['ordem_capitulos'] ?>">Inspecionar capítulo na página da obra →</a></p>
                             <details class="configurar-meta" <?= $ehPendCap ? 'open' : '' ?>>
                                 <summary><?= $ehPendCap ? 'Aprovar ou recusar capítulo pendente' : ($ehAutoCap ? 'Moderação posterior de capítulo publicado automaticamente' : 'Atualizar decisão sobre o capítulo') ?></summary>
                                 <form method="post" class="progresso-form">
                                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="aba_ativa" value="capitulos">
                                     <input type="hidden" name="acao" value="revisar_capitulo">
                                     <input type="hidden" name="id_capitulos" value="<?= (int) $fc['id_capitulos'] ?>">
                                     <label>Justificativa fundamentada da moderação
@@ -897,10 +1043,223 @@ $csrf = folivro_escape(folivro_csrf_token());
             <?php endif; ?>
         </section>
 
-        <!-- SEÇÃO 2: GESTÃO DE CONFIANÇA E QUALIFICAÇÃO DE AUTORES + HISTÓRICO AUDITÁVEL -->
-        <section class="secao-perfil" aria-labelledby="titulo-qualificacao-autores">
-            <h2 id="titulo-qualificacao-autores">Qualificação de confiança de autores e histórico de moderação</h2>
-            <p>Consulte os indicadores objetivos de cada autor (capítulos aprovados por revisão humana, obras aprovadas, publicações automáticas, denúncias procedentes e violações confirmadas) e gerencie a permissão de publicação automática com justificativa registrada.</p>
+        <!-- ABA 3: DENÚNCIAS DE OBRAS E COMENTÁRIOS -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'denuncias' ? ' ativa' : '' ?>" data-mod-painel="denuncias" role="tabpanel" aria-labelledby="titulo-fila-denuncias">
+            <h2 id="titulo-fila-denuncias">Denúncias de obras e comentários (Notice and Takedown)</h2>
+            <p>Analise denúncias de obras autorais e comentários, aplique suspensão preventiva, avalie contestações e registre decisões fundamentadas.</p>
+
+            <?php if ($listaObras): ?>
+                <div class="filtros-biblioteca" role="toolbar" aria-label="Filtrar denúncias de obras">
+                    <button type="button" class="filtro-pilula ativo" data-filtro-mod="todas">Todas (<?= count($listaObras) ?>)</button>
+                    <button type="button" class="filtro-pilula" data-filtro-mod="alta">Alta prioridade / Direitos autorais</button>
+                    <button type="button" class="filtro-pilula" data-filtro-mod="pendentes">Pendentes de decisão (<?= $qtdDenObrasPend ?>)</button>
+                    <button type="button" class="filtro-pilula" data-filtro-mod="contestadas">Com contestação do autor</button>
+                    <button type="button" class="filtro-pilula" data-filtro-mod="concluidas">Concluídas</button>
+                </div>
+            <?php endif; ?>
+
+            <div class="lista-interacoes" id="fila-moderacao">
+                <?php if (!$listaObras): ?>
+                    <p class="estado-vazio">Nenhuma denúncia de obra ou comentário registrada até o momento.</p>
+                <?php else: ?>
+                    <?php foreach ($listaObras as $d): ?>
+                        <?php
+                        $pendente = in_array($d['status_denuncias'], ['aberta', 'em_analise'], true);
+                        $temContestacao = !empty($d['contestacao_autor']);
+                        $prioridade = (string) ($d['prioridade_denuncia'] ?? 'media');
+                        $reincidencias = (int) ($d['reincidencias_autor'] ?? 0);
+                        ?>
+                        <article class="card-interacao item-moderacao"
+                                 data-prioridade="<?= folivro_escape($prioridade) ?>"
+                                 data-pendente="<?= $pendente ? '1' : '0' ?>"
+                                 data-contestada="<?= $temContestacao ? '1' : '0' ?>">
+                            <header>
+                                <strong>#<?= (int) $d['id_denuncias'] ?> · <?= folivro_escape(folivro_status_label($d['tipo_denuncias'])) ?> (ID <?= (int) $d['item_denuncia'] ?><?= !empty($d['titulo_obra']) ? ' — ' . folivro_escape($d['titulo_obra']) : '' ?>)</strong>
+                                <span class="selo-status <?= $prioridade === 'alta' ? 'selo-comprado' : '' ?>"><?= folivro_escape(folivro_status_label($prioridade)) ?></span>
+                                <span class="selo-status <?= $d['status_denuncias'] === 'procedente' ? 'selo-lido' : '' ?>">Status: <?= folivro_escape(folivro_status_label($d['status_denuncias'])) ?></span>
+                                <?php if (!empty($d['suspensao_preventiva'])): ?>
+                                    <span class="selo-status">Medida preventiva ativa</span>
+                                <?php endif; ?>
+                                <?php if (!empty($d['acao_moderacao_aplicada'])): ?>
+                                    <span class="selo-status">Medida: <?= folivro_escape(folivro_status_label((string) $d['acao_moderacao_aplicada'])) ?></span>
+                                <?php endif; ?>
+                                <?php if ($reincidencias > 0): ?>
+                                    <span class="selo-status">Reincidência do autor: <?= $reincidencias ?> caso(s) procedente(s)</span>
+                                <?php endif; ?>
+                                <small>Denunciante (restrito à moderação): <?= folivro_escape($d['denunciante']) ?> em <?= date('d/m/Y H:i', strtotime($d['data_denuncia'])) ?></small>
+                            </header>
+
+                            <p><strong>Categoria / Motivo:</strong> <?= folivro_escape($d['motivo_denuncia']) ?></p>
+                            <?php if (!empty($d['obra_referencia_denuncia'])): ?>
+                                <p><strong>Obra/autor original indicado:</strong> <?= folivro_escape($d['obra_referencia_denuncia']) ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($d['descricao_denuncia'])): ?>
+                                <p><strong>Evidências relatadas:</strong> <?= folivro_escape($d['descricao_denuncia']) ?></p>
+                            <?php endif; ?>
+
+                            <?php if ($d['tipo_denuncias'] === 'comentario'): ?>
+                                <div class="evidencia-chat-moderacao">
+                                    <p><strong>Comentário denunciado (Autor: <?= folivro_escape((string) ($d['autor_comentario_denunciado'] ?? 'Removido')) ?>):</strong></p>
+                                    <blockquote><?= nl2br(folivro_escape((string) ($d['texto_comentario_denunciado'] ?? '[Comentário já removido]'))) ?></blockquote>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if ($temContestacao): ?>
+                                <p><strong>Contestação / defesa do autor (<?= !empty($d['data_contestacao']) ? date('d/m/Y H:i', strtotime($d['data_contestacao'])) : '' ?>):</strong> <?= folivro_escape($d['contestacao_autor']) ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($d['justificativa_moderacao'])): ?>
+                                <p><strong>Decisão / justificativa registrada:</strong> <?= folivro_escape($d['justificativa_moderacao']) ?></p>
+                            <?php endif; ?>
+
+                            <?php if ($d['tipo_denuncias'] === 'obra_autoral'): ?>
+                                <p><a href="obra.php?id=<?= (int) $d['item_denuncia'] ?>">Inspecionar obra denunciada →</a></p>
+                            <?php endif; ?>
+
+                            <details class="configurar-meta" <?= $pendente ? 'open' : '' ?>>
+                                <summary><?= $pendente ? 'Registrar triagem ou decisão fundamentada' : 'Revisar decisão (após contestação ou nova análise)' ?></summary>
+                                <form method="post" class="progresso-form">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="aba_ativa" value="denuncias">
+                                    <input type="hidden" name="id_denuncias" value="<?= (int) $d['id_denuncias'] ?>">
+                                    <label>Justificativa fundamentada da decisão
+                                        <textarea name="justificativa_moderacao" rows="2" maxlength="2000" required placeholder="Descreva os elementos verificados e o fundamento da decisão..."><?= folivro_escape((string) ($d['justificativa_moderacao'] ?? '')) ?></textarea>
+                                    </label>
+                                    <label>Medida proporcional a aplicar
+                                        <select name="decisao" required>
+                                            <option value="suspender_preventivamente">Triagem: Em análise + Ocultar/suspender preventivamente</option>
+                                            <option value="aviso_e_remover_mensagem">Procedente (Leve): Emitir aviso formal ao usuário + Remover item</option>
+                                            <option value="remover_item">Procedente: Remover definitivamente obra/item e bloquear republicação por hash</option>
+                                            <option value="remover_e_banir_reincidente">Procedente (Grave / Reincidente): Remover item e suspender conta infratora</option>
+                                            <option value="improcedente">Improcedente / Acolher contestação: Arquivar denúncia e restaurar item</option>
+                                        </select>
+                                    </label>
+                                    <button class="botao-adicionar-livro" type="submit">Confirmar decisão de moderação</button>
+                                </form>
+                            </details>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <!-- ABA 4: DENÚNCIAS DE CHAT -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'denuncias_chat' ? ' ativa' : '' ?>" data-mod-painel="denuncias_chat" role="tabpanel" aria-labelledby="titulo-fila-denuncias-chat">
+            <h2 id="titulo-fila-denuncias-chat">Denúncias de Chat Literário</h2>
+            <p>Analise denúncias de mensagens e conversas no chat com acesso restrito às evidências (retidas por 180 dias para auditoria de segurança e direitos autorais).</p>
+
+            <?php if ($listaChat): ?>
+                <div class="filtros-biblioteca" role="toolbar" aria-label="Filtrar denúncias do chat">
+                    <button type="button" class="filtro-pilula ativo" data-filtro-chat="todas">Todas (<?= count($listaChat) ?>)</button>
+                    <button type="button" class="filtro-pilula" data-filtro-chat="mensagem">Mensagens</button>
+                    <button type="button" class="filtro-pilula" data-filtro-chat="conversa">Conversas</button>
+                    <button type="button" class="filtro-pilula" data-filtro-chat="pendentes">Pendentes de decisão (<?= $qtdDenChatPend ?>)</button>
+                    <button type="button" class="filtro-pilula" data-filtro-chat="concluidas">Concluídas</button>
+                </div>
+            <?php endif; ?>
+
+            <div class="lista-interacoes" id="fila-moderacao-chat">
+                <?php if (!$listaChat): ?>
+                    <p class="estado-vazio">Nenhuma denúncia de chat registrada até o momento.</p>
+                <?php else: ?>
+                    <?php foreach ($listaChat as $d): ?>
+                        <?php
+                        $pendente = in_array($d['status_denuncias'], ['aberta', 'em_analise'], true);
+                        $prioridade = (string) ($d['prioridade_denuncia'] ?? 'media');
+                        $tipoChat = $d['tipo_denuncias'] === 'mensagem_chat' ? 'mensagem' : 'conversa';
+                        ?>
+                        <article class="card-interacao item-moderacao"
+                                 data-tipo-chat="<?= $tipoChat ?>"
+                                 data-pendente="<?= $pendente ? '1' : '0' ?>">
+                            <header>
+                                <strong>#<?= (int) $d['id_denuncias'] ?> · <?= folivro_escape(folivro_status_label($d['tipo_denuncias'])) ?> (ID <?= (int) $d['item_denuncia'] ?>)</strong>
+                                <span class="selo-status <?= $prioridade === 'alta' ? 'selo-comprado' : '' ?>"><?= folivro_escape(folivro_status_label($prioridade)) ?></span>
+                                <span class="selo-status <?= $d['status_denuncias'] === 'procedente' ? 'selo-lido' : '' ?>">Status: <?= folivro_escape(folivro_status_label($d['status_denuncias'])) ?></span>
+                                <?php if (!empty($d['suspensao_preventiva'])): ?>
+                                    <span class="selo-status">Medida preventiva ativa</span>
+                                <?php endif; ?>
+                                <?php if (!empty($d['acao_moderacao_aplicada'])): ?>
+                                    <span class="selo-status">Medida: <?= folivro_escape(folivro_status_label((string) $d['acao_moderacao_aplicada'])) ?></span>
+                                <?php endif; ?>
+                                <small>Denunciante (restrito à moderação): <?= folivro_escape($d['denunciante']) ?> em <?= date('d/m/Y H:i', strtotime($d['data_denuncia'])) ?></small>
+                            </header>
+
+                            <p><strong>Categoria / Motivo:</strong> <?= folivro_escape($d['motivo_denuncia']) ?></p>
+                            <?php if (!empty($d['descricao_denuncia'])): ?>
+                                <p><strong>Evidências relatadas:</strong> <?= folivro_escape($d['descricao_denuncia']) ?></p>
+                            <?php endif; ?>
+
+                            <?php if ($d['tipo_denuncias'] === 'mensagem_chat'): ?>
+                                <div class="evidencia-chat-moderacao">
+                                    <p><strong>Evidência restrita da mensagem denunciada</strong> (Remetente: <?= folivro_escape((string) ($d['autor_mensagem_chat'] ?? 'Desconhecido')) ?> · Avisos anteriores: <?= (int) ($d['avisos_autor_msg'] ?? 0) ?> · Estado atual: <?= folivro_escape(folivro_status_label((string) ($d['status_mensagem_chat'] ?? ''))) ?>):</p>
+                                    <blockquote><?= nl2br(folivro_escape((string) ($d['texto_mensagem_chat'] ?? '[Mensagem não encontrada]'))) ?></blockquote>
+                                    <?php if (!empty($d['retencao_evidencia_ate'])): ?>
+                                        <small>Retenção legal da evidência até: <?= folivro_escape(date('d/m/Y', strtotime((string) $d['retencao_evidencia_ate']))) ?></small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="evidencia-chat-moderacao">
+                                    <?php
+                                    $stmtUltimas = $pdo->prepare(
+                                        "SELECT cm.conteudo_mensagem, cm.data_envio, u.nome_usuario
+                                           FROM chat_mensagens cm
+                                           JOIN usuario u ON u.id_usuario = cm.id_remetente
+                                          WHERE cm.id_conversa = ?
+                                          ORDER BY cm.id_mensagem DESC
+                                          LIMIT 5"
+                                    );
+                                    $stmtUltimas->execute([(int) $d['item_denuncia']]);
+                                    $ultimasMsgs = array_reverse($stmtUltimas->fetchAll());
+                                    ?>
+                                    <p><strong>Evidência restrita das últimas mensagens da conversa denunciada:</strong></p>
+                                    <?php if (!$ultimasMsgs): ?>
+                                        <p><small>[Nenhuma mensagem encontrada nesta conversa]</small></p>
+                                    <?php else: ?>
+                                        <?php foreach ($ultimasMsgs as $um): ?>
+                                            <blockquote><strong><?= folivro_escape($um['nome_usuario']) ?> (<?= date('d/m H:i', strtotime((string) $um['data_envio'])) ?>):</strong> <?= nl2br(folivro_escape($um['conteudo_mensagem'])) ?></blockquote>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <?php if (!empty($d['retencao_evidencia_ate'])): ?>
+                                        <small>Retenção legal do registro de denúncia da conversa até: <?= folivro_escape(date('d/m/Y', strtotime((string) $d['retencao_evidencia_ate']))) ?></small>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+
+                            <?php if (!empty($d['justificativa_moderacao'])): ?>
+                                <p><strong>Decisão / justificativa registrada:</strong> <?= folivro_escape($d['justificativa_moderacao']) ?></p>
+                            <?php endif; ?>
+
+                            <details class="configurar-meta" <?= $pendente ? 'open' : '' ?>>
+                                <summary><?= $pendente ? 'Registrar triagem ou decisão no chat' : 'Revisar decisão' ?></summary>
+                                <form method="post" class="progresso-form">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="aba_ativa" value="denuncias_chat">
+                                    <input type="hidden" name="id_denuncias" value="<?= (int) $d['id_denuncias'] ?>">
+                                    <label>Justificativa fundamentada da decisão
+                                        <textarea name="justificativa_moderacao" rows="2" maxlength="2000" required placeholder="Descreva os elementos verificados e o fundamento da decisão..."><?= folivro_escape((string) ($d['justificativa_moderacao'] ?? '')) ?></textarea>
+                                    </label>
+                                    <label>Medida proporcional a aplicar
+                                        <select name="decisao" required>
+                                            <option value="suspender_preventivamente">Triagem: Em análise + Ocultar mensagem preventivamente</option>
+                                            <option value="aviso_e_remover_mensagem">Procedente (Leve): Emitir aviso formal ao usuário + Remover mensagem</option>
+                                            <option value="restricao_temporaria_chat">Procedente (Moderada): Remover mensagem + Restringir chat do infrator por 7 dias</option>
+                                            <option value="remover_item">Procedente: Remover definitivamente mensagem e bloquear conteúdo por hash</option>
+                                            <option value="remover_e_banir_reincidente">Procedente (Grave / Reincidente): Remover item e suspender conta infratora</option>
+                                            <option value="improcedente">Improcedente: Arquivar denúncia e restaurar mensagem</option>
+                                        </select>
+                                    </label>
+                                    <button class="botao-adicionar-livro" type="submit">Confirmar decisão no chat</button>
+                                </form>
+                            </details>
+                        </article>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <!-- ABA 4: QUALIFICAÇÃO DE CONFIANÇA DE AUTORES -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'autores' ? ' ativa' : '' ?>" data-mod-painel="autores" role="tabpanel" aria-labelledby="titulo-qualificacao-autores">
+            <h2 id="titulo-qualificacao-autores">Qualificação de confiança de autores</h2>
+            <p>Consulte os indicadores objetivos de cada autor e gerencie a permissão de publicação automática com justificativa registrada.</p>
 
             <?php if (!$autoresConfianca): ?>
                 <p class="estado-vazio">Nenhum autor registrado com obras até o momento.</p>
@@ -914,26 +1273,49 @@ $csrf = folivro_escape(folivro_csrf_token());
                         ?>
                         <article class="card-interacao item-moderacao">
                             <header>
-                                <strong>Autor #<?= (int) $aut['id_usuario'] ?> · <?= folivro_escape($aut['nome_usuario']) ?> (<?= folivro_escape($aut['email_usuario']) ?>)</strong>
+                                <strong>Autor #<?= (int) $aut['id_usuario'] ?> · <?= folivro_escape($aut['nome_usuario']) ?></strong>
                                 <span class="selo-status <?= $modAut === 'automatica' ? 'selo-lido' : ($modAut === 'suspensa' ? 'estado-erro' : 'selo-comprado') ?>">
                                     <?= folivro_escape(folivro_status_label($modAut)) ?>
                                 </span>
+                                <small><?= folivro_escape($aut['email_usuario']) ?></small>
                             </header>
-                            <p>
-                                <strong>Capítulos aprovados (revisão humana):</strong> <?= (int) $met['capitulos_aprovados_humano'] ?>
-                                · <strong>Capítulos automáticos:</strong> <?= (int) $met['capitulos_automaticos'] ?>
-                                · <strong>Obras aprovadas:</strong> <?= (int) $met['obras_aprovadas'] ?>
-                                · <strong>Violações confirmadas:</strong> <?= (int) $met['violacoes_confirmadas'] ?>
-                                · <strong>Denúncias procedentes:</strong> <?= (int) $met['denuncias_procedentes'] ?>
-                                · <strong>Recusas editoriais:</strong> <?= (int) $met['revisoes_recusadas'] ?>
-                            </p>
+
+                            <div class="mod-metricas-grid">
+                                <div class="mod-metrica-chip">
+                                    <span>Capítulos aprovados (revisão humana)</span>
+                                    <strong><?= (int) $met['capitulos_aprovados_humano'] ?></strong>
+                                </div>
+                                <div class="mod-metrica-chip">
+                                    <span>Capítulos automáticos</span>
+                                    <strong><?= (int) $met['capitulos_automaticos'] ?></strong>
+                                </div>
+                                <div class="mod-metrica-chip">
+                                    <span>Obras aprovadas</span>
+                                    <strong><?= (int) $met['obras_aprovadas'] ?></strong>
+                                </div>
+                                <div class="mod-metrica-chip">
+                                    <span>Violações confirmadas</span>
+                                    <strong><?= (int) $met['violacoes_confirmadas'] ?></strong>
+                                </div>
+                                <div class="mod-metrica-chip">
+                                    <span>Denúncias procedentes</span>
+                                    <strong><?= (int) $met['denuncias_procedentes'] ?></strong>
+                                </div>
+                                <div class="mod-metrica-chip">
+                                    <span>Recusas editoriais</span>
+                                    <strong><?= (int) $met['revisoes_recusadas'] ?></strong>
+                                </div>
+                            </div>
+
                             <?php if (!empty($av['justificativa_admin'])): ?>
                                 <p><small><strong>Última justificativa registrada:</strong> <?= folivro_escape($av['justificativa_admin']) ?></small></p>
                             <?php endif; ?>
+
                             <details class="configurar-meta">
                                 <summary>Alterar qualificação / modalidade de publicação do autor</summary>
                                 <form method="post" class="progresso-form">
                                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="aba_ativa" value="autores">
                                     <input type="hidden" name="acao" value="gerenciar_qualificacao_autor">
                                     <input type="hidden" name="id_autor_alvo" value="<?= (int) $aut['id_usuario'] ?>">
                                     <label>Nova modalidade de publicação do autor
@@ -954,261 +1336,104 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
-            <details class="configurar-meta" style="margin-top: 16px;">
-                <summary>Consultar histórico auditável de decisões e permissões de moderação (<?= count($historicoModLogs) ?> registros recentes)</summary>
-                <?php if (!$historicoModLogs): ?>
-                    <p class="estado-vazio">Nenhum evento registrado no histórico de moderação de autores até o momento.</p>
-                <?php else: ?>
-                    <div class="lista-interacoes" style="margin-top: 10px;">
-                        <?php foreach ($historicoModLogs as $hlog): ?>
-                            <article class="card-interacao" style="padding: 12px 16px;">
-                                <header>
-                                    <strong>#<?= (int) $hlog['id_historico_mod'] ?> · <?= folivro_escape($hlog['tipo_evento']) ?></strong>
-                                    <span class="selo-status">Autor: <?= folivro_escape($hlog['nome_autor']) ?></span>
-                                    <?php if (!empty($hlog['modalidade_nova'])): ?>
-                                        <span class="selo-status"><?= folivro_escape((string) ($hlog['modalidade_anterior'] ?? '—')) ?> → <?= folivro_escape((string) $hlog['modalidade_nova']) ?></span>
-                                    <?php endif; ?>
-                                    <small><?= date('d/m/Y H:i', strtotime((string) $hlog['data_evento'])) ?> · Moderador: <?= folivro_escape((string) ($hlog['nome_moderador'] ?? 'Sistema automático')) ?></small>
-                                </header>
-                                <?php if (!empty($hlog['titulo_obra']) || !empty($hlog['titulo_capitulo'])): ?>
-                                    <p style="margin:4px 0;"><small>Obra: <?= folivro_escape((string) ($hlog['titulo_obra'] ?? '—')) ?><?= !empty($hlog['titulo_capitulo']) ? ' · Capítulo: ' . folivro_escape((string) $hlog['titulo_capitulo']) : '' ?></small></p>
-                                <?php endif; ?>
-                                <p style="margin:4px 0 0;"><?= folivro_escape((string) $hlog['justificativa']) ?></p>
-                            </article>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </details>
         </section>
 
-        <section class="secao-perfil" aria-labelledby="titulo-fila-revisao-publicacao">
-            <h2 id="titulo-fila-revisao-publicacao">Fila de revisão humana de publicação de obras autorais</h2>
-            <p>A declaração de autoria, finalidade acadêmica ou domínio público informado pelo autor não autoriza publicação automática. Verifique a base legal, os metadados e o conteúdo dos capítulos antes de aprovar qualquer disponibilização na loja ou na comunidade.</p>
-            <?php if (!$filaRevisao): ?>
-                <p class="estado-vazio">Nenhuma obra autoral cadastrada para revisão de publicação no momento.</p>
+        <!-- ABA 5: HISTÓRICO AUDITÁVEL DE DECISÕES -->
+        <section class="secao-perfil mod-painel-aba<?= $abaAtiva === 'historico' ? ' ativa' : '' ?>" data-mod-painel="historico" role="tabpanel" aria-labelledby="titulo-historico-mod">
+            <h2 id="titulo-historico-mod">Histórico auditável de decisões e permissões (<?= count($historicoModLogs) ?> registros recentes)</h2>
+            <p>Registro cronológico das aprovações, recusas, mudanças de modalidade e decisões administrativas de moderação.</p>
+
+            <?php if (!$historicoModLogs): ?>
+                <p class="estado-vazio">Nenhum evento registrado no histórico de moderação de autores até o momento.</p>
             <?php else: ?>
                 <div class="lista-interacoes">
-                    <?php foreach ($filaRevisao as $rev): ?>
-                        <?php
-                        $statusRev = (string) ($rev['revisao_publicacao'] ?? 'nao_solicitada');
-                        $origemRev = (string) ($rev['origem_obra_historias'] ?? 'autoral_original');
-                        $bloqueadaPorOrigem = in_array($origemRev, ['fanfic_sem_autorizacao', 'dominio_publico_nao_verificado'], true);
-                        $modDist = (string) ($rev['modalidade_distribuicao'] ?? 'venda_simulada');
-                        ?>
+                    <?php foreach ($historicoModLogs as $hlog): ?>
                         <article class="card-interacao item-moderacao">
                             <header>
-                                <strong>Obra #<?= (int) $rev['id_autor_dos_livros'] ?> · <?= folivro_escape($rev['titulo_autor_dos_livros']) ?></strong>
-                                <span class="selo-status <?= $statusRev === 'aprovada' ? 'selo-lido' : ($statusRev === 'pendente' ? 'selo-comprado' : '') ?>">
-                                    <?= folivro_escape(folivro_status_label($statusRev)) ?>
-                                </span>
-                                <span class="selo-status">Status atual: <?= folivro_escape(folivro_status_label((string) $rev['status_autor_dos_livros'])) ?></span>
-                                <small>Autor: <?= folivro_escape($rev['nome_autor']) ?> · Capítulos: <?= (int) ($rev['total_capitulos'] ?? 0) ?></small>
+                                <strong>#<?= (int) $hlog['id_historico_mod'] ?> · <?= folivro_escape($hlog['tipo_evento']) ?></strong>
+                                <span class="selo-status">Autor: <?= folivro_escape($hlog['nome_autor']) ?></span>
+                                <?php if (!empty($hlog['modalidade_nova'])): ?>
+                                    <span class="selo-status"><?= folivro_escape((string) ($hlog['modalidade_anterior'] ?? '—')) ?> → <?= folivro_escape((string) $hlog['modalidade_nova']) ?></span>
+                                <?php endif; ?>
+                                <small><?= date('d/m/Y H:i', strtotime((string) $hlog['data_evento'])) ?> · Moderador: <?= folivro_escape((string) ($hlog['nome_moderador'] ?? 'Sistema automático')) ?></small>
                             </header>
-                            <p>
-                                <strong>Origem/base legal informada:</strong> <?= folivro_escape(folivro_origem_obra_label($origemRev)) ?>
-                                · <strong>Licença:</strong> <?= folivro_escape((string) ($rev['licenca_historias'] ?? 'todos_os_direitos_reservados')) ?>
-                                · <strong>Modalidade:</strong> <?= $modDist === 'gratuita' ? 'Distribuição gratuita' : 'Venda simulada (R$ ' . number_format((float) $rev['preco_dos_livros_autor'], 2, ',', '.') . ')' ?>
-                            </p>
-                            <?php if ($bloqueadaPorOrigem): ?>
-                                <p class="aviso-direitos" role="alert"><strong>Bloqueio normativo:</strong> Esta obra foi declarada como derivada sem autorização ou domínio público não verificado. A aprovação para publicação ou venda está bloqueada até comprovação formal de titularidade/base legal.</p>
+                            <?php if (!empty($hlog['titulo_obra']) || !empty($hlog['titulo_capitulo'])): ?>
+                                <p><small><strong>Obra:</strong> <?= folivro_escape((string) ($hlog['titulo_obra'] ?? '—')) ?><?= !empty($hlog['titulo_capitulo']) ? ' · <strong>Capítulo:</strong> ' . folivro_escape((string) $hlog['titulo_capitulo']) : '' ?></small></p>
                             <?php endif; ?>
-                            <?php if (!empty($rev['justificativa_revisao'])): ?>
-                                <p><strong>Parecer editorial anterior:</strong> <?= folivro_escape($rev['justificativa_revisao']) ?></p>
-                            <?php endif; ?>
-                            <p><a href="obra.php?id=<?= (int) $rev['id_autor_dos_livros'] ?>">Inspecionar obra completa e capítulos</a></p>
-                            <details class="configurar-meta" <?= $statusRev === 'pendente' ? 'open' : '' ?>>
-                                <summary><?= $statusRev === 'pendente' ? 'Avaliar solicitação de publicação' : 'Atualizar revisão editorial de publicação' ?></summary>
-                                <form method="post" class="progresso-form">
-                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                                    <input type="hidden" name="acao" value="revisar_publicacao">
-                                    <input type="hidden" name="id_autor_dos_livros" value="<?= (int) $rev['id_autor_dos_livros'] ?>">
-                                    <label>Parecer fundamentado da revisão humana
-                                        <textarea name="justificativa_revisao" rows="2" maxlength="2000" required placeholder="Registre a verificação realizada sobre autoria, licença e conformidade do conteúdo..."><?= folivro_escape((string) ($rev['justificativa_revisao'] ?? '')) ?></textarea>
-                                    </label>
-                                    <label>Decisão editorial
-                                        <select name="decisao_revisao" required>
-                                            <?php if (!$bloqueadaPorOrigem): ?>
-                                                <option value="aprovar_publicacao">Aprovar publicação na loja e comunidade</option>
-                                            <?php endif; ?>
-                                            <option value="recusar_publicacao" <?= $bloqueadaPorOrigem ? 'selected' : '' ?>>Recusar / manter como rascunho privado</option>
-                                        </select>
-                                    </label>
-                                    <button class="botao-adicionar-livro" type="submit">Confirmar decisão editorial</button>
-                                </form>
-                            </details>
+                            <p><?= folivro_escape((string) $hlog['justificativa']) ?></p>
                         </article>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </section>
-
-        <h2>Fila de denúncias e contestações (Notice and Takedown)</h2>
-
-        <?php if ($lista): ?>
-            <div class="filtros-biblioteca" role="toolbar" aria-label="Filtrar fila de moderação">
-                <button type="button" class="filtro-pilula ativo" data-filtro-mod="todas">Todas (<?= count($lista) ?>)</button>
-                <button type="button" class="filtro-pilula" data-filtro-mod="alta">Alta prioridade / Direitos autorais</button>
-                <button type="button" class="filtro-pilula" data-filtro-mod="chat">Denúncias do Chat</button>
-                <button type="button" class="filtro-pilula" data-filtro-mod="pendentes">Pendentes de decisão</button>
-                <button type="button" class="filtro-pilula" data-filtro-mod="contestadas">Com contestação do autor</button>
-                <button type="button" class="filtro-pilula" data-filtro-mod="concluidas">Concluídas</button>
-            </div>
-        <?php endif; ?>
-
-        <div class="lista-interacoes" id="fila-moderacao">
-            <?php if (!$lista): ?>
-                <p class="estado-vazio">Nenhuma denúncia registrada até o momento.</p>
-            <?php else: ?>
-                <?php foreach ($lista as $d): ?>
-                    <?php
-                    $pendente = in_array($d['status_denuncias'], ['aberta', 'em_analise'], true);
-                    $temContestacao = !empty($d['contestacao_autor']);
-                    $prioridade = (string) ($d['prioridade_denuncia'] ?? 'media');
-                    $reincidencias = (int) ($d['reincidencias_autor'] ?? 0);
-                    $ehChat = in_array($d['tipo_denuncias'], ['mensagem_chat', 'conversa_chat'], true);
-                    ?>
-                    <article class="card-interacao item-moderacao"
-                             data-prioridade="<?= folivro_escape($prioridade) ?>"
-                             data-chat="<?= $ehChat ? '1' : '0' ?>"
-                             data-pendente="<?= $pendente ? '1' : '0' ?>"
-                             data-contestada="<?= $temContestacao ? '1' : '0' ?>">
-                        <header>
-                            <strong>#<?= (int) $d['id_denuncias'] ?> · <?= folivro_escape(folivro_status_label($d['tipo_denuncias'])) ?> (ID <?= (int) $d['item_denuncia'] ?><?= !empty($d['titulo_obra']) ? ' — ' . folivro_escape($d['titulo_obra']) : '' ?>)</strong>
-                            <span class="selo-status <?= $prioridade === 'alta' ? 'selo-comprado' : '' ?>"><?= folivro_escape(folivro_status_label($prioridade)) ?></span>
-                            <span class="selo-status <?= $d['status_denuncias'] === 'procedente' ? 'selo-lido' : '' ?>">Status: <?= folivro_escape(folivro_status_label($d['status_denuncias'])) ?></span>
-                            <?php if (!empty($d['suspensao_preventiva'])): ?>
-                                <span class="selo-status">Medida preventiva ativa</span>
-                            <?php endif; ?>
-                            <?php if (!empty($d['acao_moderacao_aplicada'])): ?>
-                                <span class="selo-status">Medida: <?= folivro_escape(folivro_status_label((string) $d['acao_moderacao_aplicada'])) ?></span>
-                            <?php endif; ?>
-                            <?php if ($reincidencias > 0): ?>
-                                <span class="selo-status">Reincidência do autor: <?= $reincidencias ?> caso(s) procedente(s)</span>
-                            <?php endif; ?>
-                            <small>Denunciante (restrito à moderação): <?= folivro_escape($d['denunciante']) ?> em <?= date('d/m/Y H:i', strtotime($d['data_denuncia'])) ?></small>
-                        </header>
-
-                        <p><strong>Categoria / Motivo:</strong> <?= folivro_escape($d['motivo_denuncia']) ?></p>
-                        <?php if (!empty($d['obra_referencia_denuncia'])): ?>
-                            <p><strong>Obra/autor original indicado:</strong> <?= folivro_escape($d['obra_referencia_denuncia']) ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($d['descricao_denuncia'])): ?>
-                            <p><strong>Evidências relatadas:</strong> <?= folivro_escape($d['descricao_denuncia']) ?></p>
-                        <?php endif; ?>
-
-                        <?php if ($d['tipo_denuncias'] === 'mensagem_chat'): ?>
-                            <div class="evidencia-chat-moderacao">
-                                <p>
-                                    <strong>Evidência restrita da mensagem denunciada</strong>
-                                    (Remetente: <?= folivro_escape((string) ($d['autor_mensagem_chat'] ?? 'Desconhecido')) ?>
-                                    · Avisos anteriores: <?= (int) ($d['avisos_autor_msg'] ?? 0) ?>
-                                    · Estado atual: <?= folivro_escape(folivro_status_label((string) ($d['status_mensagem_chat'] ?? ''))) ?>):
-                                </p>
-                                <blockquote><?= nl2br(folivro_escape((string) ($d['texto_mensagem_chat'] ?? '[Mensagem não encontrada]'))) ?></blockquote>
-                                <?php if (!empty($d['retencao_evidencia_ate'])): ?>
-                                    <small>Retenção legal da evidência até: <?= folivro_escape(date('d/m/Y', strtotime((string) $d['retencao_evidencia_ate']))) ?></small>
-                                <?php endif; ?>
-                            </div>
-                        <?php elseif ($d['tipo_denuncias'] === 'conversa_chat'): ?>
-                            <div class="evidencia-chat-moderacao">
-                                <?php
-                                $stmtUltimas = $pdo->prepare(
-                                    "SELECT cm.conteudo_mensagem, cm.data_envio, u.nome_usuario
-                                       FROM chat_mensagens cm
-                                       JOIN usuario u ON u.id_usuario = cm.id_remetente
-                                      WHERE cm.id_conversa = ?
-                                      ORDER BY cm.id_mensagem DESC
-                                      LIMIT 5"
-                                );
-                                $stmtUltimas->execute([(int) $d['item_denuncia']]);
-                                $ultimasMsgs = array_reverse($stmtUltimas->fetchAll());
-                                ?>
-                                <p><strong>Evidência restrita das últimas mensagens da conversa denunciada:</strong></p>
-                                <?php if (!$ultimasMsgs): ?>
-                                    <p><small>[Nenhuma mensagem encontrada nesta conversa]</small></p>
-                                <?php else: ?>
-                                    <?php foreach ($ultimasMsgs as $um): ?>
-                                        <blockquote><strong><?= folivro_escape($um['nome_usuario']) ?> (<?= date('d/m H:i', strtotime((string) $um['data_envio'])) ?>):</strong> <?= nl2br(folivro_escape($um['conteudo_mensagem'])) ?></blockquote>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                                <?php if (!empty($d['retencao_evidencia_ate'])): ?>
-                                    <small>Retenção legal do registro de denúncia da conversa até: <?= folivro_escape(date('d/m/Y', strtotime((string) $d['retencao_evidencia_ate']))) ?></small>
-                                <?php endif; ?>
-                            </div>
-                        <?php elseif ($d['tipo_denuncias'] === 'comentario'): ?>
-                            <div class="evidencia-chat-moderacao">
-                                <p><strong>Comentário denunciado (Autor: <?= folivro_escape((string) ($d['autor_comentario_denunciado'] ?? 'Removido')) ?>):</strong></p>
-                                <blockquote><?= nl2br(folivro_escape((string) ($d['texto_comentario_denunciado'] ?? '[Comentário já removido]'))) ?></blockquote>
-                            </div>
-                        <?php endif; ?>
-
-                        <?php if ($temContestacao): ?>
-                            <p><strong>Contestação / defesa do autor (<?= !empty($d['data_contestacao']) ? date('d/m/Y H:i', strtotime($d['data_contestacao'])) : '' ?>):</strong> <?= folivro_escape($d['contestacao_autor']) ?></p>
-                        <?php endif; ?>
-                        <?php if (!empty($d['justificativa_moderacao'])): ?>
-                            <p><strong>Decisão / justificativa registrada:</strong> <?= folivro_escape($d['justificativa_moderacao']) ?></p>
-                        <?php endif; ?>
-
-                        <?php if ($d['tipo_denuncias'] === 'obra_autoral'): ?>
-                            <p><a href="obra.php?id=<?= (int) $d['item_denuncia'] ?>">Inspecionar obra denunciada</a></p>
-                        <?php endif; ?>
-
-                        <details class="configurar-meta" <?= $pendente ? 'open' : '' ?>>
-                            <summary><?= $pendente ? 'Registrar triagem ou decisão fundamentada' : 'Revisar decisão (após contestação ou nova análise)' ?></summary>
-                            <form method="post" class="progresso-form">
-                                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                                <input type="hidden" name="id_denuncias" value="<?= (int) $d['id_denuncias'] ?>">
-                                <label>Justificativa fundamentada da decisão
-                                    <textarea name="justificativa_moderacao" rows="2" maxlength="2000" required placeholder="Descreva os elementos verificados e o fundamento da decisão..."><?= folivro_escape((string) ($d['justificativa_moderacao'] ?? '')) ?></textarea>
-                                </label>
-                                <label>Medida proporcional a aplicar
-                                    <select name="decisao" required>
-                                        <option value="suspender_preventivamente">Triagem: Em análise + Ocultar/suspender preventivamente</option>
-                                        <option value="aviso_e_remover_mensagem">Procedente (Leve): Emitir aviso formal ao usuário + Remover mensagem/item</option>
-                                        <option value="restricao_temporaria_chat">Procedente (Moderada): Remover mensagem + Restringir chat do infrator por 7 dias</option>
-                                        <option value="remover_item">Procedente: Remover definitivamente obra/mensagem e bloquear republicação por hash</option>
-                                        <option value="remover_e_banir_reincidente">Procedente (Grave / Reincidente): Remover item e suspender conta infratora</option>
-                                        <option value="improcedente">Improcedente / Acolher contestação: Arquivar denúncia e restaurar item</option>
-                                    </select>
-                                </label>
-                                <button class="botao-adicionar-livro" type="submit">Confirmar decisão de moderação</button>
-                            </form>
-                        </details>
-                    </article>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
     </main>
 
     <script>
-        document.querySelectorAll('[data-filtro-mod]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const f = btn.dataset.filtroMod;
-                document.querySelectorAll('[data-filtro-mod]').forEach((b) => b.classList.toggle('ativo', b === btn));
-                document.querySelectorAll('#fila-moderacao .item-moderacao').forEach((card) => {
-                    if (f === 'todas') card.hidden = false;
-                    else if (f === 'alta') card.hidden = card.dataset.prioridade !== 'alta';
-                    else if (f === 'chat') card.hidden = card.dataset.chat !== '1';
-                    else if (f === 'pendentes') card.hidden = card.dataset.pendente !== '1';
-                    else if (f === 'contestadas') card.hidden = card.dataset.contestada !== '1';
-                    else if (f === 'concluidas') card.hidden = card.dataset.pendente === '1';
-                });
-            });
-        });
+        (() => {
+            const botoesAba = Array.from(document.querySelectorAll('[data-mod-aba]'));
+            const paineisAba = Array.from(document.querySelectorAll('[data-mod-painel]'));
 
-        document.querySelectorAll('[data-filtro-cap]').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const f = btn.dataset.filtroCap;
-                document.querySelectorAll('[data-filtro-cap]').forEach((b) => b.classList.toggle('ativo', b === btn));
-                document.querySelectorAll('#lista-moderacao-capitulos .item-moderacao').forEach((card) => {
-                    if (f === 'todos') card.hidden = false;
-                    else if (f === 'pendente') card.hidden = card.dataset.capPendente !== '1';
-                    else if (f === 'automatico') card.hidden = card.dataset.capAutomatico !== '1';
-                    else if (f === 'oculto') card.hidden = card.dataset.capOculto !== '1';
+            function ativarAba(nomeAba) {
+                botoesAba.forEach((btn) => {
+                    const ativa = btn.dataset.modAba === nomeAba;
+                    btn.classList.toggle('ativa', ativa);
+                    btn.setAttribute('aria-selected', ativa ? 'true' : 'false');
+                });
+                paineisAba.forEach((painel) => {
+                    painel.classList.toggle('ativa', painel.dataset.modPainel === nomeAba);
+                });
+                try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('aba', nomeAba);
+                    window.history.replaceState({}, '', url.toString());
+                } catch (_) {}
+            }
+
+            botoesAba.forEach((btn) => {
+                btn.addEventListener('click', () => ativarAba(btn.dataset.modAba));
+            });
+
+            document.querySelectorAll('[data-filtro-mod]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const f = btn.dataset.filtroMod;
+                    document.querySelectorAll('[data-filtro-mod]').forEach((b) => b.classList.toggle('ativo', b === btn));
+                    document.querySelectorAll('#fila-moderacao .item-moderacao').forEach((card) => {
+                        if (f === 'todas') card.hidden = false;
+                        else if (f === 'alta') card.hidden = card.dataset.prioridade !== 'alta';
+                        else if (f === 'pendentes') card.hidden = card.dataset.pendente !== '1';
+                        else if (f === 'contestadas') card.hidden = card.dataset.contestada !== '1';
+                        else if (f === 'concluidas') card.hidden = card.dataset.pendente === '1';
+                    });
                 });
             });
-        });
+
+            document.querySelectorAll('[data-filtro-chat]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const f = btn.dataset.filtroChat;
+                    document.querySelectorAll('[data-filtro-chat]').forEach((b) => b.classList.toggle('ativo', b === btn));
+                    document.querySelectorAll('#fila-moderacao-chat .item-moderacao').forEach((card) => {
+                        if (f === 'todas') card.hidden = false;
+                        else if (f === 'mensagem') card.hidden = card.dataset.tipoChat !== 'mensagem';
+                        else if (f === 'conversa') card.hidden = card.dataset.tipoChat !== 'conversa';
+                        else if (f === 'pendentes') card.hidden = card.dataset.pendente !== '1';
+                        else if (f === 'concluidas') card.hidden = card.dataset.pendente === '1';
+                    });
+                });
+            });
+
+            document.querySelectorAll('[data-filtro-cap]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const f = btn.dataset.filtroCap;
+                    document.querySelectorAll('[data-filtro-cap]').forEach((b) => b.classList.toggle('ativo', b === btn));
+                    document.querySelectorAll('#lista-moderacao-capitulos .item-moderacao').forEach((card) => {
+                        if (f === 'todos') card.hidden = false;
+                        else if (f === 'pendente') card.hidden = card.dataset.capPendente !== '1';
+                        else if (f === 'automatico') card.hidden = card.dataset.capAutomatico !== '1';
+                        else if (f === 'oculto') card.hidden = card.dataset.capOculto !== '1';
+                    });
+                });
+            });
+        })();
     </script>
 
 </body>
