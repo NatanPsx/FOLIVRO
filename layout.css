@@ -6219,6 +6219,96 @@ body.tema-ametista .banner-modalidade-publicacao.modal-pub-suspensa {
     color: #f9b8b2;
 }
 
+/* ==========================================================================
+   LEITOR DOMÍNIO PÚBLICO (RESPEITAR ATRIBUTO HIDDEN) E QUEBRA DE TEXTO GLOBAL
+   ========================================================================== */
+
+#leitor-dominio-publico:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+/* Garante que títulos, sinopses, resenhas e cards quebrem linha verticalmente
+   e expandam o container em vez de vazar horizontalmente para fora da tela. */
+.conteudo,
+.conteudo > *,
+.livro-detalhes-container > *,
+.livro-coluna-principal,
+.livro-coluna-lateral,
+.card-secao-livro,
+.texto-sinopse-formatado,
+.card-sinopse-contextual,
+.painel-critica-receptividade,
+.grade-critica-conteudo > *,
+.card-resenha-item,
+.gerenciar-obra-container,
+.cabecalho-gerenciar-obra,
+.cabecalho-gerenciar-info,
+.secao-capitulos-gerenciar,
+.item-capitulo-gerenciar,
+.livro-card,
+.livro-info,
+.cabecalho-leitor-info,
+.folha-leitura-capitulo,
+.conteudo-capitulo-texto {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.conteudo h1,
+.conteudo h2,
+.conteudo h3,
+.conteudo h4,
+.conteudo p,
+.conteudo li,
+.conteudo dd,
+.conteudo blockquote,
+.conteudo strong,
+.texto-quebravel,
+.texto-sinopse-formatado,
+.card-sinopse-contextual,
+.corpo-item-resenha,
+.titulo-item-resenha,
+.link-titulo-livro,
+.autor-card-livro,
+.estado-vazio,
+.banner-modalidade-publicacao,
+.migalhas-navegacao,
+.conteudo-capitulo-texto {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.titulo-com-icone-folivro {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+h1.titulo-com-icone-folivro,
+h2.titulo-com-icone-folivro,
+h3.titulo-com-icone-folivro {
+    display: flex;
+    width: 100%;
+}
+
+.titulo-com-icone-folivro > .folivro-icon {
+    flex-shrink: 0;
+    margin-top: 0.12em;
+}
+
+.titulo-com-icone-folivro > .texto-quebravel {
+    flex: 1 1 0%;
+    min-width: 0;
+}
+
+
 
 
 

@@ -7,6 +7,7 @@ require_once __DIR__ . '/config/loja.php';
 $pdo = folivro_database();
 folivro_require_login();
 $uid = (int) $_SESSION['id_usuario'];
+$maiorDeIdadeAutor = folivro_usuario_maior_de_idade($pdo, $uid);
 $erro = '';
 $sucesso = '';
 
@@ -49,6 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             || mb_strlen($synopsis, 'UTF-8') > 5000 || strlen($chapter) > 500000
             || !is_float($price) || $price < 0 || $price > 99999999) {
             $erro = 'Preencha título (até 120 caracteres), nome do capítulo (até 120 caracteres), texto e preço válido.';
+        } elseif (!$maiorDeIdadeAutor && folivro_classificacao_eh_maior18($avisoConteudo)) {
+            $erro = 'Restrição etária: autores menores de 18 anos não podem escrever ou publicar obras com classificação indicativa +18.';
         } elseif ($generosString === '') {
             $erro = 'Selecione pelo menos um gênero literário para a sua obra (ou informe um gênero personalizado).';
         } elseif ($publish && !$declareAutoria) {
@@ -445,8 +448,13 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                                 <option value="12" <?= $classifSelecionada === '12' ? 'selected' : '' ?>>+12 anos — Agressões moderadas ou temas dramáticos sensíveis</option>
                                 <option value="14" <?= $classifSelecionada === '14' ? 'selected' : '' ?>>+14 anos — Violência mais intensa, drogas lícitas ou temas sensíveis</option>
                                 <option value="16" <?= $classifSelecionada === '16' ? 'selected' : '' ?>>+16 anos — Violência gráfica, drogas ou temas psicológicos intensos</option>
-                                <option value="18" <?= $classifSelecionada === '18' ? 'selected' : '' ?>>+18 anos — Conteúdo adulto/sensível (sexo explícito, violência extrema)</option>
+                                <?php if ($maiorDeIdadeAutor): ?>
+                                    <option value="18" <?= $classifSelecionada === '18' ? 'selected' : '' ?>>+18 anos — Conteúdo adulto/sensível (sexo explícito, violência extrema)</option>
+                                <?php endif; ?>
                             </select>
+                            <?php if (!$maiorDeIdadeAutor): ?>
+                                <small style="color:var(--texto-apoio); font-size:12px;">Autores menores de 18 anos não podem publicar obras com classificação indicativa +18.</small>
+                            <?php endif; ?>
                             <div class="resumo-classificacao-seletor" id="resumo-classificacao-estudio" aria-live="polite">
                                 <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifSelecionada) ?>" id="badge-classificacao-estudio">
                                     <?= folivro_escape(folivro_classificacao_sigla($classifSelecionada)) ?>

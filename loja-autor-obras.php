@@ -6,6 +6,7 @@ $pdo = folivro_database();
 folivro_require_login();
 $uid = (int) $_SESSION['id_usuario'];
 $ehAutor = folivro_loja_eh_autor($pdo, $uid);
+$maiorDeIdadeAutor = folivro_usuario_maior_de_idade($pdo, $uid);
 
 $erro = '';
 $sucesso = '';
@@ -203,9 +204,13 @@ $generosExtrasForm = array_values(array_filter($generosForm, static fn(string $g
                             <select id="classificacao_produto" name="classificacao_produto">
                                 <?php $classAtual = $obraEdicao['classificacao_produto'] ?? ($_POST['classificacao_produto'] ?? 'livre'); ?>
                                 <?php foreach (folivro_classificacoes_idade() as $kCl => $vCl): ?>
+                                    <?php if (!$maiorDeIdadeAutor && folivro_classificacao_eh_maior18((string) $kCl)) { continue; } ?>
                                     <option value="<?= folivro_escape($kCl) ?>" <?= $classAtual === $kCl ? 'selected' : '' ?>><?= folivro_escape($vCl) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php if (!$maiorDeIdadeAutor): ?>
+                                <small style="color:var(--texto-apoio); font-size:12px;">Autores menores de 18 anos não podem cadastrar obras com classificação +18.</small>
+                            <?php endif; ?>
                         </label>
 
                         <label for="id_autor_dos_livros">Vincular a uma história do seu estúdio (opcional)

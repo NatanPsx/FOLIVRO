@@ -192,8 +192,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Metas e Estatísticas | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
-    <link rel="stylesheet" href="estatisticas.css?v=20261123_02">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
+    <link rel="stylesheet" href="estatisticas.css?v=20261125_01">
 </head>
 
 <body>
@@ -297,38 +297,61 @@ $csrf = folivro_escape(folivro_csrf_token());
                 </section>
             </div>
 
-            <section class="meta-anual" aria-labelledby="titulo-desafios-extras">
-                <div class="meta-cabecalho-linha">
-                    <h2 id="titulo-desafios-extras">Desafios personalizados</h2>
-                    <details class="configurar-meta" style="margin:0;">
-                        <summary>+ Novo desafio</summary>
-                        <form method="post" class="progresso-form" style="margin-top:10px;">
-                            <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
-                            <input type="hidden" name="acao" value="criar_meta_extra">
-                            <label for="titulo_extra">Nome do desafio
+            <section class="meta-anual secao-desafios" aria-labelledby="titulo-desafios-extras">
+                <div class="desafios-cabecalho">
+                    <div class="desafios-cabecalho-texto">
+                        <h2 id="titulo-desafios-extras">Desafios personalizados</h2>
+                        <p class="desafios-subtitulo">Defina metas extras de curto prazo — como maratonas mensais, férias ou desafios de páginas.</p>
+                    </div>
+                    <button type="button" id="btn-toggle-novo-desafio" class="botao-adicionar-livro btn-novo-desafio-toggle" aria-expanded="false" aria-controls="painel-novo-desafio">
+                        + Novo desafio
+                    </button>
+                </div>
+
+                <div id="painel-novo-desafio" class="painel-novo-desafio" hidden>
+                    <div class="desafios-sugestoes">
+                        <span class="desafios-sugestoes-rotulo">Sugestões rápidas:</span>
+                        <div class="desafios-sugestoes-lista">
+                            <button type="button" class="chip-sugestao-desafio" data-nome="Maratona de Férias" data-tipo="livros" data-alvo="3" data-dias="30">Maratona de Férias (3 livros)</button>
+                            <button type="button" class="chip-sugestao-desafio" data-nome="Desafio 500 Páginas" data-tipo="paginas" data-alvo="500" data-dias="30">Desafio 500 Páginas</button>
+                            <button type="button" class="chip-sugestao-desafio" data-nome="Clássicos Brasileiros" data-tipo="livros" data-alvo="2" data-dias="45">Clássicos Brasileiros (2 livros)</button>
+                            <button type="button" class="chip-sugestao-desafio" data-nome="Sprint Semanal" data-tipo="paginas" data-alvo="150" data-dias="14">Sprint 150 Páginas (14 dias)</button>
+                        </div>
+                    </div>
+
+                    <form method="post" class="form-novo-desafio">
+                        <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                        <input type="hidden" name="acao" value="criar_meta_extra">
+                        <div class="grade-form-desafio">
+                            <label for="titulo_extra" class="campo-desafio-nome">Nome do desafio
                                 <input id="titulo_extra" name="titulo_metas" maxlength="120" required placeholder="Ex.: Maratona de Férias">
                             </label>
-                            <div class="grade-campos-dupla">
-                                <label for="tipo_extra">Medir por
-                                    <select id="tipo_extra" name="tipo_metas">
-                                        <option value="livros">Livros concluídos</option>
-                                        <option value="paginas">Páginas lidas</option>
-                                    </select>
-                                </label>
-                                <label for="qtd_extra">Alvo
-                                    <input id="qtd_extra" type="number" name="quantidade_metas" min="1" max="100000" value="5" required>
-                                </label>
-                            </div>
+                            <label for="tipo_extra">Medir por
+                                <select id="tipo_extra" name="tipo_metas">
+                                    <option value="livros">Livros concluídos</option>
+                                    <option value="paginas">Páginas lidas</option>
+                                </select>
+                            </label>
+                            <label for="qtd_extra">Alvo
+                                <input id="qtd_extra" type="number" name="quantidade_metas" min="1" max="100000" value="5" required>
+                            </label>
                             <label for="fim_extra">Prazo final
                                 <input id="fim_extra" type="date" name="data_fim_metas" min="<?= date('Y-m-d') ?>" value="<?= date('Y-m-d', strtotime('+30 days')) ?>" required>
                             </label>
+                        </div>
+                        <div class="acoes-form-desafio">
                             <button type="submit" class="botao-adicionar-livro">Criar desafio</button>
-                        </form>
-                    </details>
+                            <button type="button" id="btn-cancelar-novo-desafio" class="filtro-pilula">Cancelar</button>
+                        </div>
+                    </form>
                 </div>
 
                 <?php if (!$metasExtras): ?>
-                    <p><small>Você ainda não criou desafios extras. Use “+ Novo desafio” para definir metas mensais ou de férias.</small></p>
+                    <div class="desafios-estado-vazio">
+                        <p class="desafios-vazio-titulo">Nenhum desafio personalizado ativo no momento</p>
+                        <p class="desafios-vazio-desc">Crie uma meta rápida de férias, leitura mensal ou páginas lidas para acompanhar seu ritmo.</p>
+                        <button type="button" class="filtro-pilula btn-abrir-desafio-vazio">Criar meu primeiro desafio</button>
+                    </div>
                 <?php else: ?>
                     <div class="lista-metas-personalizadas">
                         <?php foreach ($metasExtras as $mx): ?>
@@ -337,26 +360,43 @@ $csrf = folivro_escape(folivro_csrf_token());
                             $atualX = $mx['tipo_metas'] === 'paginas' ? (int) $stats['paginas_lidas'] : (int) $stats['livros_lidos'];
                             $pctX = min(100, (int) round(($atualX / $alvoX) * 100));
                             $unidX = $mx['tipo_metas'] === 'paginas' ? 'páginas' : 'livros';
+                            $concluidoX = $pctX >= 100;
+                            $fimTs = strtotime((string) $mx['data_fim_metas'] . ' 23:59:59');
+                            $diasRest = $fimTs ? (int) ceil(($fimTs - time()) / 86400) : 0;
+                            if ($concluidoX) {
+                                $badgeTexto = 'Concluído ✓';
+                                $badgeClasse = 'concluido';
+                            } elseif ($diasRest < 0) {
+                                $badgeTexto = 'Prazo encerrado';
+                                $badgeClasse = 'encerrado';
+                            } elseif ($diasRest === 0) {
+                                $badgeTexto = 'Termina hoje';
+                                $badgeClasse = 'alerta';
+                            } else {
+                                $badgeTexto = $diasRest . ($diasRest === 1 ? ' dia restante' : ' dias restantes');
+                                $badgeClasse = 'ativo';
+                            }
                             ?>
-                            <article class="card-meta-extra">
+                            <article class="card-meta-extra <?= $concluidoX ? 'card-meta-concluido' : '' ?>">
                                 <div class="card-meta-extra-topo">
-                                    <div>
+                                    <div class="card-meta-extra-cabecalho">
+                                        <span class="badge-desafio-status badge-desafio-<?= $badgeClasse ?>"><?= folivro_escape($badgeTexto) ?></span>
                                         <h3><?= folivro_escape($mx['titulo_metas']) ?></h3>
-                                        <small>Até <?= date('d/m/Y', strtotime((string) $mx['data_fim_metas'])) ?></small>
+                                        <small class="prazo-desafio">Prazo: <?= date('d/m/Y', strtotime((string) $mx['data_fim_metas'])) ?></small>
                                     </div>
                                     <form method="post">
                                         <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                                         <input type="hidden" name="acao" value="cancelar_meta_extra">
                                         <input type="hidden" name="id_metas_leitura" value="<?= (int) $mx['id_metas_leitura'] ?>">
-                                        <button type="submit" class="filtro-pilula" style="padding:4px 10px; font-size:12px;">Remover</button>
+                                        <button type="submit" class="btn-remover-desafio" title="Remover desafio">Remover</button>
                                     </form>
                                 </div>
-                                <div class="informacoes-meta" style="margin-bottom:6px;">
-                                    <small><?= $atualX ?> / <?= $alvoX ?> <?= $unidX ?></small>
+                                <div class="informacoes-meta" style="margin-bottom:8px;">
+                                    <small><?= number_format($atualX, 0, ',', '.') ?> / <?= number_format($alvoX, 0, ',', '.') ?> <?= $unidX ?></small>
                                     <strong><?= $pctX ?>%</strong>
                                 </div>
-                                <div class="barra" style="height:12px;">
-                                    <div class="progresso" style="width: <?= $pctX ?>%"></div>
+                                <div class="barra" style="height:10px;">
+                                    <div class="progresso <?= $concluidoX ? 'progresso-concluido' : '' ?>" style="width: <?= $pctX ?>%"></div>
                                 </div>
                             </article>
                         <?php endforeach; ?>
@@ -411,6 +451,51 @@ $csrf = folivro_escape(folivro_csrf_token());
             })();
         </script>
     <?php endif; ?>
+    <script>
+        (function () {
+            const btnToggle = document.getElementById('btn-toggle-novo-desafio');
+            const btnCancelar = document.getElementById('btn-cancelar-novo-desafio');
+            const painel = document.getElementById('painel-novo-desafio');
+            const inputNome = document.getElementById('titulo_extra');
+            const selectTipo = document.getElementById('tipo_extra');
+            const inputAlvo = document.getElementById('qtd_extra');
+            const inputFim = document.getElementById('fim_extra');
+
+            function setAberto(abrir) {
+                if (!painel || !btnToggle) return;
+                painel.hidden = !abrir;
+                btnToggle.setAttribute('aria-expanded', abrir ? 'true' : 'false');
+                btnToggle.textContent = abrir ? 'Fechar formulário' : '+ Novo desafio';
+                if (abrir && inputNome) inputNome.focus();
+            }
+
+            if (btnToggle) {
+                btnToggle.addEventListener('click', () => setAberto(painel.hidden));
+            }
+            if (btnCancelar) {
+                btnCancelar.addEventListener('click', () => setAberto(false));
+            }
+            document.querySelectorAll('.btn-abrir-desafio-vazio').forEach((btn) => {
+                btn.addEventListener('click', () => setAberto(true));
+            });
+
+            document.querySelectorAll('.chip-sugestao-desafio').forEach((chip) => {
+                chip.addEventListener('click', () => {
+                    if (inputNome) inputNome.value = chip.dataset.nome || '';
+                    if (selectTipo) selectTipo.value = chip.dataset.tipo || 'livros';
+                    if (inputAlvo) inputAlvo.value = chip.dataset.alvo || '5';
+                    if (inputFim) {
+                        const dias = Number(chip.dataset.dias) || 30;
+                        const dt = new Date();
+                        dt.setDate(dt.getDate() + dias);
+                        inputFim.value = dt.toISOString().slice(0, 10);
+                    }
+                    document.querySelectorAll('.chip-sugestao-desafio').forEach((c) => c.classList.remove('ativo'));
+                    chip.classList.add('ativo');
+                });
+            });
+        })();
+    </script>
 </body>
 
 </html>

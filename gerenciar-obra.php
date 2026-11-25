@@ -7,6 +7,7 @@ require_once __DIR__ . '/config/loja.php';
 $pdo = folivro_database();
 folivro_require_login();
 $uid = (int) $_SESSION['id_usuario'];
+$maiorDeIdadeAutor = folivro_usuario_maior_de_idade($pdo, $uid);
 $id  = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 
 // Autorização no servidor: só o autor dono da obra a encontra.
@@ -76,6 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     || mb_strlen($novaSinopse, 'UTF-8') > 5000
                     || !is_float($novoPreco) || $novoPreco < 0 || $novoPreco > 99999999) {
                     throw new RuntimeException('Informe título válido (até 120 caracteres), sinopse (até 5.000 caracteres) e preço não negativo.');
+                }
+                if (!$maiorDeIdadeAutor && folivro_classificacao_eh_maior18($novoAviso)) {
+                    throw new RuntimeException('Restrição etária: autores menores de 18 anos não podem classificar ou publicar obras como +18.');
                 }
                 if ($novosGeneros === '') {
                     throw new RuntimeException('Selecione pelo menos um gênero literário para a obra (ou informe um gênero personalizado).');
@@ -548,7 +552,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gerenciar obra | FOLIVRO</title>
     <link rel="stylesheet" href="home.css?v=20261123_01">
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
 </head>
 
 <body>
@@ -567,7 +571,7 @@ $csrf = folivro_escape(folivro_csrf_token());
 
             <header class="cabecalho-gerenciar-obra">
                 <div class="cabecalho-gerenciar-info">
-                    <h1 class="titulo-com-icone-folivro"><?= folivro_icone('livro-indice-f', 'folivro-icon-lg') ?> <?= folivro_escape($work['titulo_autor_dos_livros']) ?></h1>
+                    <h1 class="titulo-com-icone-folivro"><?= folivro_icone('livro-indice-f', 'folivro-icon-lg') ?> <span class="texto-quebravel"><?= folivro_escape($work['titulo_autor_dos_livros']) ?></span></h1>
                     <?php $classifAtualWork = folivro_normalizar_classificacao($work['aviso_conteudo_historias'] ?? 'livre'); ?>
                     <div class="grade-selos-obra-gerenciar">
                         <span class="selo-status <?= $work['status_autor_dos_livros'] === 'a_venda' ? 'selo-comprado' : '' ?>">
@@ -690,11 +694,15 @@ $csrf = folivro_escape(folivro_csrf_token());
                                     '12'    => '+12 anos — Agressões moderadas ou temas dramáticos sensíveis',
                                     '14'    => '+14 anos — Violência mais intensa, drogas lícitas ou temas sensíveis',
                                     '16'    => '+16 anos — Violência gráfica, drogas ou temas psicológicos intensos',
+                                ] + ($maiorDeIdadeAutor ? [
                                     '18'    => '+18 anos — Conteúdo adulto/sensível (sexo explícito, violência extrema; capa e título ocultos para menores)',
-                                ] as $kAv => $vAv): ?>
+                                ] : []) as $kAv => $vAv): ?>
                                     <option value="<?= $kAv ?>" <?= $classifAtualWork === $kAv ? 'selected' : '' ?>><?= $vAv ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <?php if (!$maiorDeIdadeAutor): ?>
+                                <small style="color:var(--texto-apoio); font-size:12px;">Autores menores de 18 anos não podem definir classificação +18.</small>
+                            <?php endif; ?>
                         </label>
                         <?php if (folivro_pagamentos_ativos()): ?>
                         <label for="modalidade_distribuicao">Modalidade de disponibilização

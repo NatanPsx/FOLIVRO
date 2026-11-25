@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/config/loja.php';
+require_once __DIR__ . '/config/dominio_publico.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -13,6 +14,8 @@ $maiorDeIdade = folivro_usuario_maior_de_idade($pdo, $uid);
 $continua = $pdo->prepare(
     "SELECT b.id_livro, b.titulo_livro, b.autor_livro, b.capa_livro,
             COALESCE(b.classificacao_livro, 'livre') AS classificacao_livro,
+            COALESCE(b.fonte_livro, 'catalogo') AS fonte_livro,
+            COALESCE(b.id_externo_livro, '') AS id_externo_livro,
             p.porcentagem_progressao
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
@@ -89,7 +92,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261124_01">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
     <link rel="stylesheet" href="estante.css?v=20261124_01">
     <meta name="csrf-token" content="<?= folivro_escape(folivro_csrf_token()) ?>">
@@ -106,13 +109,19 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
             <div class="texto">
                 <span class="selo-status">Bem-vindo(a) de volta, <?= folivro_escape($primeiroNome) ?></span>
                 <?php if ($heroLivro): ?>
+                    <?php
+                    $heroEhOpenLibrary = (($heroLivro['fonte_livro'] ?? '') === 'openlibrary' || preg_match('/^OL[0-9]+W$/', (string) ($heroLivro['id_externo_livro'] ?? '')) === 1)
+                        && folivro_dp_encontrar_obra((string) ($heroLivro['id_externo_livro'] ?? ''), (string) ($heroLivro['titulo_livro'] ?? '')) === null;
+                    $heroUrlDestino = ($heroEhOpenLibrary ? 'livro.php?id=' : 'leitor.php?id=') . (int) $heroLivro['id_livro'];
+                    $heroTextoBtn = $heroEhOpenLibrary ? 'Ver ficha crítica' : 'Continuar leitura';
+                    ?>
                     <h1>Continue sua leitura</h1>
                     <h3><?= folivro_escape($heroLivro['titulo_livro']) ?> · <?= folivro_escape($heroLivro['autor_livro']) ?></h3>
                     <p>
                         Você já avançou <strong><?= min(100, max(0, (int) round((float) ($heroLivro['porcentagem_progressao'] ?? 0)))) ?>%</strong> deste livro. Retome exatamente de onde parou ou explore novas obras na loja e no catálogo.
                     </p>
                     <div class="acoes-obra">
-                        <a href="leitor.php?id=<?= (int) $heroLivro['id_livro'] ?>" class="botao-mais">Continuar leitura</a>
+                        <a href="<?= folivro_escape($heroUrlDestino) ?>" class="botao-mais"><?= folivro_escape($heroTextoBtn) ?></a>
                         <a href="loja.php" class="botao-mais">Explorar loja</a>
                         <a href="pesquisa.php" class="botao-mais">Buscar livros</a>
                     </div>
@@ -132,7 +141,7 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
 
             <div class="imagem">
                 <?php if ($heroLivro): ?>
-                    <a href="leitor.php?id=<?= (int) $heroLivro['id_livro'] ?>" title="Continuar leitura">
+                    <a href="<?= folivro_escape($heroUrlDestino) ?>" title="<?= folivro_escape($heroTextoBtn) ?>">
                         <img src="<?= folivro_escape(folivro_capa_url($heroLivro['capa_livro'] ?? '', (string) $heroLivro['titulo_livro'], (string) $heroLivro['autor_livro'])) ?>" alt="Capa de <?= folivro_escape($heroLivro['titulo_livro']) ?>">
                     </a>
                 <?php elseif ($heroLoja): ?>
@@ -235,7 +244,15 @@ if ($heroLoja && !$maiorDeIdade && folivro_classificacao_eh_maior18((string) ($h
                                                 <span style="width: <?= $pctLivro ?>%"></span>
                                             </div>
                                         </div>
-                                        <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $livro['id_livro'] ?>">Continuar leitura</a>
+                                        <?php
+                                        $ehOlCardHome = (($livro['fonte_livro'] ?? '') === 'openlibrary' || preg_match('/^OL[0-9]+W$/', (string) ($livro['id_externo_livro'] ?? '')) === 1)
+                                            && folivro_dp_encontrar_obra((string) ($livro['id_externo_livro'] ?? ''), (string) ($livro['titulo_livro'] ?? '')) === null;
+                                        ?>
+                                        <?php if ($ehOlCardHome): ?>
+                                            <a class="botao-adicionar-livro btn-card-principal" href="livro.php?id=<?= (int) $livro['id_livro'] ?>">Ver ficha crítica</a>
+                                        <?php else: ?>
+                                            <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $livro['id_livro'] ?>">Continuar leitura</a>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </div>

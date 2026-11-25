@@ -551,6 +551,9 @@ function folivro_loja_salvar_produto(PDO $pdo, int $uid, ?int $idProduto, array 
     if (!array_key_exists($classifBruta, folivro_classificacoes_idade())) {
         return ['ok' => false, 'erro' => 'Selecione uma classificação indicativa válida.'];
     }
+    if (folivro_classificacao_eh_maior18($classif) && !folivro_usuario_maior_de_idade($pdo, $uid)) {
+        return ['ok' => false, 'erro' => 'Restrição etária: autores menores de 18 anos não podem cadastrar ou publicar obras com classificação indicativa +18.'];
+    }
     // Lei 9.610/98: o autor declara ser titular dos direitos patrimoniais da obra.
     if (!$aceite && (int) ($atual['aceite_termo_direitos'] ?? 0) !== 1) {
         return ['ok' => false, 'erro' => 'É obrigatório declarar a titularidade dos direitos autorais (Lei 9.610/98) e aceitar o termo de venda.'];

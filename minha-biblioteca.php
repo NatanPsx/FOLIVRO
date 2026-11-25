@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/dominio_publico.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -34,7 +35,9 @@ $stmt = $pdo->prepare(
             p.porcentagem_progressao AS progresso,
             CASE WHEN adl.id_autor_dos_livros IS NOT NULL THEN 1 ELSE 0 END AS obra_autoral,
             COALESCE(adl.motivo_bloqueio_autor, "") AS motivo_bloqueio, COALESCE(b.classificacao_livro, "livre") AS classificacao,
-            COALESCE(b.genero_livro, "") AS generos
+            COALESCE(b.genero_livro, "") AS generos,
+            COALESCE(b.fonte_livro, "catalogo") AS fonte_livro,
+            COALESCE(b.id_externo_livro, "") AS id_externo_livro
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
   LEFT JOIN progressao_leitura p ON p.id_usuario = l.id_usuario AND p.id_livro = l.id_livro
@@ -52,7 +55,9 @@ $stmt = $pdo->prepare(
             END,
             100, 1,
             COALESCE(a.motivo_bloqueio_autor, ""), COALESCE(h.aviso_conteudo_historias, "livre"),
-            COALESCE(h.generos_historias, "")
+            COALESCE(h.generos_historias, ""),
+            "local" AS fonte_livro,
+            "" AS id_externo_livro
        FROM livraria_digital d
        JOIN autor_dos_livros a ON a.id_autor_dos_livros = d.id_autor_dos_livros
        JOIN historias h ON h.id_historias = a.id_historias
@@ -77,7 +82,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Minha biblioteca digital | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261124_01">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
     <link rel="stylesheet" href="estante.css?v=20261124_01">
 </head>
@@ -208,7 +213,15 @@ $csrf = folivro_escape(folivro_csrf_token());
                                             <span style="width: <?= $pctItem ?>%"></span>
                                         </div>
                                     </div>
-                                    <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $b['item_id'] ?>">Continuar leitura</a>
+                                    <?php
+                                    $ehOpenLibraryBib = (($b['fonte_livro'] ?? '') === 'openlibrary' || preg_match('/^OL[0-9]+W$/', (string) ($b['id_externo_livro'] ?? '')) === 1)
+                                        && folivro_dp_encontrar_obra((string) ($b['id_externo_livro'] ?? ''), (string) ($b['titulo'] ?? '')) === null;
+                                    ?>
+                                    <?php if ($ehOpenLibraryBib): ?>
+                                        <a class="botao-adicionar-livro btn-card-principal" href="livro.php?id=<?= (int) $b['item_id'] ?>">Ver ficha crítica</a>
+                                    <?php else: ?>
+                                        <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $b['item_id'] ?>">Continuar leitura</a>
+                                    <?php endif; ?>
                                     <div class="acoes-secundarias-card">
                                         <a class="link-ver-detalhes" href="livro.php?id=<?= (int) $b['item_id'] ?>">Críticas &rarr;</a>
                                         <form method="post" class="form-remover-card">

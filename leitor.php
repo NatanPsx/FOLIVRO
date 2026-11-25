@@ -83,6 +83,18 @@ if ($produtoLoja) {
     }
 }
 
+// Obras do catálogo Open Library (que não pertencem ao Acervo Nacional de Domínio Público) abrem direto na ficha crítica.
+$ehOpenLibrarySemLeitor = !$produtoLoja
+    && $obraDpLeitor === null
+    && (
+        ($book['fonte_livro'] ?? '') === 'openlibrary'
+        || preg_match('/^OL[0-9]+W$/', (string) ($book['id_externo_livro'] ?? '')) === 1
+    );
+if ($ehOpenLibrarySemLeitor) {
+    header('Location: livro.php?id=' . (int) $book['id_livro']);
+    exit;
+}
+
 $ehLivroInternoLeitor = (($book['fonte_livro'] ?? '') === 'local')
     || str_starts_with((string) ($book['id_externo_livro'] ?? ''), 'LOJA-');
 if ($produtoLoja && (!empty($produtoLoja['historia_classificacao']) || !empty($produtoLoja['classificacao_produto']))) {
@@ -104,7 +116,7 @@ if (folivro_classificacao_eh_maior18($classLivroLeitor) && !folivro_usuario_maio
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Leitura Bloqueada (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="layout.css?v=20261125_01">
         <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
@@ -225,7 +237,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= $csrf ?>">
     <title><?= $titulo ?> | Leitor · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
@@ -286,7 +298,7 @@ $csrf = folivro_escape(folivro_csrf_token());
             <section id="leitor-status" class="estado-vazio" role="status">Verificando disponibilidade do leitor…</section>
 
             <!-- LEITOR NATIVO DE CAPÍTULOS — ACERVO NACIONAL DE DOMÍNIO PÚBLICO (IDÊNTICO AO OBRA.PHP) -->
-            <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público" style="display: flex; flex-direction: column; gap: 22px;">
+            <section id="leitor-dominio-publico" hidden aria-label="Leitor de Capítulos em Domínio Público">
                 <div class="barra-conforto-leitura-moderna" role="toolbar" aria-label="Controles de conforto e navegação de leitura">
                     <div class="grupo-controle-leitura">
                         <label for="dp-select-capitulo" class="rotulo-controle-leitura">Capítulo:</label>

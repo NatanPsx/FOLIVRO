@@ -85,7 +85,8 @@ try {
     $library->execute([$userId, $idLivro]);
     $progress = $pdo->prepare('INSERT IGNORE INTO progressao_leitura (id_usuario, id_livro, total_paginas_progressao) VALUES (?, ?, ?)');
     $progress->execute([$userId, $idLivro, $pages]);
-    echo json_encode(['ok' => true, 'id_livro' => $idLivro, 'readerUrl' => 'leitor.php?id=' . $idLivro], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $readerUrl = ($obraDp !== null ? 'leitor.php?id=' : 'livro.php?id=') . $idLivro;
+    echo json_encode(['ok' => true, 'id_livro' => $idLivro, 'readerUrl' => $readerUrl], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Não foi possível salvar o livro na biblioteca.'], JSON_UNESCAPED_UNICODE);

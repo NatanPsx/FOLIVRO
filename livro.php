@@ -50,7 +50,7 @@ if ($idLivro === null && $workId === '') {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Livro não encontrado | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="layout.css?v=20261125_01">
     </head>
     <body>
         <?php $menuAtivo = 'pesquisar'; require __DIR__ . '/includes/menu-lateral.php'; ?>
@@ -418,7 +418,7 @@ if (folivro_classificacao_eh_maior18($classLivro) && !folivro_usuario_maior_de_i
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Livro Bloqueado (+18) | FOLIVRO</title>
-        <link rel="stylesheet" href="layout.css?v=20261123_03">
+        <link rel="stylesheet" href="layout.css?v=20261125_01">
         <link rel="stylesheet" href="home.css?v=20261123_01">
     </head>
     <body>
@@ -619,6 +619,7 @@ $resenhasComunidade = [];
 $minhaResenha = null;
 $mediaComunidade = null;
 $totalComunidade = 0;
+$comunidadeCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
 
 if ($idLivro !== null) {
     $resQ = $pdo->prepare(
@@ -646,12 +647,51 @@ if ($idLivro !== null) {
         $mediaComunidade = round((float) $rowMedia['media'], 1);
         $totalComunidade = (int) $rowMedia['total'];
     }
+
+    $distQ = $pdo->prepare('SELECT nota_resenha, COUNT(*) AS qtd FROM resenha WHERE id_livro = ? GROUP BY nota_resenha');
+    $distQ->execute([$idLivro]);
+    foreach ($distQ->fetchAll() as $dRow) {
+        $notaEstrela = (int) ($dRow['nota_resenha'] ?? 0);
+        if ($notaEstrela >= 1 && $notaEstrela <= 5) {
+            $comunidadeCounts[$notaEstrela] = (int) $dRow['qtd'];
+        }
+    }
 }
 
 // Cálculo do Índice Crítico Literário (Inspirado no Metacritic & IMDb)
 $olAvg = $dadosOl['ratings']['average'] ?? null;
 $olCount = $dadosOl['ratings']['count'] ?? 0;
 $olCounts = $dadosOl['ratings']['counts'] ?? [];
+
+// Distribuição combinada de notas (Open Library + Comunidade FOLIVRO)
+$distCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+$somaOlCounts = 0;
+for ($eDist = 1; $eDist <= 5; $eDist++) {
+    $somaOlCounts += (int) ($olCounts[$eDist] ?? $olCounts[(string) $eDist] ?? 0);
+}
+if ($somaOlCounts === 0 && $olAvg !== null && $olAvg > 0 && $olCount > 0) {
+    $mediaClamped = max(1.0, min(5.0, (float) $olAvg));
+    $piso = (int) floor($mediaClamped);
+    $teto = min(5, $piso + 1);
+    $frac = $mediaClamped - $piso;
+    $olEstimado = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+    if ($piso === $teto) {
+        $olEstimado[$piso] = (int) $olCount;
+    } else {
+        $qtdTeto = (int) round($olCount * $frac);
+        $qtdPiso = max(0, (int) $olCount - $qtdTeto);
+        $olEstimado[$teto] = $qtdTeto;
+        $olEstimado[$piso] = $qtdPiso;
+    }
+    $olCounts = $olEstimado;
+}
+$distTotal = 0;
+for ($eDist = 1; $eDist <= 5; $eDist++) {
+    $qtdOlEst = (int) ($olCounts[$eDist] ?? $olCounts[(string) $eDist] ?? 0);
+    $qtdComEst = (int) ($comunidadeCounts[$eDist] ?? 0);
+    $distCounts[$eDist] = $qtdOlEst + $qtdComEst;
+    $distTotal += $distCounts[$eDist];
+}
 
 // Média ponderada global: combina Open Library e Comunidade FOLIVRO
 $pontosMetascore = null;
@@ -715,7 +755,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <link rel="preconnect" href="https://covers.openlibrary.org" crossorigin>
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="dns-prefetch" href="https://covers.openlibrary.org">
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261125_01">
     <link rel="stylesheet" href="pesquisa.css?v=20261123_01">
     <meta name="csrf-token" content="<?= $csrf ?>">
 </head>
@@ -763,14 +803,14 @@ $csrf = folivro_escape(folivro_csrf_token());
                         $pctLido = $progressoUsuario ? min(100, max(0, (int) round((float) $progressoUsuario['porcentagem_progressao']))) : 0;
                         ?>
                         <div class="cartao-status-leitura">
-                            <span class="selo-status selo-<?= folivro_escape($st) ?>">
+                            <span id="selo-status-sidebar" class="selo-status selo-<?= folivro_escape($st) ?>">
                                 Na sua biblioteca: <?= folivro_escape(folivro_status_label($st)) ?>
                             </span>
 
                             <div class="mini-progresso" role="progressbar" aria-valuenow="<?= $pctLido ?>" aria-valuemin="0" aria-valuemax="100" style="margin: 10px 0 6px;">
-                                <span style="width: <?= $pctLido ?>%"></span>
+                                <span id="barra-progresso-sidebar" style="width: <?= $pctLido ?>%"></span>
                             </div>
-                            <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;"><?= $pctLido ?>% concluído</p>
+                            <p id="texto-progresso-sidebar" style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;"><?= $pctLido ?>% concluído</p>
 
                             <?php if ($produtoLojaLivro): ?>
                                 <?php if (!$temAcessoLojaLivro): ?>
@@ -792,12 +832,16 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 <?php else: ?>
                                     <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">Conteúdo de leitura indisponível para esta obra.</p>
                                 <?php endif; ?>
-                            <?php elseif ($workId !== ''): ?>
+                            <?php elseif ($workId !== '' && folivro_dp_encontrar_obra($workId, $tituloLivroRaw) !== null): ?>
                                 <div id="acao-leitor-ol" data-work-id="<?= folivro_escape($workId) ?>">
                                     <a href="leitor.php?id=<?= (int) $idLivro ?>" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
                                         <?= folivro_icone('livro-abrindo', 'folivro-icon-sm') ?> Continuar Leitura no Leitor
                                     </a>
                                 </div>
+                            <?php elseif ($workId !== ''): ?>
+                                <a href="https://openlibrary.org/works/<?= folivro_escape($workId) ?>" target="_blank" rel="noopener noreferrer" class="botao-adicionar-livro botao-destaque-leitor" style="display:flex; align-items:center; justify-content:center; gap:8px; text-align:center; text-decoration:none; margin-bottom: 12px;">
+                                    Ver obra na Open Library ↗
+                                </a>
                             <?php else: ?>
                                 <p style="font-size: 13px; color: var(--texto-secundario); margin-bottom: 12px;">Este registro não possui conteúdo de leitura online disponível.</p>
                             <?php endif; ?>
@@ -978,8 +1022,8 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <div class="barras-distribuicao-lista">
                                 <?php
                                 for ($estrela = 5; $estrela >= 1; $estrela--):
-                                    $qtdEstrela = (int) ($olCounts[(string) $estrela] ?? 0);
-                                    $pctEstrela = $olCount > 0 ? (float) (($qtdEstrela / $olCount) * 100) : 0;
+                                    $qtdEstrela = (int) ($distCounts[$estrela] ?? 0);
+                                    $pctEstrela = $distTotal > 0 ? (float) (($qtdEstrela / $distTotal) * 100) : 0.0;
                                 ?>
                                     <div class="linha-barra-estrela">
                                         <span class="rotulo-estrela"><?= $estrela ?> ★</span>
@@ -1007,6 +1051,77 @@ $csrf = folivro_escape(folivro_csrf_token());
                 </article>
 
                 <!-- Sinopse e Apresentação da Obra -->
+                <?php
+                $ehOpenLibraryFicha = !$produtoLojaLivro
+                    && $workId !== ''
+                    && folivro_dp_encontrar_obra($workId, $tituloLivroRaw) === null;
+                ?>
+                <?php if ($ehOpenLibraryFicha && !$bloqueadoModLivro): ?>
+                    <section class="card-secao-livro" aria-label="Organização de leitura na biblioteca">
+                        <h2 class="titulo-secao-livro">Organização de Leitura na Biblioteca</h2>
+                        <?php if ($registroLivraria): ?>
+                            <?php
+                            $stFicha = (string) ($registroLivraria['status_livraria'] ?? 'lendo');
+                            $pagAtualFicha = (int) ($progressoUsuario['pagina_atual_progressao'] ?? 0);
+                            $totalPagFicha = (int) (($progressoUsuario['total_paginas_progressao'] ?? 0) ?: $paginasEstimadas ?: 1);
+                            ?>
+                            <div class="grade-painel-progresso-leitor">
+                                <form id="form-progresso-ficha" class="progresso-form form-largura-total card-progresso-nivelado">
+                                    <h3 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-sm') ?> <span>Registrar progresso de páginas</span></h3>
+                                    <p class="texto-apoio-pequeno" style="margin:0;">Atualize a página em que você parou para sincronizar sua barra de leitura e metas.</p>
+                                    <div class="grade-campos-dupla">
+                                        <label for="pagina_atual_ficha">Página atual
+                                            <input id="pagina_atual_ficha" type="number" name="pagina_atual" min="0" value="<?= $pagAtualFicha ?>" required>
+                                        </label>
+                                        <label for="total_paginas_ficha">Total de páginas
+                                            <input id="total_paginas_ficha" type="number" name="total_paginas" min="1" value="<?= $totalPagFicha ?>" required>
+                                        </label>
+                                    </div>
+                                    <div class="rodape-card-nivelado">
+                                        <button class="botao-adicionar-livro" type="submit">Salvar progresso</button>
+                                        <span id="progresso-mensagem-ficha" class="msg-inline-progresso" role="status"></span>
+                                    </div>
+                                </form>
+
+                                <form method="post" class="progresso-form form-largura-total card-progresso-nivelado">
+                                    <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                    <input type="hidden" name="acao" value="alterar_status">
+                                    <h3 class="titulo-com-icone-folivro"><?= folivro_icone('pasta-biblioteca', 'folivro-icon-sm') ?> <span>Status na biblioteca</span></h3>
+                                    <p class="texto-apoio-pequeno" style="margin:0;">Organize em qual estante este livro fica na sua biblioteca pessoal.</p>
+                                    <label for="status_livraria_ficha">Situação atual da leitura
+                                        <select id="status_livraria_ficha" name="status_livraria">
+                                            <?php foreach (['quero_ler' => 'Quero ler', 'lendo' => 'Lendo atualmente', 'lido' => 'Concluído (Lido)', 'abandonado' => 'Pausado / Abandonado', 'remover' => 'Remover da biblioteca'] as $valSt => $rotuloSt): ?>
+                                                <option value="<?= $valSt ?>" <?= $stFicha === $valSt ? 'selected' : '' ?>><?= $rotuloSt ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </label>
+                                    <div class="rodape-card-nivelado">
+                                        <button class="botao-adicionar-livro" type="submit">Atualizar status</button>
+                                    </div>
+                                </form>
+                            </div>
+                        <?php else: ?>
+                            <form method="post" class="progresso-form form-largura-total" style="margin:0;">
+                                <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
+                                <input type="hidden" name="acao" value="adicionar_biblioteca">
+                                <p class="texto-apoio-pequeno" style="margin:0 0 12px;">Adicione esta obra à sua biblioteca pessoal para acompanhar páginas lidas, metas e estantes.</p>
+                                <div class="grade-campos-dupla" style="align-items: end;">
+                                    <label for="status_inicial_ficha">Escolher estante inicial
+                                        <select id="status_inicial_ficha" name="status_livraria">
+                                            <option value="quero_ler">Quero ler</option>
+                                            <option value="lendo" selected>Lendo atualmente</option>
+                                            <option value="lido">Concluído (Lido)</option>
+                                        </select>
+                                    </label>
+                                    <div>
+                                        <button class="botao-adicionar-livro" type="submit" style="width:100%;">Salvar na minha biblioteca</button>
+                                    </div>
+                                </div>
+                            </form>
+                        <?php endif; ?>
+                    </section>
+                <?php endif; ?>
+
                 <section class="card-secao-livro">
                     <h2 class="titulo-secao-livro">Sinopse e Contexto da Obra</h2>
                     <div class="texto-sinopse-formatado">
@@ -1173,6 +1288,51 @@ $csrf = folivro_escape(folivro_csrf_token());
                     }
                 })
                 .catch(() => {});
+        })();
+
+        (() => {
+            const formProg = document.getElementById('form-progresso-ficha');
+            if (!formProg) return;
+            const idLivroAtual = <?= (int) ($idLivro ?? 0) ?>;
+            const msg = document.getElementById('progresso-mensagem-ficha');
+            formProg.addEventListener('submit', async (ev) => {
+                ev.preventDefault();
+                if (!idLivroAtual) return;
+                if (msg) msg.textContent = 'Salvando…';
+                try {
+                    const r = await fetch('api/progresso.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                        },
+                        body: JSON.stringify({
+                            id_livro: idLivroAtual,
+                            pagina_atual: Number(formProg.pagina_atual.value),
+                            total_paginas: Number(formProg.total_paginas.value)
+                        })
+                    });
+                    const d = await r.json();
+                    if (!r.ok) throw new Error(d.error || 'Falha ao salvar progresso.');
+                    const pct = Math.max(0, Math.min(100, Math.round(Number(d.porcentagem) || 0)));
+                    if (msg) msg.textContent = `Progresso salvo: ${pct}%.`;
+                    const barraSide = document.getElementById('barra-progresso-sidebar');
+                    const textoSide = document.getElementById('texto-progresso-sidebar');
+                    const seloSide = document.getElementById('selo-status-sidebar');
+                    const selSide = document.getElementById('sel-status');
+                    const selFicha = document.getElementById('status_livraria_ficha');
+                    if (barraSide) barraSide.style.width = `${pct}%`;
+                    if (textoSide) textoSide.textContent = `${pct}% concluído`;
+                    if (d.status && d.statusLabel && seloSide) {
+                        seloSide.className = `selo-status selo-${d.status}`;
+                        seloSide.textContent = `Na sua biblioteca: ${d.statusLabel}`;
+                    }
+                    if (d.status && selSide) selSide.value = d.status;
+                    if (d.status && selFicha) selFicha.value = d.status;
+                } catch (e) {
+                    if (msg) msg.textContent = e.message || 'Não foi possível salvar.';
+                }
+            });
         })();
     </script>
 

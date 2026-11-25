@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/config/dominio_publico.php';
 
 $pdo = folivro_database();
 folivro_require_login();
@@ -202,7 +203,9 @@ if ($user) {
 
 // Prévia visual de livros salvos e obras compradas para a estante do perfil (como no Figma).
 $prevLivrosStmt = $pdo->prepare(
-    'SELECT b.id_livro, b.titulo_livro, b.autor_livro, b.capa_livro, b.classificacao_livro, l.status_livraria, COALESCE(p.porcentagem_progressao, 0) AS porcentagem
+    'SELECT b.id_livro, b.titulo_livro, b.autor_livro, b.capa_livro, b.classificacao_livro,
+            COALESCE(b.fonte_livro, "catalogo") AS fonte_livro, COALESCE(b.id_externo_livro, "") AS id_externo_livro,
+            l.status_livraria, COALESCE(p.porcentagem_progressao, 0) AS porcentagem
        FROM livraria l
        JOIN livro b ON b.id_livro = l.id_livro
   LEFT JOIN progressao_leitura p ON p.id_usuario = l.id_usuario AND p.id_livro = l.id_livro
@@ -426,8 +429,14 @@ $csrf = folivro_escape(folivro_csrf_token());
                                                     <span style="width: <?= $pctPrev ?>%"></span>
                                                 </div>
                                             </div>
-                                            <?php if ($ehMeuPerfil): ?>
+                                            <?php
+                                            $ehOlPerfil = (($pl['fonte_livro'] ?? '') === 'openlibrary' || preg_match('/^OL[0-9]+W$/', (string) ($pl['id_externo_livro'] ?? '')) === 1)
+                                                && folivro_dp_encontrar_obra((string) ($pl['id_externo_livro'] ?? ''), (string) ($pl['titulo_livro'] ?? '')) === null;
+                                            ?>
+                                            <?php if ($ehMeuPerfil && !$ehOlPerfil): ?>
                                                 <a class="botao-adicionar-livro btn-card-principal" href="leitor.php?id=<?= (int) $pl['id_livro'] ?>">Continuar leitura</a>
+                                            <?php elseif ($ehMeuPerfil): ?>
+                                                <a class="botao-adicionar-livro btn-card-principal" href="livro.php?id=<?= (int) $pl['id_livro'] ?>">Ver ficha crítica</a>
                                             <?php else: ?>
                                                 <a class="botao-adicionar-livro btn-card-principal" href="livro.php?id=<?= (int) $pl['id_livro'] ?>">Ver livro</a>
                                             <?php endif; ?>
