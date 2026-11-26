@@ -237,7 +237,7 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= $csrf ?>">
     <title><?= $titulo ?> | Leitor · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261125_01">
+    <link rel="stylesheet" href="layout.css?v=20261126_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
@@ -256,6 +256,8 @@ $csrf = folivro_escape(folivro_csrf_token());
             $pctAtual = max(0, min(100, (int) round((float) ($book['porcentagem_progressao'] ?? 0))));
             $siglaIdadeLeitor = folivro_classificacao_sigla($classLivroLeitor);
             $labelIdadeLeitor = folivro_aviso_conteudo_label($classLivroLeitor);
+            $usaCapitulosLeitor = ($obraDpLeitor !== null) || ($produtoLoja !== null) || $ehLivroInternoLeitor;
+            $unidadeCurtaLeitor = $usaCapitulosLeitor ? 'Cap.' : 'Pág.';
             ?>
 
             <nav class="navegacao-topo-leitura elemento-ocultavel-foco" aria-label="Navegação do leitor">
@@ -285,7 +287,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <div class="topo-progresso-leitor-flex">
                             <span id="progresso-rotulo-topo">Progresso atual: <?= $pctAtual ?>%</span>
                             <span class="paginas-rotulo-topo" id="paginas-rotulo-topo">
-                                Pág. <?= (int) ($book['pagina_atual_progressao'] ?? 0) ?> de <?= (int) ($book['total_paginas_progressao'] ?: $book['paginas_livro'] ?: 1) ?>
+                                <?= $unidadeCurtaLeitor ?> <?= (int) ($book['pagina_atual_progressao'] ?? 0) ?> de <?= (int) ($book['total_paginas_progressao'] ?: $book['paginas_livro'] ?: 1) ?>
                             </span>
                         </div>
                         <div class="mini-progresso" aria-label="Progresso de leitura">
@@ -375,13 +377,13 @@ $csrf = folivro_escape(folivro_csrf_token());
             <!-- PAINEL DUPLO ALINHADO: REGISTRAR PROGRESSO + STATUS NA BIBLIOTECA -->
             <div class="grade-painel-progresso-leitor elemento-ocultavel-foco">
                 <form id="form-progresso" class="progresso-form form-largura-total card-progresso-nivelado">
-                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-sm') ?> <span>Registrar progresso de páginas</span></h2>
-                    <p class="texto-apoio-pequeno" style="margin:0;">Atualize a página em que você parou para sincronizar sua barra de leitura.</p>
+                    <h2 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-sm') ?> <span><?= $usaCapitulosLeitor ? 'Registrar progresso de capítulos' : 'Registrar progresso de páginas' ?></span></h2>
+                    <p class="texto-apoio-pequeno" style="margin:0;"><?= $usaCapitulosLeitor ? 'Atualize o capítulo em que você parou para sincronizar sua barra de leitura.' : 'Atualize a página em que você parou para sincronizar sua barra de leitura.' ?></p>
                     <div class="grade-campos-dupla">
-                        <label for="pagina_atual">Página atual
+                        <label for="pagina_atual"><?= $usaCapitulosLeitor ? 'Capítulo atual' : 'Página atual' ?>
                             <input id="pagina_atual" type="number" name="pagina_atual" min="0" value="<?= (int) ($book['pagina_atual_progressao'] ?? 0) ?>" required>
                         </label>
-                        <label for="total_paginas">Total de páginas
+                        <label for="total_paginas"><?= $usaCapitulosLeitor ? 'Total de capítulos' : 'Total de páginas' ?>
                             <input id="total_paginas" type="number" name="total_paginas" min="1" value="<?= (int) ($book['total_paginas_progressao'] ?: $book['paginas_livro'] ?: 1) ?>" required>
                         </label>
                     </div>
@@ -487,6 +489,64 @@ $csrf = folivro_escape(folivro_csrf_token());
             'bloqueadoMod' => $bloqueadoModLeitor,
         ] : null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
         const statusBox = document.getElementById('leitor-status');
+        let timerProgressoAuto = null;
+        let ultimoProgressoSalvo = '';
+
+        function aplicarProgressoNaInterface(atual, total, pct, status, statusLabel, unidade = 'Pág.') {
+            const pctNorm = Math.max(0, Math.min(100, Math.round(Number(pct) || 0)));
+            const barra = document.getElementById('progresso-barra-preenchimento');
+            const rotulo = document.getElementById('progresso-rotulo-topo');
+            const pagRotulo = document.getElementById('paginas-rotulo-topo');
+            const seloStatus = document.querySelector('.cabecalho-leitor-info .selo-status');
+            const selectStatus = document.getElementById('status_livraria');
+
+            if (barra) barra.style.width = `${pctNorm}%`;
+            if (rotulo) rotulo.textContent = `Progresso atual: ${pctNorm}%`;
+            if (pagRotulo) pagRotulo.textContent = `${unidade} ${atual} de ${total}`;
+            if (seloStatus && statusLabel) {
+                seloStatus.textContent = statusLabel;
+                seloStatus.classList.toggle('selo-lido', status === 'lido');
+            }
+            if (selectStatus && status) {
+                selectStatus.value = status;
+            }
+        }
+
+        function salvarProgressoAutomatico(atual, total, unidade = 'Pág.') {
+            const pagAtual = Math.max(0, Math.floor(Number(atual) || 0));
+            const pagTotal = Math.max(1, Math.floor(Number(total) || 1));
+            const pagClamp = Math.min(pagAtual, pagTotal);
+            const chave = `${pagClamp}/${pagTotal}`;
+            if (chave === ultimoProgressoSalvo) return;
+
+            if (timerProgressoAuto) clearTimeout(timerProgressoAuto);
+            timerProgressoAuto = setTimeout(async () => {
+                const msg = document.getElementById('progresso-mensagem');
+                try {
+                    const r = await fetch('api/progresso.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            id_livro: idLivro,
+                            pagina_atual: pagClamp,
+                            total_paginas: pagTotal,
+                            auto_livraria: true
+                        })
+                    });
+                    const d = await r.json();
+                    if (!r.ok || !d.ok) return;
+                    ultimoProgressoSalvo = chave;
+                    const pct = Math.max(0, Math.min(100, Math.round(Number(d.porcentagem) || 0)));
+                    aplicarProgressoNaInterface(pagClamp, pagTotal, pct, d.status, d.statusLabel, unidade);
+                    if (msg) {
+                        msg.textContent = `Progresso salvo automaticamente: ${pct}% (${unidade} ${pagClamp} de ${pagTotal}).`;
+                    }
+                } catch (_) {}
+            }, 450);
+        }
 
         function linkExterno(href, texto) {
             const a = document.createElement('a');
@@ -570,6 +630,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     if (inputPagAtual) {
                         inputPagAtual.value = String(currentPage);
                     }
+                    salvarProgressoAutomatico(currentPage, totalPages, 'Pág.');
                 }
 
                 btnPrev.addEventListener('click', () => {
@@ -710,6 +771,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 if (rotuloTopo) rotuloTopo.textContent = `Progresso atual: ${pctCap}%`;
                 if (pagRotuloTopo) pagRotuloTopo.textContent = `Cap. ${ordem} de ${d.totalCapitulos}`;
                 if (barraTopoCard) barraTopoCard.style.width = `${pctCap}%`;
+                salvarProgressoAutomatico(ordem, d.totalCapitulos, 'Cap.');
 
                 secaoDp.hidden = false;
                 statusBox.hidden = true;
@@ -829,11 +891,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || 'Falha ao salvar.');
                 const pct = Math.max(0, Math.min(100, Math.round(Number(d.porcentagem) || 0)));
-                msg.textContent = `Progresso salvo: ${pct}%.`;
-                const barra = document.getElementById('progresso-barra-preenchimento');
-                const rotulo = document.getElementById('progresso-rotulo-topo');
-                if (barra) barra.style.width = `${pct}%`;
-                if (rotulo) rotulo.textContent = `Progresso atual: ${pct}%`;
+                const unidadeManual = <?= json_encode($unidadeCurtaLeitor) ?>;
+                const atualManual = Number(f.pagina_atual.value) || 0;
+                const totalManual = Number(f.total_paginas.value) || 1;
+                msg.textContent = `Progresso salvo: ${pct}% (${unidadeManual} ${atualManual} de ${totalManual}).`;
+                aplicarProgressoNaInterface(atualManual, totalManual, pct, d.status, d.statusLabel, unidadeManual);
             } catch (e) {
                 msg.textContent = e.message || 'Não foi possível salvar.';
             }

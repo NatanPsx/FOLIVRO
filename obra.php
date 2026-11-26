@@ -369,6 +369,13 @@ $stLivroVinc = $pdo->prepare('SELECT COALESCE(id_livro, 0) FROM loja_produtos WH
 $stLivroVinc->execute([$id]);
 $idLivroVinculadoObra = (int) $stLivroVinc->fetchColumn();
 
+$progressoObraAtual = 0;
+if ($idLivroVinculadoObra > 0) {
+    $stProgObra = $pdo->prepare('SELECT pagina_atual_progressao FROM progressao_leitura WHERE id_usuario = ? AND id_livro = ? LIMIT 1');
+    $stProgObra->execute([$uid, $idLivroVinculadoObra]);
+    $progressoObraAtual = (int) ($stProgObra->fetchColumn() ?: 0);
+}
+
 $csrf = folivro_escape(folivro_csrf_token());
 ?>
 <!doctype html>
@@ -377,8 +384,9 @@ $csrf = folivro_escape(folivro_csrf_token());
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="<?= $csrf ?>">
     <title><?= folivro_escape($obra['titulo_historias']) ?> | Leitura Confortável · FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261124_01">
+    <link rel="stylesheet" href="layout.css?v=20261126_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
@@ -585,6 +593,10 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <button type="button" class="btn-papel-cor" data-papel="noturno" title="Leitura Noturna Suave">Noturno</button>
                         </div>
 
+                        <span id="selo-progresso-auto-obra" class="selo-progresso-auto" role="status" aria-live="polite">
+                            Progresso automático
+                        </span>
+
                         <button type="button" class="btn-conforto-item btn-modo-foco-leitura" id="btn-modo-foco-leitura" title="Ocultar menus e distrações (Atalho: tecla F)">
                             <?= folivro_icone('livro-aberto-seta', 'folivro-icon-xs') ?> Modo Foco
                         </button>
@@ -725,7 +737,24 @@ $csrf = folivro_escape(folivro_csrf_token());
             let tamanho = Number(localStorage.getItem('folivro_fonte_tamanho')) || 19;
             let serifa = (localStorage.getItem('folivro_fonte_familia') || 'serifa') === 'serifa';
             let papel = localStorage.getItem('folivro_papel_leitura') || 'padrao';
+            const idLivroVinc = <?= (int) $idLivroVinculadoObra ?>;
+            const idObraAtual = <?= (int) $id ?>;
+            const capSalvoDb = <?= (int) $progressoObraAtual ?>;
+            const chaveCapLocal = `folivro_obra_cap_${idObraAtual}`;
+            const seloProgressoAuto = document.getElementById('selo-progresso-auto-obra');
+            let timerProgressoObra = null;
+            let ultimoSalvoObra = '';
             let capAtivo = '0';
+
+            // Retoma automaticamente o último capítulo lido (banco ou navegador)
+            if (capSalvoDb >= 1 && capSalvoDb <= capitulos.length) {
+                capAtivo = String(capSalvoDb - 1);
+            } else {
+                const capLocal = Number(localStorage.getItem(chaveCapLocal));
+                if (!Number.isNaN(capLocal) && capLocal >= 0 && capLocal < capitulos.length) {
+                    capAtivo = String(capLocal);
+                }
+            }
 
             // Verifica se a URL aponta para um capítulo específico (#capitulo-2)
             if (window.location.hash.startsWith('#capitulo-')) {
@@ -734,6 +763,62 @@ $csrf = folivro_escape(folivro_csrf_token());
                 if (idxHash >= 0) {
                     capAtivo = String(idxHash);
                 }
+            }
+
+            function salvarProgressoObraAutomatico(indiceCap) {
+                const totalCaps = capitulos.length;
+                if (totalCaps <= 0) return;
+                const capNum = Math.max(1, Math.min(totalCaps, indiceCap + 1));
+                const pctLocal = Math.min(100, Math.max(0, Math.round((capNum / totalCaps) * 100)));
+
+                try {
+                    localStorage.setItem(chaveCapLocal, String(capNum - 1));
+                } catch (_) {}
+
+                if (seloProgressoAuto) {
+                    seloProgressoAuto.textContent = `Cap. ${capNum}/${totalCaps} (${pctLocal}%)`;
+                    seloProgressoAuto.classList.remove('salvo');
+                }
+
+                if (idLivroVinc <= 0) {
+                    if (seloProgressoAuto) {
+                        seloProgressoAuto.textContent = `Cap. ${capNum}/${totalCaps} (${pctLocal}%) · Salvo`;
+                        seloProgressoAuto.classList.add('salvo');
+                    }
+                    return;
+                }
+
+                const chave = `${capNum}/${totalCaps}`;
+                if (chave === ultimoSalvoObra) return;
+                if (timerProgressoObra) clearTimeout(timerProgressoObra);
+
+                timerProgressoObra = setTimeout(async () => {
+                    const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                    if (!csrfMeta) return;
+                    try {
+                        const r = await fetch('api/progresso.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfMeta.content
+                            },
+                            body: JSON.stringify({
+                                id_livro: idLivroVinc,
+                                pagina_atual: capNum,
+                                total_paginas: totalCaps,
+                                auto_livraria: true
+                            })
+                        });
+                        const d = await r.json();
+                        if (!r.ok || !d.ok) return;
+                        ultimoSalvoObra = chave;
+                        const pctDb = Math.max(0, Math.min(100, Math.round(Number(d.porcentagem) || pctLocal)));
+                        if (seloProgressoAuto) {
+                            seloProgressoAuto.textContent = `Progresso: ${pctDb}% · Salvo automaticamente`;
+                            seloProgressoAuto.classList.add('salvo');
+                        }
+                    } catch (_) {}
+                }, 450);
             }
 
             function aplicarConfortoVisual() {
@@ -776,6 +861,14 @@ $csrf = folivro_escape(folivro_csrf_token());
                     if (palco) {
                         palco.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
+                }
+                if (capAtivo !== 'todos') {
+                    const idxNum = Number(capAtivo);
+                    if (!Number.isNaN(idxNum)) {
+                        salvarProgressoObraAutomatico(idxNum);
+                    }
+                } else {
+                    salvarProgressoObraAutomatico(capitulos.length - 1);
                 }
                 atualizarProgressoScroll();
             }

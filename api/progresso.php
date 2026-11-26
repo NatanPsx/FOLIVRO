@@ -26,11 +26,23 @@ if ($page > $total) {
 }
 $pdo = folivro_database();
 $userId = (int) $_SESSION['id_usuario'];
+$autoLivraria = !empty($data['auto_livraria']);
 $owned = $pdo->prepare('SELECT 1 FROM livraria WHERE id_usuario = ? AND id_livro = ? LIMIT 1');
 $owned->execute([$userId, $idLivro]);
 if (!$owned->fetchColumn()) {
-    http_response_code(404);
-    exit(json_encode(['error' => 'Livro não encontrado na sua biblioteca.'], JSON_UNESCAPED_UNICODE));
+    if ($autoLivraria) {
+        $existsLivro = $pdo->prepare('SELECT 1 FROM livro WHERE id_livro = ? LIMIT 1');
+        $existsLivro->execute([$idLivro]);
+        if (!$existsLivro->fetchColumn()) {
+            http_response_code(404);
+            exit(json_encode(['error' => 'Livro não encontrado no catálogo.'], JSON_UNESCAPED_UNICODE));
+        }
+        $pdo->prepare("INSERT IGNORE INTO livraria (id_usuario, id_livro, status_livraria) VALUES (?, ?, 'lendo')")
+            ->execute([$userId, $idLivro]);
+    } else {
+        http_response_code(404);
+        exit(json_encode(['error' => 'Livro não encontrado na sua biblioteca.'], JSON_UNESCAPED_UNICODE));
+    }
 }
 $percent = $total > 0 ? min(100, round(($page / $total) * 100, 2)) : 0;
 $upsert = $pdo->prepare(

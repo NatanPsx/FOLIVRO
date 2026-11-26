@@ -91,17 +91,252 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
 
 <!-- Estilos Completos e Autocontidos do Botão e Modal de Configurações -->
 <style id="folivro-config-estilos-completos">
-/* Botão fixo no canto superior direito */
+/* Botões fixos empilhados no canto superior direito (Configurações em cima, Temas abaixo) */
 .folivro-topo-fixo-acoes {
     position: fixed !important;
-    top: 18px !important;
-    right: 24px !important;
+    top: 14px !important;
+    right: 8px !important;
     left: auto !important;
     bottom: auto !important;
     z-index: 9999 !important;
     display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
+    gap: 8px !important;
     pointer-events: none !important;
+}
+
+/* Seletor compacto e interativo de temas no topo da tela */
+.seletor-temas-topo-wrap {
+    pointer-events: auto !important;
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.btn-abrir-temas-topo {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: var(--fundo-superficie, #ffffff) !important;
+    color: var(--texto-principal, #231b18) !important;
+    border: 2px solid var(--borda-suave, #e2d6cb) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16) !important;
+    cursor: pointer !important;
+    position: relative !important;
+    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.btn-abrir-temas-topo:hover,
+.btn-abrir-temas-topo[aria-expanded="true"] {
+    transform: scale(1.07) !important;
+    background: var(--fundo-superficie-suave, #faf6f2) !important;
+    border-color: var(--cor-vermelho-acao, #6b130d) !important;
+    color: var(--cor-vermelho-acao, #6b130d) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22) !important;
+}
+
+.btn-abrir-temas-topo:focus-visible {
+    outline: 3px solid var(--cor-dourado-foco, #e7ae5c) !important;
+    outline-offset: 2px !important;
+}
+
+.ponto-tema-atual-btn {
+    position: absolute !important;
+    bottom: 2px !important;
+    right: 2px !important;
+    width: 11px !important;
+    height: 11px !important;
+    border-radius: 50% !important;
+    border: 2px solid var(--fundo-superficie, #ffffff) !important;
+    background: var(--cor-vermelho-acao, #6b130d) !important;
+    pointer-events: none !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.popover-temas-topo {
+    position: absolute !important;
+    top: calc(100% + 10px) !important;
+    right: 0 !important;
+    width: 244px !important;
+    padding: 12px !important;
+    border-radius: 16px !important;
+    background: var(--fundo-superficie, #ffffff) !important;
+    border: 1px solid var(--borda-forte, #c9b7a8) !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.28) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    z-index: 10002 !important;
+    opacity: 0 !important;
+    transform: translateY(-6px) scale(0.96) !important;
+    transform-origin: top right !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+    transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s ease !important;
+}
+
+.popover-temas-topo.aberto {
+    opacity: 1 !important;
+    transform: translateY(0) scale(1) !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+}
+
+.popover-temas-cabecalho {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid var(--borda-suave, #e2d6cb) !important;
+}
+
+.popover-temas-titulo {
+    font-family: var(--fonte-interface, system-ui, -apple-system, sans-serif) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: var(--texto-principal, #231b18) !important;
+    letter-spacing: 0.01em !important;
+}
+
+.popover-modo-segmento {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+    padding: 2px !important;
+    border-radius: 999px !important;
+    background: var(--fundo-superficie-suave, rgba(127, 127, 127, 0.12)) !important;
+    border: 1px solid var(--borda-suave, #e2d6cb) !important;
+}
+
+.btn-modo-seg-topo {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 4px 8px !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    color: var(--texto-secundario, #54463f) !important;
+    font-family: var(--fonte-interface, system-ui, sans-serif) !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.btn-modo-seg-topo.ativo {
+    background: var(--cor-vermelho-acao, #6b130d) !important;
+    color: #ffffff !important;
+}
+
+.grade-swatches-popover {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+}
+
+.btn-tema-rapido-topo {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    padding: 7px 9px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+    border: 1.5px solid var(--borda-suave, #e2d6cb) !important;
+    background: var(--fundo-superficie-suave, rgba(127, 127, 127, 0.05)) !important;
+    color: var(--texto-principal, #231b18) !important;
+    font-family: var(--fonte-interface, system-ui, -apple-system, sans-serif) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    transition: transform 0.14s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease !important;
+}
+
+.btn-tema-rapido-topo:hover {
+    transform: translateY(-1px) !important;
+    border-color: var(--cor-vermelho-acao, #6b130d) !important;
+    background: var(--fundo-destaque, rgba(127, 127, 127, 0.1)) !important;
+}
+
+.btn-tema-rapido-topo:focus-visible {
+    outline: 2px solid var(--cor-dourado-foco, #e7ae5c) !important;
+    outline-offset: 2px !important;
+}
+
+.btn-tema-rapido-topo.ativo {
+    border-color: var(--cor-vermelho-acao, #6b130d) !important;
+    background: var(--fundo-destaque, rgba(127, 127, 127, 0.12)) !important;
+    box-shadow: 0 0 0 1px var(--cor-vermelho-acao, #6b130d) !important;
+}
+
+.btn-tema-rapido-topo .swatch-disco-wrap {
+    position: relative !important;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    flex-shrink: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.btn-tema-rapido-topo .swatch-disco {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.28) !important;
+}
+
+.btn-tema-rapido-topo .swatch-check {
+    position: absolute !important;
+    inset: 0 !important;
+    margin: auto !important;
+    width: 11px !important;
+    height: 11px !important;
+    color: #ffffff !important;
+    opacity: 0 !important;
+    transform: scale(0.5) !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.85)) !important;
+    transition: opacity 0.15s ease, transform 0.16s ease !important;
+}
+
+.btn-tema-rapido-topo.ativo .swatch-check {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+}
+
+.btn-tema-rapido-topo .swatch-nome {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
+}
+
+body.modo-leitura-foco .btn-abrir-temas-topo {
+    opacity: 0.72 !important;
+}
+body.modo-leitura-foco .btn-abrir-temas-topo:hover,
+body.modo-leitura-foco .btn-abrir-temas-topo[aria-expanded="true"] {
+    opacity: 1 !important;
 }
 
 .botao-configuracoes-topo {
@@ -847,8 +1082,16 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
 
 @media (max-width: 768px) {
     .folivro-topo-fixo-acoes {
-        top: 12px !important;
-        right: 14px !important;
+        top: 10px !important;
+        right: 8px !important;
+        gap: 8px !important;
+    }
+    .btn-abrir-temas-topo {
+        width: 40px !important;
+        height: 40px !important;
+    }
+    .popover-temas-topo {
+        width: 232px !important;
     }
     .botao-configuracoes-topo {
         width: 40px !important;
@@ -878,8 +1121,8 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
 }
 </style>
 
-<!-- Botão de Configurações no Canto Superior Direito (Símbolo Institucional FOLIVRO) -->
-<div class="folivro-topo-fixo-acoes" aria-label="Ações de configuração e preferências">
+<!-- Botão de Configurações (em cima) + Seletor Compacto de Temas (em baixo) no Canto Superior Direito -->
+<div class="folivro-topo-fixo-acoes" aria-label="Configurações e temas rápidos">
     <button type="button" 
             class="botao-configuracoes-topo" 
             id="abrirModalConfiguracoes" 
@@ -895,6 +1138,84 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
             </span>
         <?php endif; ?>
     </button>
+
+    <div class="seletor-temas-topo-wrap" id="seletorTemasTopoWrap">
+        <button type="button"
+                class="btn-abrir-temas-topo"
+                id="btnAbrirTemasTopo"
+                title="Temas de cores"
+                aria-label="Abrir seletor de temas de cores"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-controls="popoverTemasTopo">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="13.5" cy="6.5" r="1.2" fill="currentColor"></circle>
+                <circle cx="17.5" cy="10.5" r="1.2" fill="currentColor"></circle>
+                <circle cx="8.5" cy="7.5" r="1.2" fill="currentColor"></circle>
+                <circle cx="6.5" cy="12.5" r="1.2" fill="currentColor"></circle>
+                <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"></path>
+            </svg>
+            <span class="ponto-tema-atual-btn" id="pontoTemaAtualBtn" aria-hidden="true"></span>
+        </button>
+
+        <div class="popover-temas-topo" id="popoverTemasTopo" role="region" aria-label="Escolher tema de cores">
+            <div class="popover-temas-cabecalho">
+                <span class="popover-temas-titulo">Temas</span>
+                <div class="popover-modo-segmento" role="group" aria-label="Modo de iluminação">
+                    <button type="button" class="btn-modo-seg-topo" id="btnModoClaroTopo" data-modo-topo="claro" aria-pressed="false" title="Modo Claro">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                        </svg>
+                        <span>Claro</span>
+                    </button>
+                    <button type="button" class="btn-modo-seg-topo" id="btnModoEscuroTopo" data-modo-topo="escuro" aria-pressed="false" title="Modo Escuro">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                        <span>Escuro</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="grade-swatches-popover" role="group" aria-label="Paletas de cores">
+                <?php
+                $swatchesTopo = [
+                    // Esquerda: Claros | Direita: Escuros
+                    ['id' => 'padrao',    'modo' => 'claro',  'c1' => '#6b130d', 'c2' => '#f3eee8', 'nome' => 'Vinho',    'titulo' => 'Vinho & Marfim (Claro)'],
+                    ['id' => 'escuro',    'modo' => 'escuro', 'c1' => '#1b1716', 'c2' => '#f3c879', 'nome' => 'Café',     'titulo' => 'Café Noturno (Escuro)'],
+                    ['id' => 'sepia',     'modo' => 'claro',  'c1' => '#873d1e', 'c2' => '#f5eedf', 'nome' => 'Sépia',    'titulo' => 'Sépia & Pergaminho (Claro)'],
+                    ['id' => 'meianoite', 'modo' => 'escuro', 'c1' => '#0c131f', 'c2' => '#3b82f6', 'nome' => 'Oceano',   'titulo' => 'Oceano Meia-Noite (Escuro)'],
+                    ['id' => 'floresta',  'modo' => 'claro',  'c1' => '#1e4d28', 'c2' => '#e9f2e6', 'nome' => 'Floresta', 'titulo' => 'Floresta & Sálvia (Claro)'],
+                    ['id' => 'ametista',  'modo' => 'escuro', 'c1' => '#16121f', 'c2' => '#a855f7', 'nome' => 'Ametista', 'titulo' => 'Ametista & Lavanda (Escuro)'],
+                ];
+                foreach ($swatchesTopo as $sw):
+                ?>
+                    <button type="button"
+                            class="btn-tema-rapido-topo"
+                            data-tema-rapido="<?= $sw['id'] ?>"
+                            data-modo-padrao="<?= $sw['modo'] ?>"
+                            data-cor-destaque="<?= $sw['c1'] === '#1b1716' || $sw['c1'] === '#0c131f' || $sw['c1'] === '#16121f' ? $sw['c2'] : $sw['c1'] ?>"
+                            title="<?= folivro_escape($sw['titulo']) ?>"
+                            aria-label="Tema <?= folivro_escape($sw['titulo']) ?>"
+                            aria-pressed="false">
+                        <span class="swatch-disco-wrap" aria-hidden="true">
+                            <span class="swatch-disco" style="background: linear-gradient(135deg, <?= $sw['c1'] ?> 50%, <?= $sw['c2'] ?> 50%) !important;"></span>
+                            <svg class="swatch-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </span>
+                        <span class="swatch-nome"><?= folivro_escape($sw['nome']) ?></span>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Janela Modal de Configurações (OBRIGATORIAMENTE INICIA OCULTA VIA INLINE STYLE) -->
@@ -1332,11 +1653,34 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
             btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
         });
 
+        document.querySelectorAll('.btn-tema-rapido-topo').forEach(function (btn) {
+            const btnTema = btn.getAttribute('data-tema-rapido');
+            const ativo = (btnTema === temaId);
+            btn.classList.toggle('ativo', ativo);
+            btn.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+            if (ativo) {
+                const ponto = document.getElementById('pontoTemaAtualBtn');
+                const cor = btn.getAttribute('data-cor-destaque');
+                if (ponto && cor) {
+                    ponto.style.setProperty('background', cor, 'important');
+                }
+            }
+        });
+
         const btnClaro = document.getElementById('btnModoClaro');
         const btnEscuro = document.getElementById('btnModoEscuro');
         if (btnClaro && btnEscuro) {
             btnClaro.classList.toggle('ativo', modo === 'claro');
             btnEscuro.classList.toggle('ativo', modo === 'escuro');
+        }
+
+        const btnClaroTopo = document.getElementById('btnModoClaroTopo');
+        const btnEscuroTopo = document.getElementById('btnModoEscuroTopo');
+        if (btnClaroTopo && btnEscuroTopo) {
+            btnClaroTopo.classList.toggle('ativo', modo === 'claro');
+            btnClaroTopo.setAttribute('aria-pressed', modo === 'claro' ? 'true' : 'false');
+            btnEscuroTopo.classList.toggle('ativo', modo === 'escuro');
+            btnEscuroTopo.setAttribute('aria-pressed', modo === 'escuro' ? 'true' : 'false');
         }
     }
 
@@ -1413,6 +1757,65 @@ $cfgTotalPendencias = $cfgModStats['denuncias'] + $cfgModStats['obras'];
                 aplicarTema(temaEscolhido, modoPadrao);
             });
         });
+
+        document.querySelectorAll('.btn-tema-rapido-topo').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const temaEscolhido = this.getAttribute('data-tema-rapido') || 'padrao';
+                const modoPadrao = this.getAttribute('data-modo-padrao') || 'claro';
+                aplicarTema(temaEscolhido, modoPadrao);
+            });
+        });
+
+        const btnAbrirTemasTopo = document.getElementById('btnAbrirTemasTopo');
+        const popoverTemasTopo = document.getElementById('popoverTemasTopo');
+
+        function fecharPopoverTemas() {
+            if (!popoverTemasTopo || !btnAbrirTemasTopo) return;
+            popoverTemasTopo.classList.remove('aberto');
+            btnAbrirTemasTopo.setAttribute('aria-expanded', 'false');
+        }
+
+        if (btnAbrirTemasTopo && popoverTemasTopo) {
+            btnAbrirTemasTopo.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                const aberto = popoverTemasTopo.classList.toggle('aberto');
+                btnAbrirTemasTopo.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function (ev) {
+                if (popoverTemasTopo.classList.contains('aberto')
+                    && !popoverTemasTopo.contains(ev.target)
+                    && ev.target !== btnAbrirTemasTopo
+                    && !btnAbrirTemasTopo.contains(ev.target)) {
+                    fecharPopoverTemas();
+                }
+            });
+
+            document.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Escape' && popoverTemasTopo.classList.contains('aberto')) {
+                    fecharPopoverTemas();
+                    btnAbrirTemasTopo.focus();
+                }
+            });
+        }
+
+        const btnModoClaroTopo = document.getElementById('btnModoClaroTopo');
+        if (btnModoClaroTopo) {
+            btnModoClaroTopo.addEventListener('click', function () {
+                const temaAtual = obterTemaSalvo();
+                const novoTema = (temaAtual === 'escuro' || temaAtual === 'meianoite' || temaAtual === 'ametista') ? 'padrao' : temaAtual;
+                aplicarTema(novoTema, 'claro');
+            });
+        }
+
+        const btnModoEscuroTopo = document.getElementById('btnModoEscuroTopo');
+        if (btnModoEscuroTopo) {
+            btnModoEscuroTopo.addEventListener('click', function () {
+                const temaAtual = obterTemaSalvo();
+                const novoTema = (temaAtual === 'padrao' || temaAtual === 'sepia' || temaAtual === 'floresta') ? 'escuro' : temaAtual;
+                aplicarTema(novoTema, 'escuro');
+            });
+        }
 
         const btnClaro = document.getElementById('btnModoClaro');
         if (btnClaro) {

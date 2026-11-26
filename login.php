@@ -13,10 +13,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!folivro_verify_csrf()) {
         $erro = 'Sua sessão expirou. Atualize a página e tente novamente.';
     } else {
-        $email = trim((string) ($_POST['email'] ?? ''));
+        $email = mb_strtolower(trim((string) ($_POST['email'] ?? '')), 'UTF-8');
         $senha = (string) ($_POST['senha'] ?? '');
         if ($email !== '' && strlen($email) <= 150 && $senha !== '' && strlen($senha) <= 255) {
-            $consulta = $pdo->prepare('SELECT id_usuario, nome_usuario, email_usuario, data_nascimento_usuario, senha_usuario, nivel_usuario, status_usuario FROM usuario WHERE email_usuario = ? LIMIT 1');
+            $consulta = $pdo->prepare('SELECT id_usuario, nome_usuario, email_usuario, data_nascimento_usuario, senha_usuario, nivel_usuario, status_usuario FROM usuario WHERE LOWER(TRIM(email_usuario)) = ? LIMIT 1');
             $consulta->execute([$email]);
             $usuario = $consulta->fetch();
             if ($usuario && $usuario['status_usuario'] === 'ativo' && password_verify($senha, $usuario['senha_usuario'])) {

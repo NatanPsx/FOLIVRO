@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erro = 'Sua sessão expirou. Atualize a página e tente novamente.';
     } else {
         $nome           = trim((string) ($_POST['nome']            ?? ''));
-        $email          = trim((string) ($_POST['email']           ?? ''));
+        $email          = mb_strtolower(trim((string) ($_POST['email'] ?? '')), 'UTF-8');
         $dataNascimento = trim((string) ($_POST['data_nascimento'] ?? ''));
         $senha          = (string) ($_POST['senha']                ?? '');
         $confirmacao    = (string) ($_POST['confirmacao']          ?? '');
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erro = 'Para criar a conta, aceite os termos de uso e a política de privacidade.';
         } else {
             /* Verifica e-mail duplicado */
-            $check = $pdo->prepare('SELECT 1 FROM usuario WHERE email_usuario = ? LIMIT 1');
+            $check = $pdo->prepare('SELECT 1 FROM usuario WHERE LOWER(TRIM(email_usuario)) = ? LIMIT 1');
             $check->execute([$email]);
             if ($check->fetchColumn()) {
                 $erro = 'Este e-mail já está cadastrado.';

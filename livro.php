@@ -96,6 +96,7 @@ function folivro_buscar_no_cache_local(string $cacheDir, string $wId): ?array
                     'coverUrl' => $coverM,
                     'coverLargeUrl' => $coverL,
                     'firstPublishYear' => isset($item['year']) && is_numeric($item['year']) ? (int) $item['year'] : null,
+                    'pages' => isset($item['pages']) && is_numeric($item['pages']) && (int) $item['pages'] > 0 ? (int) $item['pages'] : 0,
                     'ratings' => ['average' => $avg, 'count' => $cnt, 'counts' => [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0]],
                     'workUrl' => 'https://openlibrary.org/works/' . $wId,
                 ];
@@ -103,6 +104,112 @@ function folivro_buscar_no_cache_local(string $cacheDir, string $wId): ?array
         }
     }
     return null;
+}
+
+/**
+ * Calcula a mediana de páginas a partir do JSON de edições da Open Library (/works/{id}/editions.json).
+ */
+function folivro_calcular_paginas_editions_ol(?string $editionsRaw): int {
+    if (!$editionsRaw) {
+        return 0;
+    }
+    $data = json_decode($editionsRaw, true);
+    if (!is_array($data) || empty($data['entries']) || !is_array($data['entries'])) {
+        return 0;
+    }
+    $vals = [];
+    foreach ($data['entries'] as $entry) {
+        if (!is_array($entry)) {
+            continue;
+        }
+        $p = isset($entry['number_of_pages']) && is_numeric($entry['number_of_pages']) ? (int) $entry['number_of_pages'] : 0;
+        if ($p >= 10 && $p <= 10000) {
+            $vals[] = $p;
+        }
+    }
+    if (!$vals) {
+        return 0;
+    }
+    sort($vals, SORT_NUMERIC);
+    $n = count($vals);
+    $mid = intdiv($n, 2);
+    return ($n % 2 === 1) ? $vals[$mid] : (int) round(($vals[$mid - 1] + $vals[$mid]) / 2);
+}
+
+/**
+ * Obtém (com cache) o número médio/mediano de páginas de uma obra diretamente da API da Open Library.
+ */
+function folivro_buscar_paginas_openlibrary(string $wId, string $cacheDir): int {
+    if (!preg_match('/^OL[0-9]+W$/', $wId)) {
+        return 0;
+    }
+    $localHit = folivro_buscar_no_cache_local($cacheDir, $wId);
+    if ($localHit && !empty($localHit['pages']) && (int) $localHit['pages'] >= 10) {
+        return (int) $localHit['pages'];
+    }
+
+    $pagesCacheFile = $cacheDir . '/ol_pages_' . $wId . '.json';
+    if (file_exists($pagesCacheFile) && (time() - filemtime($pagesCacheFile) < 86400 * 30)) {
+        $cData = json_decode((string) file_get_contents($pagesCacheFile), true);
+        if (is_array($cData) && isset($cData['pages'])) {
+            return (int) $cData['pages'];
+        }
+    }
+
+    $paginas = 0;
+    $urls = [
+        "https://openlibrary.org/works/{$wId}/editions.json?limit=20",
+        "https://openlibrary.org/search.json?q=key:/works/{$wId}&fields=number_of_pages_median&limit=1",
+    ];
+    foreach ($urls as $idxUrl => $url) {
+        $raw = null;
+        if (function_exists('curl_init')) {
+            foreach ([true, false] as $verifySsl) {
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_CONNECTTIMEOUT => 2,
+                    CURLOPT_TIMEOUT => 3,
+                    CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+                    CURLOPT_ENCODING => '',
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_SSL_VERIFYPEER => $verifySsl,
+                    CURLOPT_SSL_VERIFYHOST => $verifySsl ? 2 : 0,
+                    CURLOPT_USERAGENT => 'FOLIVRO-Academic-Demo/1.0 (TCC Platform; contact@folivro.local)',
+                ]);
+                $raw = curl_exec($ch);
+                $err = curl_errno($ch);
+                curl_close($ch);
+                if ($raw || $err !== 60) {
+                    break;
+                }
+            }
+        } else {
+            $ctx = stream_context_create([
+                'http' => ['method' => 'GET', 'timeout' => 3, 'header' => "User-Agent: FOLIVRO-Academic-Demo/1.0\r\nAccept: application/json\r\n"],
+                'ssl' => ['verify_peer' => false, 'verify_peer_name' => false],
+            ]);
+            $raw = @file_get_contents($url, false, $ctx);
+        }
+
+        if ($raw) {
+            if ($idxUrl === 0) {
+                $paginas = folivro_calcular_paginas_editions_ol((string) $raw);
+            } else {
+                $j = json_decode((string) $raw, true);
+                $med = $j['docs'][0]['number_of_pages_median'] ?? 0;
+                if (is_numeric($med) && (int) $med >= 10 && (int) $med <= 10000) {
+                    $paginas = (int) $med;
+                }
+            }
+        }
+        if ($paginas > 0) {
+            break;
+        }
+    }
+
+    @file_put_contents($pagesCacheFile, json_encode(['pages' => $paginas]));
+    return $paginas;
 }
 
 /**
@@ -145,13 +252,18 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 604800)) {
         $cached = json_decode((string) file_get_contents($cacheFile), true);
         if (is_array($cached)) {
+            if (!isset($cached['pages'])) {
+                $cached['pages'] = folivro_buscar_paginas_openlibrary($wId, $cacheDir);
+                @file_put_contents($cacheFile, json_encode($cached, JSON_UNESCAPED_UNICODE));
+            }
             return $cached;
         }
     }
 
-    // Busca metadados da obra e avaliações em paralelo com curl_multi para máxima velocidade
+    // Busca metadados da obra, avaliações e edições (para calcular páginas) em paralelo com curl_multi
     $workRaw = null;
     $ratingsRaw = null;
+    $editionsRaw = null;
 
     if (function_exists('curl_multi_init')) {
         foreach ([true, false] as $verifySsl) {
@@ -161,8 +273,9 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
             }
             $chWork = curl_init("https://openlibrary.org/works/{$wId}.json");
             $chRatings = curl_init("https://openlibrary.org/works/{$wId}/ratings.json");
+            $chEditions = curl_init("https://openlibrary.org/works/{$wId}/editions.json?limit=20");
 
-            foreach ([$chWork, $chRatings] as $ch) {
+            foreach ([$chWork, $chRatings, $chEditions] as $ch) {
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_TIMEOUT, 3);
                 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2);
@@ -188,13 +301,16 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
 
             $workRaw = curl_multi_getcontent($chWork);
             $ratingsRaw = curl_multi_getcontent($chRatings);
+            $editionsRaw = curl_multi_getcontent($chEditions);
             $workErr = curl_errno($chWork);
 
             curl_multi_remove_handle($mh, $chWork);
             curl_multi_remove_handle($mh, $chRatings);
+            curl_multi_remove_handle($mh, $chEditions);
             curl_multi_close($mh);
             curl_close($chWork);
             curl_close($chRatings);
+            curl_close($chEditions);
 
             if ($workRaw || $workErr !== 60) {
                 break;
@@ -212,6 +328,7 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
             ]);
             $workRaw = @file_get_contents("https://openlibrary.org/works/{$wId}.json", false, $ctx);
             $ratingsRaw = @file_get_contents("https://openlibrary.org/works/{$wId}/ratings.json", false, $ctx);
+            $editionsRaw = @file_get_contents("https://openlibrary.org/works/{$wId}/editions.json?limit=20", false, $ctx);
             if ($workRaw) {
                 break;
             }
@@ -329,6 +446,11 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
         }
     }
 
+    $paginasOl = folivro_calcular_paginas_editions_ol(is_string($editionsRaw) ? $editionsRaw : null);
+    if ($paginasOl <= 0) {
+        $paginasOl = folivro_buscar_paginas_openlibrary($wId, $cacheDir);
+    }
+
     $resultado = [
         'workId' => $wId,
         'title' => (string) ($work['title'] ?? 'Sem título'),
@@ -338,6 +460,7 @@ function folivro_obter_dados_openlibrary(string $wId, string $autorConhecido = '
         'coverUrl' => $capaMedia,
         'coverLargeUrl' => $capaAlta,
         'firstPublishYear' => $anoPublicacao,
+        'pages' => $paginasOl,
         'ratings' => $ratings,
         'workUrl' => "https://openlibrary.org/works/{$wId}",
     ];
@@ -374,6 +497,17 @@ if (!$anoPublicacao && !empty($livroLocal['data_publicacao_livro'])) {
     $anoPublicacao = (int) date('Y', strtotime($livroLocal['data_publicacao_livro']));
 }
 $paginasEstimadas = (int) ($livroLocal['paginas_livro'] ?? 0);
+if ($paginasEstimadas <= 0 && !empty($dadosOl['pages']) && (int) $dadosOl['pages'] > 0) {
+    $paginasEstimadas = (int) $dadosOl['pages'];
+    if ($livroLocal && $idLivro !== null) {
+        try {
+            $pdo->prepare('UPDATE livro SET paginas_livro = ? WHERE id_livro = ? AND (paginas_livro IS NULL OR paginas_livro = 0)')
+                ->execute([$paginasEstimadas, $idLivro]);
+        } catch (Throwable $e) {
+            // Falha silenciosa de atualização de metadado auxiliar
+        }
+    }
+}
 
 $ehLivroCatalogoInterno = $livroLocal && (
     ($livroLocal['fonte_livro'] ?? '') === 'local'
@@ -912,9 +1046,10 @@ $csrf = folivro_escape(folivro_csrf_token());
                             </div>
                         <?php endif; ?>
                         <?php if ($paginasEstimadas > 0): ?>
+                            <?php $ehCapitulosFicha = ($produtoLojaLivro !== null) || (folivro_dp_encontrar_obra($workId, $tituloLivroRaw) !== null); ?>
                             <div>
-                                <dt>Volume aproximado</dt>
-                                <dd><?= $paginasEstimadas ?> páginas</dd>
+                                <dt><?= $ehCapitulosFicha ? 'Capítulos' : 'Volume aproximado' ?></dt>
+                                <dd><?= $paginasEstimadas ?> <?= $ehCapitulosFicha ? ($paginasEstimadas === 1 ? 'capítulo' : 'capítulos') : 'páginas' ?></dd>
                             </div>
                         <?php endif; ?>
                         <div>
@@ -1063,12 +1198,30 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <?php
                             $stFicha = (string) ($registroLivraria['status_livraria'] ?? 'lendo');
                             $pagAtualFicha = (int) ($progressoUsuario['pagina_atual_progressao'] ?? 0);
-                            $totalPagFicha = (int) (($progressoUsuario['total_paginas_progressao'] ?? 0) ?: $paginasEstimadas ?: 1);
+                            $totalSalvoProg = (int) ($progressoUsuario['total_paginas_progressao'] ?? 0);
+                            $totalPagFicha = ($totalSalvoProg > 1) ? $totalSalvoProg : ($paginasEstimadas > 0 ? $paginasEstimadas : max(1, $totalSalvoProg));
+                            if ($idLivro !== null && $totalSalvoProg <= 1 && $paginasEstimadas > 1) {
+                                $pctSync = min(100, round(($pagAtualFicha / $paginasEstimadas) * 100, 2));
+                                try {
+                                    $pdo->prepare(
+                                        'INSERT INTO progressao_leitura (id_usuario, id_livro, pagina_atual_progressao, total_paginas_progressao, porcentagem_progressao)
+                                         VALUES (?, ?, ?, ?, ?)
+                                         ON DUPLICATE KEY UPDATE total_paginas_progressao = IF(total_paginas_progressao <= 1, VALUES(total_paginas_progressao), total_paginas_progressao),
+                                                                 porcentagem_progressao = IF(total_paginas_progressao <= 1, VALUES(porcentagem_progressao), porcentagem_progressao)'
+                                    )->execute([$uid, $idLivro, min($pagAtualFicha, $paginasEstimadas), $paginasEstimadas, $pctSync]);
+                                } catch (Throwable $e) {
+                                    // Falha silenciosa
+                                }
+                            }
                             ?>
                             <div class="grade-painel-progresso-leitor">
                                 <form id="form-progresso-ficha" class="progresso-form form-largura-total card-progresso-nivelado">
                                     <h3 class="titulo-com-icone-folivro"><?= folivro_icone('pagina-marcador', 'folivro-icon-sm') ?> <span>Registrar progresso de páginas</span></h3>
-                                    <p class="texto-apoio-pequeno" style="margin:0;">Atualize a página em que você parou para sincronizar sua barra de leitura e metas.</p>
+                                    <p class="texto-apoio-pequeno" style="margin:0;">
+                                        <?= $paginasEstimadas > 0
+                                            ? 'Total calculado automaticamente pela Open Library (você pode ajustar se sua edição tiver outra quantidade).'
+                                            : 'Atualize a página em que você parou para sincronizar sua barra de leitura e metas.' ?>
+                                    </p>
                                     <div class="grade-campos-dupla">
                                         <label for="pagina_atual_ficha">Página atual
                                             <input id="pagina_atual_ficha" type="number" name="pagina_atual" min="0" value="<?= $pagAtualFicha ?>" required>

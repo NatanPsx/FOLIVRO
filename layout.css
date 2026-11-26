@@ -6315,3 +6315,138 @@ h3.titulo-com-icone-folivro {
 
 
 
+
+
+/* ==========================================================================
+   ESTÚDIO DE ESCRITA — ABAS DE MÚLTIPLOS CAPÍTULOS E BOTÃO "ESCREVER MAIS"
+   ========================================================================== */
+.estudio-abas-capitulos-barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 0 4px;
+}
+
+.estudio-abas-capitulos {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1 1 auto;
+}
+
+.aba-capitulo-item {
+    display: inline-flex;
+    align-items: center;
+    background: var(--fundo-superficie-suave, #faf6f2);
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: 999px;
+    overflow: hidden;
+    transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.aba-capitulo-item.ativa {
+    background: var(--cor-vermelho-acao, #6b130d);
+    border-color: var(--cor-vermelho-acao, #6b130d);
+    box-shadow: 0 2px 8px rgba(107, 19, 13, 0.22);
+}
+
+.aba-capitulo-tab {
+    background: transparent;
+    border: 0;
+    color: var(--texto-secundario, #54463f);
+    font-family: var(--fonte-interface, sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.aba-capitulo-item.ativa .aba-capitulo-tab {
+    color: #ffffff;
+}
+
+.btn-remover-aba-cap {
+    background: transparent;
+    border: 0;
+    color: var(--texto-apoio, #6e5d54);
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 6px 10px 6px 2px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.aba-capitulo-item.ativa .btn-remover-aba-cap {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.btn-remover-aba-cap:hover {
+    color: #c5221f;
+}
+
+.aba-capitulo-item.ativa .btn-remover-aba-cap:hover {
+    color: #ffd6d6;
+}
+
+.btn-escrever-mais {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 15px;
+    border-radius: 999px;
+    border: 1.5px dashed var(--cor-vermelho-acao, #6b130d);
+    background: transparent;
+    color: var(--cor-vermelho-acao, #6b130d);
+    font-family: var(--fonte-interface, sans-serif);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease, transform 0.14s ease;
+}
+
+.btn-escrever-mais:hover {
+    background: var(--cor-vermelho-acao, #6b130d);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.btn-escrever-mais:focus-visible,
+.aba-capitulo-tab:focus-visible {
+    outline: 3px solid var(--cor-dourado-foco, #e7ae5c);
+    outline-offset: 2px;
+}
+
+.selo-metrica-caps {
+    font-weight: 700;
+    color: var(--cor-vermelho-acao, #6b130d);
+}
+
+/* Indicador discreto de progresso automático nos leitores */
+.selo-progresso-auto {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--texto-secundario, #54463f);
+    background: var(--fundo-superficie-suave, #faf6f2);
+    border: 1px solid var(--borda-suave, #e2d6cb);
+    border-radius: 999px;
+    padding: 4px 12px;
+    white-space: nowrap;
+}
+
+.selo-progresso-auto.salvo {
+    border-color: rgba(34, 139, 34, 0.35);
+    color: #1f6f3b;
+}
+
+.tema-escuro .selo-progresso-auto.salvo {
+    color: #8ce3a7;
+    border-color: rgba(140, 227, 167, 0.35);
+}

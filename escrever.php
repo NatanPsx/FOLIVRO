@@ -17,8 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $title            = trim((string) ($_POST['titulo'] ?? ''));
         $synopsis         = trim((string) ($_POST['sinopse'] ?? ''));
-        $chapter          = trim((string) ($_POST['capitulo'] ?? ''));
-        $chapterTitle     = trim((string) ($_POST['titulo_capitulo'] ?? ''));
         $modalidade       = (!folivro_pagamentos_ativos() || ($_POST['modalidade_distribuicao'] ?? 'venda_simulada') === 'gratuita') ? 'gratuita' : 'venda_simulada';
         $price            = $modalidade === 'gratuita' ? 0.00 : filter_var($_POST['preco'] ?? null, FILTER_VALIDATE_FLOAT);
         $origemObra       = (string) ($_POST['origem_obra'] ?? 'autoral_original');
@@ -30,6 +28,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $declareAutoria   = isset($_POST['declaracao_autoria']);
         $declareComercial = isset($_POST['declaracao_comercializacao']);
         $publish          = isset($_POST['publicar']);
+
+        // Monta lista de capítulos (suporta múltiplos capítulos via abas ou envio único legado)
+        $capitulosLista = [];
+        $titulosPost = $_POST['capitulos_titulos'] ?? null;
+        $conteudosPost = $_POST['capitulos_conteudos'] ?? null;
+        if (is_array($titulosPost) && is_array($conteudosPost) && count($titulosPost) > 0) {
+            $totalPost = min(50, max(count($titulosPost), count($conteudosPost)));
+            for ($i = 0; $i < $totalPost; $i++) {
+                $tCap = trim((string) ($titulosPost[$i] ?? ''));
+                $cCap = trim((string) ($conteudosPost[$i] ?? ''));
+                // Ignora abas completamente vazias além da primeira, se o autor abriu e não preencheu
+                if ($i > 0 && $tCap === '' && trim(strip_tags($cCap)) === '') {
+                    continue;
+                }
+                $capitulosLista[] = ['titulo' => $tCap, 'conteudo' => $cCap];
+            }
+        }
+        if (!$capitulosLista) {
+            $capitulosLista[] = [
+                'titulo' => trim((string) ($_POST['titulo_capitulo'] ?? '')),
+                'conteudo' => trim((string) ($_POST['capitulo'] ?? '')),
+            ];
+        }
+
+        $chapterTitle = $capitulosLista[0]['titulo'] ?? '';
+        $chapter      = $capitulosLista[0]['conteudo'] ?? '';
 
         $origensValidas  = ['autoral_original', 'autorizacao_documentada', 'fanfic_sem_autorizacao', 'dominio_publico_nao_verificado'];
         $licencasValidas = ['direitos_reservados', 'cc_by_nc_nd', 'autorizacao_especifica'];
@@ -45,11 +69,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $avisoConteudo = 'livre';
         }
 
-        if ($title === '' || $chapter === '' || $chapterTitle === ''
-            || mb_strlen($title, 'UTF-8') > 120 || mb_strlen($chapterTitle, 'UTF-8') > 120
-            || mb_strlen($synopsis, 'UTF-8') > 5000 || strlen($chapter) > 500000
+        $erroCapitulo = '';
+        foreach ($capitulosLista as $idxCapVal => $capVal) {
+            $numCapVal = $idxCapVal + 1;
+            $textoPuroVal = trim(strip_tags($capVal['conteudo']));
+            if ($capVal['titulo'] === '' || mb_strlen($capVal['titulo'], 'UTF-8') > 120) {
+                $erroCapitulo = "Preencha um título válido (até 120 caracteres) no Capítulo {$numCapVal}.";
+                break;
+            }
+            if ($textoPuroVal === '' || strlen($capVal['conteudo']) > 500000) {
+                $erroCapitulo = "Escreva o conteúdo do Capítulo {$numCapVal} (máx. 500 KB).";
+                break;
+            }
+        }
+
+        if ($title === '' || mb_strlen($title, 'UTF-8') > 120
+            || mb_strlen($synopsis, 'UTF-8') > 5000
             || !is_float($price) || $price < 0 || $price > 99999999) {
-            $erro = 'Preencha título (até 120 caracteres), nome do capítulo (até 120 caracteres), texto e preço válido.';
+            $erro = 'Preencha título (até 120 caracteres), sinopse válida e preço válido.';
+        } elseif ($erroCapitulo !== '') {
+            $erro = $erroCapitulo;
         } elseif (!$maiorDeIdadeAutor && folivro_classificacao_eh_maior18($avisoConteudo)) {
             $erro = 'Restrição etária: autores menores de 18 anos não podem escrever ou publicar obras com classificação indicativa +18.';
         } elseif ($generosString === '') {
@@ -61,11 +100,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($publish && $modalidade === 'venda_simulada' && $licenca === 'cc_by_nc_nd' && $price > 0) {
             $erro = 'A licença Creative Commons BY-NC-ND 4.0 é restrita a uso não comercial. Selecione outra licença ou publique gratuitamente.';
         } else {
-            // Verifica se o mesmo material (capítulo isolado ou título+capítulo) já foi removido pela moderação.
+            // Verifica se algum capítulo coincide com material anteriormente removido pela moderação.
             $hashConteudo = folivro_content_hash($title . ' ' . $chapter);
-            $hashCapitulo = folivro_content_hash($chapter);
-            if (folivro_conteudo_foi_removido($pdo, $title, $chapter, 0)) {
-                $erro = 'Bloqueio de segurança: este conteúdo corresponde a material anteriormente removido pela moderação por violação de direitos autorais. Não é permitida a republicação automática; utilize o recurso de contestação no painel da obra original.';
+            foreach ($capitulosLista as $idxCapChk => $capChk) {
+                if (folivro_conteudo_foi_removido($pdo, $title, $capChk['conteudo'], 0)) {
+                    $numCapChk = $idxCapChk + 1;
+                    $erro = "Bloqueio de segurança: o conteúdo do Capítulo {$numCapChk} corresponde a material anteriormente removido pela moderação por violação de direitos autorais. Não é permitida a republicação automática; utilize o recurso de contestação no painel da obra original.";
+                    break;
+                }
             }
 
             $caminhoCapa = null;
@@ -108,9 +150,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($erro === '') {
                 $qualificacaoAutor = folivro_avaliar_qualificacao_autor($pdo, $uid, true);
                 $aprovAutoGlobal = folivro_aprovacao_automatica_obras_ativa($pdo);
-                $avalSegCap1 = folivro_avaliar_seguranca_capitulo($pdo, $title, $chapterTitle, $chapter, $origemObra, 0);
+                $todosCapsSeguros = true;
+                foreach ($capitulosLista as $capSeg) {
+                    $avalSegCap = folivro_avaliar_seguranca_capitulo($pdo, $title, $capSeg['titulo'], $capSeg['conteudo'], $origemObra, 0);
+                    if (($avalSegCap['acao'] ?? '') !== 'permitir') {
+                        $todosCapsSeguros = false;
+                        break;
+                    }
+                }
                 $baseLegalIncerta = in_array($origemObra, ['fanfic_sem_autorizacao', 'dominio_publico_nao_verificado'], true);
-                $publicarAutomatico = ($publish && !$baseLegalIncerta && ($qualificacaoAutor['qualificado_automatico'] || $aprovAutoGlobal) && $avalSegCap1['acao'] === 'permitir');
+                $publicarAutomatico = ($publish && !$baseLegalIncerta && ($qualificacaoAutor['qualificado_automatico'] || $aprovAutoGlobal) && $todosCapsSeguros);
 
                 $revisaoPublicacao = 'nao_solicitada';
                 $motivoBloqueio = null;
@@ -160,12 +209,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                              data_revisao_capitulos)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, IF(?, CURRENT_TIMESTAMP, NULL))'
                     );
-                    $ch->execute([
-                        $storyId, $chapterTitle, $chapter, $hashCapitulo,
-                        1, $statusCapNovo, $modoPubCapNovo, $revCapNovo,
-                        $publicarAutomatico ? 1 : 0,
-                    ]);
-                    $newCapId = (int) $pdo->lastInsertId();
+                    $newCapId = 0;
+                    foreach ($capitulosLista as $idxIns => $capIns) {
+                        $ordemCap = $idxIns + 1;
+                        $hashCapItem = folivro_content_hash($capIns['conteudo']);
+                        $ch->execute([
+                            $storyId, $capIns['titulo'], $capIns['conteudo'], $hashCapItem,
+                            $ordemCap, $statusCapNovo, $modoPubCapNovo, $revCapNovo,
+                            $publicarAutomatico ? 1 : 0,
+                        ]);
+                        if ($idxIns === 0) {
+                            $newCapId = (int) $pdo->lastInsertId();
+                        }
+                    }
+                    $qtdCapsSalvos = count($capitulosLista);
 
                     $book = $pdo->prepare(
                         'INSERT INTO autor_dos_livros (id_historias, id_autor, titulo_autor_dos_livros, preco_dos_livros_autor,
@@ -187,12 +244,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $bookId = (int) $pdo->lastInsertId();
 
                     if ($publicarAutomatico) {
+                        $rotuloCaps = $qtdCapsSalvos > 1 ? "{$qtdCapsSalvos} capítulos" : "Capítulo 1 ({$chapterTitle})";
                         folivro_registrar_historico_moderacao(
                             $pdo,
                             $uid,
                             null,
                             'publicacao_automatica_capitulo',
-                            "Obra '{$title}' e Capítulo 1 ({$chapterTitle}) publicados automaticamente (sujeitos à moderação posterior).",
+                            "Obra '{$title}' e {$rotuloCaps} publicados automaticamente (sujeitos à moderação posterior).",
                             $qualificacaoAutor['modalidade'],
                             $qualificacaoAutor['modalidade'],
                             $bookId,
@@ -217,14 +275,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         folivro_loja_sincronizar_obra_estudio($pdo, $bookId);
                     }
 
+                    $txtQtd = $qtdCapsSalvos > 1 ? "{$qtdCapsSalvos} capítulos" : "1 capítulo";
                     if ($publish && $baseLegalIncerta) {
-                        $erro = $motivoBloqueio . ' A obra foi salva apenas como rascunho privado.';
+                        $erro = $motivoBloqueio . " A obra ({$txtQtd}) foi salva apenas como rascunho privado.";
                     } elseif ($publicarAutomatico) {
-                        $sucesso = 'Você está qualificado para publicação automática. Este capítulo foi publicado e está sujeito à moderação posterior.';
+                        $sucesso = "Você está qualificado para publicação automática. Obra publicada com {$txtQtd} (sujeita à moderação posterior).";
                     } elseif ($publish) {
-                        $sucesso = 'Sua publicação foi encaminhada para revisão humana.';
+                        $sucesso = "Sua publicação com {$txtQtd} foi encaminhada para revisão humana.";
                     } else {
-                        $sucesso = 'Rascunho privado salvo em Livros escritos.';
+                        $sucesso = "Rascunho privado salvo com {$txtQtd} em Livros escritos.";
                     }
                     $_POST = [];
                 } catch (Throwable $e) {
@@ -240,6 +299,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $old = static fn(string $k): string => folivro_escape((string) ($_POST[$k] ?? ''));
 $oldRaw = static fn(string $k): string => (string) ($_POST[$k] ?? '');
+$capitulosIniciais = [];
+if (is_array($_POST['capitulos_titulos'] ?? null) && is_array($_POST['capitulos_conteudos'] ?? null)) {
+    $totInit = min(50, max(count($_POST['capitulos_titulos']), count($_POST['capitulos_conteudos'])));
+    for ($i = 0; $i < $totInit; $i++) {
+        $capitulosIniciais[] = [
+            'titulo' => (string) ($_POST['capitulos_titulos'][$i] ?? ''),
+            'conteudo' => folivro_sanitizar_html_capitulo((string) ($_POST['capitulos_conteudos'][$i] ?? '')),
+        ];
+    }
+}
+if (!$capitulosIniciais) {
+    $capitulosIniciais[] = [
+        'titulo' => $oldRaw('titulo_capitulo'),
+        'conteudo' => $oldRaw('capitulo') !== '' ? folivro_sanitizar_html_capitulo($oldRaw('capitulo')) : '',
+    ];
+}
 $qualificacaoEstudio = folivro_avaliar_qualificacao_autor($pdo, $uid, false);
 $aprovAutoEstudio = folivro_aprovacao_automatica_obras_ativa($pdo);
 $taxaLojaEstudio = 10.0;
@@ -256,7 +331,7 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Escrever | FOLIVRO</title>
-    <link rel="stylesheet" href="layout.css?v=20261123_03">
+    <link rel="stylesheet" href="layout.css?v=20261126_01">
     <link rel="stylesheet" href="home.css?v=20261123_01">
 </head>
 
@@ -296,7 +371,16 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                 <section class="estudio-manuscrito" aria-label="Área de escrita do manuscrito">
                     <header class="estudio-manuscrito-topo">
                         <input id="titulo" name="titulo" class="input-titulo-manuscrito" maxlength="120" required placeholder="Título do seu livro (máx. 120 caracteres)..." value="<?= $old('titulo') ?>" aria-label="Título da obra" autocomplete="off">
-                        <input id="titulo_capitulo" name="titulo_capitulo" class="input-capitulo-manuscrito" maxlength="120" required placeholder="Capítulo 1: Título do primeiro capítulo (máx. 120 caracteres)..." value="<?= $old('titulo_capitulo') ?>" aria-label="Título do primeiro capítulo" autocomplete="off">
+
+                        <!-- Barra de abas de capítulos + botão "Escrever mais" -->
+                        <div class="estudio-abas-capitulos-barra">
+                            <div class="estudio-abas-capitulos" id="abas-capitulos-lista" role="tablist" aria-label="Capítulos da obra"></div>
+                            <button type="button" id="btn-escrever-mais" class="btn-escrever-mais" title="Abrir mais uma aba de capítulo para escrita">
+                                + Escrever mais
+                            </button>
+                        </div>
+
+                        <input id="titulo_capitulo" name="titulo_capitulo" class="input-capitulo-manuscrito" maxlength="120" required placeholder="Capítulo 1: Título do capítulo (máx. 120 caracteres)..." value="<?= folivro_escape($capitulosIniciais[0]['titulo'] ?? '') ?>" aria-label="Título do capítulo atual" autocomplete="off">
                     </header>
 
                     <div class="estudio-canvas-wrapper">
@@ -388,11 +472,13 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                              data-placeholder="Era uma vez... comece a escrever sua história aqui com tranquilidade e inspiração."><?= !empty($oldRaw('capitulo')) ? folivro_sanitizar_html_capitulo($oldRaw('capitulo')) : '' ?></div>
 
                         <!-- Textarea Sincronizado para envio no POST do form -->
-                        <textarea id="capitulo" name="capitulo" style="display:none;" required><?= $old('capitulo') ?></textarea>
+                        <textarea id="capitulo" name="capitulo" style="display:none;"><?= folivro_escape($capitulosIniciais[0]['conteudo'] ?? '') ?></textarea>
+                        <div id="capitulos-hidden-inputs" hidden></div>
                     </div>
 
                     <footer class="estudio-barra-zen">
                         <div class="estudio-metricas">
+                            <span id="contador-capitulos" class="selo-metrica selo-metrica-caps">1 capítulo</span>
                             <span id="contador-palavras" class="selo-metrica">0 palavras</span>
                             <span id="contador-caracteres" class="selo-metrica">0 caracteres</span>
                             <span id="tempo-leitura" class="selo-metrica">~0 min de leitura</span>
@@ -565,24 +651,174 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
             const selectTamanho = document.getElementById('select-tamanho-fonte');
             const selectBloco = document.getElementById('select-bloco-estilo');
             const formEscrita = document.getElementById('form-escrita');
+            const inputTitObra = document.getElementById('titulo');
+            const inputTitCap = document.getElementById('titulo_capitulo');
+            const abasLista = document.getElementById('abas-capitulos-lista');
+            const btnEscreverMais = document.getElementById('btn-escrever-mais');
+            const hiddenCapsBox = document.getElementById('capitulos-hidden-inputs');
+            const contadorCapitulos = document.getElementById('contador-capitulos');
+
+            // Gerenciamento de múltiplos capítulos em abas
+            const chaveLocal = 'folivro_rascunho_estudio_v2_' + <?= (int) $uid ?>;
+            let capitulos = <?= json_encode($capitulosIniciais, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+            if (!Array.isArray(capitulos) || capitulos.length === 0) {
+                capitulos = [{ titulo: '', conteudo: '' }];
+            }
+            let indiceCapAtivo = 0;
+
+            function salvarEstadoCapituloAtual() {
+                if (!capitulos[indiceCapAtivo]) return;
+                if (inputTitCap) {
+                    capitulos[indiceCapAtivo].titulo = inputTitCap.value;
+                }
+                if (editorCapitulo) {
+                    const textoPuro = editorCapitulo.innerText.trim();
+                    capitulos[indiceCapAtivo].conteudo = textoPuro === '' ? '' : editorCapitulo.innerHTML;
+                }
+            }
+
+            function renderizarAbasCapitulos() {
+                if (!abasLista) return;
+                abasLista.innerHTML = '';
+                capitulos.forEach((cap, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'aba-capitulo-item' + (idx === indiceCapAtivo ? ' ativa' : '');
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'aba-capitulo-tab';
+                    btn.setAttribute('role', 'tab');
+                    btn.setAttribute('aria-selected', idx === indiceCapAtivo ? 'true' : 'false');
+                    const tituloCurto = (cap.titulo || '').trim();
+                    btn.textContent = tituloCurto ? `Cap. ${idx + 1}: ${tituloCurto.slice(0, 18)}${tituloCurto.length > 18 ? '…' : ''}` : `Capítulo ${idx + 1}`;
+                    btn.title = tituloCurto ? `Capítulo ${idx + 1} — ${tituloCurto}` : `Capítulo ${idx + 1}`;
+                    btn.addEventListener('click', () => selecionarCapitulo(idx));
+                    wrap.appendChild(btn);
+
+                    if (capitulos.length > 1) {
+                        const btnRem = document.createElement('button');
+                        btnRem.type = 'button';
+                        btnRem.className = 'btn-remover-aba-cap';
+                        btnRem.setAttribute('aria-label', `Remover Capítulo ${idx + 1}`);
+                        btnRem.title = `Remover Capítulo ${idx + 1}`;
+                        btnRem.textContent = '×';
+                        btnRem.addEventListener('click', (ev) => {
+                            ev.stopPropagation();
+                            removerCapitulo(idx);
+                        });
+                        wrap.appendChild(btnRem);
+                    }
+                    abasLista.appendChild(wrap);
+                });
+
+                if (contadorCapitulos) {
+                    contadorCapitulos.textContent = `${capitulos.length} capítulo${capitulos.length === 1 ? '' : 's'}`;
+                }
+            }
+
+            function carregarCapituloNoEditor(idx) {
+                indiceCapAtivo = Math.max(0, Math.min(capitulos.length - 1, idx));
+                const cap = capitulos[indiceCapAtivo] || { titulo: '', conteudo: '' };
+                if (inputTitCap) {
+                    inputTitCap.value = cap.titulo || '';
+                    inputTitCap.placeholder = `Capítulo ${indiceCapAtivo + 1}: Título do capítulo (máx. 120 caracteres)...`;
+                    inputTitCap.setAttribute('aria-label', `Título do Capítulo ${indiceCapAtivo + 1}`);
+                }
+                if (editorCapitulo) {
+                    editorCapitulo.innerHTML = cap.conteudo || '';
+                }
+                sincronizarEditor();
+                renderizarAbasCapitulos();
+            }
+
+            function selecionarCapitulo(idx) {
+                if (idx === indiceCapAtivo) return;
+                salvarEstadoCapituloAtual();
+                carregarCapituloNoEditor(idx);
+                if (inputTitCap) inputTitCap.focus();
+            }
+
+            function adicionarNovoCapitulo() {
+                if (capitulos.length >= 50) {
+                    alert('Você pode escrever até 50 capítulos por vez.');
+                    return;
+                }
+                salvarEstadoCapituloAtual();
+                capitulos.push({ titulo: '', conteudo: '' });
+                carregarCapituloNoEditor(capitulos.length - 1);
+                salvarRascunhoLocal();
+                if (inputTitCap) {
+                    inputTitCap.focus();
+                }
+            }
+
+            function removerCapitulo(idx) {
+                if (capitulos.length <= 1) return;
+                salvarEstadoCapituloAtual();
+                const alvo = capitulos[idx];
+                const temConteudo = (alvo.titulo && alvo.titulo.trim() !== '') || (alvo.conteudo && alvo.conteudo.replace(/<[^>]*>/g, '').trim() !== '');
+                if (temConteudo && !confirm(`Deseja remover a aba do Capítulo ${idx + 1}? O texto escrito nela será descartado.`)) {
+                    return;
+                }
+                capitulos.splice(idx, 1);
+                const novoIdx = Math.min(indiceCapAtivo, capitulos.length - 1);
+                carregarCapituloNoEditor(novoIdx);
+                salvarRascunhoLocal();
+            }
+
+            if (btnEscreverMais) {
+                btnEscreverMais.addEventListener('click', adicionarNovoCapitulo);
+            }
+
+            function salvarRascunhoLocal() {
+                if (!inputTitObra) return;
+                try {
+                    localStorage.setItem(chaveLocal, JSON.stringify({
+                        t: inputTitObra.value,
+                        caps: capitulos,
+                        idx: indiceCapAtivo
+                    }));
+                } catch (e) {}
+            }
 
             // Sincronização entre o editor WYSIWYG e o textarea do formulário
             function sincronizarEditor() {
                 if (!editorCapitulo || !textareaCapitulo) return;
                 const textoPuro = editorCapitulo.innerText.trim();
-                if (textoPuro === '') {
-                    textareaCapitulo.value = '';
-                } else {
-                    textareaCapitulo.value = editorCapitulo.innerHTML;
-                }
+                textareaCapitulo.value = textoPuro === '' ? '' : editorCapitulo.innerHTML;
+                salvarEstadoCapituloAtual();
                 atualizarMetricas();
+                salvarRascunhoLocal();
             }
 
-            // Inicialização do conteúdo se houver valor prévio
-            if (editorCapitulo && textareaCapitulo) {
-                if (editorCapitulo.innerHTML.trim() === '' && textareaCapitulo.value.trim() !== '') {
-                    editorCapitulo.innerHTML = textareaCapitulo.value;
+            // Restaura rascunho local se o formulário estiver vazio
+            if (inputTitObra && inputTitCap && editorCapitulo) {
+                const estaVazio = !inputTitObra.value && capitulos.length === 1 && !capitulos[0].titulo && !capitulos[0].conteudo;
+                if (estaVazio) {
+                    try {
+                        const salvo = JSON.parse(localStorage.getItem(chaveLocal) || 'null');
+                        if (salvo && Array.isArray(salvo.caps) && salvo.caps.length > 0) {
+                            const temAlgo = (salvo.t || '').trim() !== '' || salvo.caps.some((c) => (c.titulo || '').trim() !== '' || (c.conteudo || '').trim() !== '');
+                            if (temAlgo) {
+                                inputTitObra.value = salvo.t || '';
+                                capitulos = salvo.caps.slice(0, 50).map((c) => ({
+                                    titulo: String(c.titulo || ''),
+                                    conteudo: String(c.conteudo || '')
+                                }));
+                                indiceCapAtivo = Math.max(0, Math.min(capitulos.length - 1, Number(salvo.idx) || 0));
+                            }
+                        }
+                    } catch (e) {}
                 }
+
+                carregarCapituloNoEditor(indiceCapAtivo);
+
+                inputTitObra.addEventListener('input', salvarRascunhoLocal);
+                inputTitCap.addEventListener('input', () => {
+                    salvarEstadoCapituloAtual();
+                    renderizarAbasCapitulos();
+                    salvarRascunhoLocal();
+                });
                 editorCapitulo.addEventListener('input', sincronizarEditor);
                 editorCapitulo.addEventListener('keyup', sincronizarEditor);
                 editorCapitulo.addEventListener('blur', sincronizarEditor);
@@ -630,8 +866,54 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
             }
 
             if (formEscrita && editorCapitulo && textareaCapitulo) {
-                formEscrita.addEventListener('submit', () => {
-                    sincronizarEditor();
+                formEscrita.addEventListener('submit', (ev) => {
+                    salvarEstadoCapituloAtual();
+
+                    // Valida que cada capítulo preenchido (e o capítulo 1) tenha título e texto
+                    for (let i = 0; i < capitulos.length; i++) {
+                        const t = (capitulos[i].titulo || '').trim();
+                        const textoLimpo = (capitulos[i].conteudo || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+                        if (i > 0 && t === '' && textoLimpo === '') {
+                            continue; // aba extra vazia será ignorada no servidor
+                        }
+                        if (t === '') {
+                            ev.preventDefault();
+                            carregarCapituloNoEditor(i);
+                            if (inputTitCap) inputTitCap.focus();
+                            alert(`Preencha o título do Capítulo ${i + 1} antes de salvar.`);
+                            return;
+                        }
+                        if (textoLimpo === '') {
+                            ev.preventDefault();
+                            carregarCapituloNoEditor(i);
+                            editorCapitulo.focus();
+                            alert(`Escreva o conteúdo do Capítulo ${i + 1} antes de salvar.`);
+                            return;
+                        }
+                    }
+
+                    // Sincroniza campos ocultos de todos os capítulos para o POST
+                    if (hiddenCapsBox) {
+                        hiddenCapsBox.innerHTML = '';
+                        capitulos.forEach((cap) => {
+                            const inpT = document.createElement('input');
+                            inpT.type = 'hidden';
+                            inpT.name = 'capitulos_titulos[]';
+                            inpT.value = cap.titulo || '';
+                            hiddenCapsBox.appendChild(inpT);
+
+                            const inpC = document.createElement('textarea');
+                            inpC.name = 'capitulos_conteudos[]';
+                            inpC.value = cap.conteudo || '';
+                            hiddenCapsBox.appendChild(inpC);
+                        });
+                    }
+
+                    // Mantém campos legados com o Capítulo 1
+                    if (textareaCapitulo && capitulos[0]) {
+                        textareaCapitulo.value = capitulos[0].conteudo || '';
+                    }
+                    try { localStorage.removeItem(chaveLocal); } catch (e) {}
                 });
             }
 
@@ -774,40 +1056,6 @@ $pubImediataAtiva = ($aprovAutoEstudio || !empty($qualificacaoEstudio['qualifica
                 atualizarTextoBotao();
             } else {
                 atualizarObrigatoriedadeAutoria();
-            }
-
-            // Auto-save local no navegador (evita perda acidental do texto)
-            const chaveLocal = 'folivro_rascunho_estudio_v1_' + <?= (int) $uid ?>;
-            const inputTit = document.getElementById('titulo');
-            const inputCap = document.getElementById('titulo_capitulo');
-            if (inputTit && inputCap && editor && form) {
-                if (!inputTit.value && !inputCap.value && editor.innerHTML.trim() === '') {
-                    try {
-                        const salvo = JSON.parse(localStorage.getItem(chaveLocal) || 'null');
-                        if (salvo && (salvo.t || salvo.c || salvo.b)) {
-                            inputTit.value = salvo.t || '';
-                            inputCap.value = salvo.c || '';
-                            editor.innerHTML = salvo.b || '';
-                            sincronizarConteudo();
-                            atualizarMetricas();
-                        }
-                    } catch (e) {}
-                }
-                const salvarLocal = () => {
-                    try {
-                        localStorage.setItem(chaveLocal, JSON.stringify({
-                            t: inputTit.value,
-                            c: inputCap.value,
-                            b: editor.innerHTML
-                        }));
-                    } catch (e) {}
-                };
-                inputTit.addEventListener('input', salvarLocal);
-                inputCap.addEventListener('input', salvarLocal);
-                editor.addEventListener('input', salvarLocal);
-                form.addEventListener('submit', () => {
-                    try { localStorage.removeItem(chaveLocal); } catch (e) {}
-                });
             }
         })();
     </script>
