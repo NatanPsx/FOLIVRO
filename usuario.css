@@ -261,3 +261,268 @@
         gap: 10px;
     }
 }
+
+
+/* ==========================================================================
+   FORMULÁRIO MODERNO DE EDIÇÃO DE PERFIL E APOIO AO CRIADOR
+   ========================================================================== */
+.configurar-meta.card-editar-perfil {
+    border: 1px solid var(--borda-suave);
+    border-radius: 16px;
+    background: var(--fundo-superficie);
+    box-shadow: var(--sombra-card);
+    overflow: hidden;
+    margin-bottom: 22px;
+}
+
+.configurar-meta.card-editar-perfil > summary {
+    padding: 16px 22px;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--texto-principal);
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.configurar-meta.card-editar-perfil > summary::-webkit-details-marker {
+    display: none;
+}
+
+.configurar-meta.card-editar-perfil > summary::after {
+    content: "▾";
+    font-size: 16px;
+    color: var(--texto-secundario);
+    transition: transform 0.2s ease;
+}
+
+.configurar-meta.card-editar-perfil[open] > summary {
+    border-bottom: 1px solid var(--borda-suave);
+    background: var(--fundo-destaque, var(--fundo-superficie-suave));
+}
+
+.configurar-meta.card-editar-perfil[open] > summary::after {
+    transform: rotate(180deg);
+}
+
+.form-editar-perfil-moderno {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 24px !important;
+    margin: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    box-sizing: border-box;
+}
+
+.layout-duas-colunas-perfil {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: stretch;
+}
+
+.coluna-dados-perfil {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+.titulo-subsecao-perfil {
+    margin: 0 0 2px;
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--texto-principal);
+}
+
+.grade-campos-perfil {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 210px;
+    gap: 14px;
+    align-items: start;
+}
+
+.grade-campos-apoio {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.campo-perfil-moderno {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 !important;
+}
+
+.campo-perfil-moderno .rotulo-campo-perfil {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--texto-principal);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.campo-perfil-moderno .dica-campo-perfil {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--texto-apoio, var(--texto-secundario));
+}
+
+.form-editar-perfil-moderno input[type="text"],
+.form-editar-perfil-moderno input[type="date"],
+.form-editar-perfil-moderno input[type="url"],
+.form-editar-perfil-moderno input[type="file"],
+.form-editar-perfil-moderno textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--borda-forte);
+    background: var(--fundo-superficie-suave) !important;
+    color: var(--texto-principal) !important;
+    font-family: var(--fonte-interface, system-ui, sans-serif);
+    font-size: 14px;
+    line-height: 1.45;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.tema-escuro .form-editar-perfil-moderno input[type="date"] {
+    color-scheme: dark;
+}
+
+.form-editar-perfil-moderno input::placeholder,
+.form-editar-perfil-moderno textarea::placeholder {
+    color: var(--texto-apoio, #8b7b72);
+    opacity: 0.8;
+}
+
+.form-editar-perfil-moderno input:focus,
+.form-editar-perfil-moderno textarea:focus {
+    outline: none;
+    border-color: var(--cor-dourado-foco, #d4943a) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cor-dourado-foco, #d4943a) 22%, transparent);
+}
+
+.form-editar-perfil-moderno input[type="file"] {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.form-editar-perfil-moderno input[type="file"]::file-selector-button {
+    margin-right: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--borda-forte);
+    background: var(--fundo-superficie);
+    color: var(--texto-principal);
+    font-family: var(--fonte-interface, system-ui, sans-serif);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.form-editar-perfil-moderno input[type="file"]::file-selector-button:hover {
+    background: var(--cor-vermelho-acao, #6b130d);
+    border-color: var(--cor-vermelho-acao, #6b130d);
+    color: #ffffff;
+}
+
+/* Sub-cartão: Apoio ao criador */
+.bloco-apoio-perfil-config {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--borda-suave);
+    border-left: 3.5px solid var(--cor-dourado-foco, #d4943a);
+    background: color-mix(in srgb, var(--fundo-superficie-suave) 88%, var(--cor-dourado-foco, #d4943a) 4%);
+}
+
+.topo-apoio-perfil {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.topo-apoio-perfil h3 {
+    margin: 0;
+    font-family: var(--fonte-literaria, Georgia, serif);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--texto-principal);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.selo-opcional-apoio {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--cor-dourado-foco, #d4943a) 18%, transparent);
+    color: var(--texto-principal);
+    border: 1px solid color-mix(in srgb, var(--cor-dourado-foco, #d4943a) 40%, transparent);
+}
+
+.desc-apoio-perfil {
+    margin: -6px 0 2px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--texto-secundario);
+}
+
+.rodape-form-perfil {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 6px;
+    border-top: 1px solid var(--borda-suave);
+}
+
+.rodape-form-perfil .botao-adicionar-livro {
+    min-width: 190px;
+    padding: 11px 22px;
+    border-radius: 10px;
+    font-size: 14.5px;
+    font-weight: 700;
+}
+
+@media (max-width: 980px) {
+    .layout-duas-colunas-perfil {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+}
+
+@media (max-width: 720px) {
+    .grade-campos-perfil {
+        grid-template-columns: 1fr;
+    }
+    .form-editar-perfil-moderno {
+        padding: 16px !important;
+    }
+    .rodape-form-perfil .botao-adicionar-livro {
+        width: 100%;
+    }
+}

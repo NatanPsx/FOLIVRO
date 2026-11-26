@@ -255,8 +255,8 @@ $csrf = folivro_escape(folivro_csrf_token());
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meu perfil | FOLIVRO</title>
-    <link rel="stylesheet" href="usuario.css?v=20261124_01">
-    <link rel="stylesheet" href="layout.css?v=20261124_01">
+    <link rel="stylesheet" href="usuario.css?v=20261126_03">
+    <link rel="stylesheet" href="layout.css?v=20261126_01">
     <link rel="stylesheet" href="estante.css?v=20261124_01">
 </head>
 
@@ -369,48 +369,87 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <p class="estado-vazio estado-sucesso" role="status"><?= folivro_escape($msgPerfilSucesso) ?></p>
             <?php endif; ?>
 
-            <details class="configurar-meta">
-                <summary>Editar perfil, data de nascimento e foto</summary>
-                <form method="post" enctype="multipart/form-data" class="progresso-form">
+            <details class="configurar-meta card-editar-perfil">
+                <summary>Editar perfil, foto e apoio ao criador</summary>
+                <form method="post" enctype="multipart/form-data" class="progresso-form form-editar-perfil-moderno">
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="editar_perfil">
-                    <label for="nome_usuario">Nome de exibição
-                        <input id="nome_usuario" name="nome_usuario" maxlength="120" required value="<?= folivro_escape($user['nome_usuario'] ?? '') ?>">
-                    </label>
-                    <label for="data_nascimento_usuario">Data de nascimento (define a exibição de obras +18)
-                        <input id="data_nascimento_usuario" name="data_nascimento_usuario" type="date" min="1905-01-01" max="<?= date('Y-m-d') ?>" value="<?= folivro_escape((string) ($user['data_nascimento_usuario'] ?? '')) ?>">
-                    </label>
-                    <label for="biografia_usuario">Biografia (opcional)
-                        <textarea id="biografia_usuario" name="biografia_usuario" rows="3" maxlength="1000"><?= folivro_escape((string) ($user['biografia_usuario'] ?? '')) ?></textarea>
-                    </label>
-                    <label for="foto_usuario">Foto de perfil (JPG, PNG ou WebP, máx. 2 MB)
-                        <input id="foto_usuario" type="file" name="foto_usuario" accept="image/jpeg,image/png,image/webp">
-                    </label>
 
-                    <div class="bloco-apoio-perfil-config" style="margin-top:12px; padding:14px; border:1px solid var(--borda-suave); border-radius:12px; background:var(--fundo-superficie-suave);">
-                        <input type="hidden" name="salvar_apoio_criador" value="1">
-                        <h3 style="margin:0 0 6px; font-size:1rem;">Apoio ao criador (opcional)</h3>
-                        <p style="margin:0 0 12px; font-size:0.86rem; color:var(--texto-secundario);">
-                            Preencha seu link de apoio ou chave Pix para exibir o botão <strong>"Apoie o criador"</strong> nas suas obras autorais. O FOLIVRO não processa pagamentos nem cobra taxas.
-                        </p>
-                        <label for="link_apoio_usuario">Link externo de apoio (Apoia.se, Catarse, Ko-fi, LivePix, Patreon...)
-                            <input id="link_apoio_usuario" name="link_apoio_usuario" type="url" maxlength="255"
-                                   placeholder="https://apoia.se/seuperfil"
-                                   value="<?= folivro_escape((string) ($user['link_apoio_usuario'] ?? '')) ?>">
-                        </label>
-                        <label for="chave_pix_usuario">Chave Pix (opcional — recomendamos chave aleatória ou e-mail profissional)
-                            <input id="chave_pix_usuario" name="chave_pix_usuario" type="text" maxlength="140"
-                                   placeholder="Ex.: 123e4567-e89b-12d3-a456-426614174000 ou autor@email.com"
-                                   value="<?= folivro_escape((string) ($user['chave_pix_usuario'] ?? '')) ?>">
-                        </label>
-                        <label for="mensagem_apoio_usuario">Mensagem curta para os leitores (até 200 caracteres)
-                            <input id="mensagem_apoio_usuario" name="mensagem_apoio_usuario" type="text" maxlength="200"
-                                   placeholder="Ex.: Curtiu a história? Seu apoio ajuda a manter novos capítulos!"
-                                   value="<?= folivro_escape((string) ($user['mensagem_apoio_usuario'] ?? '')) ?>">
-                        </label>
+                    <div class="layout-duas-colunas-perfil">
+                        <!-- Coluna Esquerda: Dados do perfil -->
+                        <div class="coluna-dados-perfil">
+                            <h3 class="titulo-subsecao-perfil">Dados pessoais e apresentação</h3>
+
+                            <div class="grade-campos-perfil">
+                                <label class="campo-perfil-moderno" for="nome_usuario">
+                                    <span class="rotulo-campo-perfil">Nome de exibição</span>
+                                    <input id="nome_usuario" type="text" name="nome_usuario" maxlength="120" required value="<?= folivro_escape($user['nome_usuario'] ?? '') ?>">
+                                </label>
+
+                                <label class="campo-perfil-moderno" for="data_nascimento_usuario">
+                                    <span class="rotulo-campo-perfil">Data de nascimento</span>
+                                    <input id="data_nascimento_usuario" name="data_nascimento_usuario" type="date" min="1905-01-01" max="<?= date('Y-m-d') ?>" value="<?= folivro_escape((string) ($user['data_nascimento_usuario'] ?? '')) ?>">
+                                    <span class="dica-campo-perfil">Define a exibição de obras +18</span>
+                                </label>
+                            </div>
+
+                            <label class="campo-perfil-moderno" for="biografia_usuario">
+                                <span class="rotulo-campo-perfil">Biografia <span class="dica-campo-perfil">Opcional · até 1.000 caracteres</span></span>
+                                <textarea id="biografia_usuario" name="biografia_usuario" rows="4" maxlength="1000" placeholder="Conte um pouco sobre seus gostos literários e projetos..."><?= folivro_escape((string) ($user['biografia_usuario'] ?? '')) ?></textarea>
+                            </label>
+
+                            <label class="campo-perfil-moderno" for="foto_usuario">
+                                <span class="rotulo-campo-perfil">Foto de perfil <span class="dica-campo-perfil">JPG, PNG ou WebP · máx. 2 MB</span></span>
+                                <input id="foto_usuario" type="file" name="foto_usuario" accept="image/jpeg,image/png,image/webp">
+                            </label>
+                        </div>
+
+                        <!-- Coluna Direita: Apoio ao criador -->
+                        <div class="bloco-apoio-perfil-config">
+                            <input type="hidden" name="salvar_apoio_criador" value="1">
+                            <div class="topo-apoio-perfil">
+                                <h3>
+                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" style="color:#d9463e;" aria-hidden="true">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                    <span>Apoio ao criador</span>
+                                </h3>
+                                <span class="selo-opcional-apoio">Opcional</span>
+                            </div>
+                            <p class="desc-apoio-perfil">
+                                Preencha seu link de apoio ou chave Pix para exibir o botão <strong>"Apoie o criador"</strong> nas suas obras autorais. O FOLIVRO não processa pagamentos nem cobra taxas.
+                            </p>
+
+                            <div class="grade-campos-apoio">
+                                <label class="campo-perfil-moderno" for="link_apoio_usuario">
+                                    <span class="rotulo-campo-perfil">Link externo de apoio</span>
+                                    <input id="link_apoio_usuario" name="link_apoio_usuario" type="url" maxlength="255"
+                                           placeholder="https://apoia.se/seuperfil"
+                                           value="<?= folivro_escape((string) ($user['link_apoio_usuario'] ?? '')) ?>">
+                                    <span class="dica-campo-perfil">Apoia.se, Catarse, Ko-fi, LivePix, Patreon...</span>
+                                </label>
+
+                                <label class="campo-perfil-moderno" for="chave_pix_usuario">
+                                    <span class="rotulo-campo-perfil">Chave Pix</span>
+                                    <input id="chave_pix_usuario" name="chave_pix_usuario" type="text" maxlength="140"
+                                           placeholder="Ex.: chave aleatória ou autor@email.com"
+                                           value="<?= folivro_escape((string) ($user['chave_pix_usuario'] ?? '')) ?>">
+                                    <span class="dica-campo-perfil">Recomendamos chave aleatória ou e-mail profissional</span>
+                                </label>
+
+                                <label class="campo-perfil-moderno" for="mensagem_apoio_usuario">
+                                    <span class="rotulo-campo-perfil">Mensagem para os leitores <span class="dica-campo-perfil">Até 200 caracteres</span></span>
+                                    <input id="mensagem_apoio_usuario" name="mensagem_apoio_usuario" type="text" maxlength="200"
+                                           placeholder="Ex.: Curtiu a história? Seu apoio ajuda a manter novos capítulos!"
+                                           value="<?= folivro_escape((string) ($user['mensagem_apoio_usuario'] ?? '')) ?>">
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
-                    <button class="botao-adicionar-livro" type="submit">Salvar alterações</button>
+                    <div class="rodape-form-perfil">
+                        <button class="botao-adicionar-livro" type="submit">Salvar alterações</button>
+                    </div>
                 </form>
             </details>
             <?php endif; ?>
