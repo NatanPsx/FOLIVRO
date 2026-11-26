@@ -967,12 +967,12 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="publicar">
                     <h2>Solicitar revisão humana para publicação</h2>
-                    <p><small>Declarações de autoria ou comercialização não liberam a obra automaticamente. A obra permanecerá privada até decisão humana registrada na moderação.</small></p>
+                    <p><small>Declarações de autoria<?= folivro_pagamentos_ativos() ? ' ou comercialização' : '' ?> não liberam a obra automaticamente. A obra permanecerá privada até decisão humana registrada na moderação.</small></p>
                     <label>
                         <input type="checkbox" name="declaracao" value="1" required>
                         <strong>Declaração autoral obrigatória:</strong> Declaro ser titular dos direitos autorais desta obra e de sua capa (ou possuir autorização válida para reprodução e disponibilização ao público), ciente de que a declaração não substitui comprovação legal. <strong style="color:#8b2635;">(Obrigatório)</strong>
                     </label>
-                    <?php if (($work['modalidade_distribuicao'] ?? 'venda_simulada') === 'venda_simulada'): ?>
+                    <?php if (folivro_pagamentos_ativos() && ($work['modalidade_distribuicao'] ?? 'venda_simulada') === 'venda_simulada'): ?>
                         <label>
                             <input type="checkbox" name="declaracao_comercializacao" value="1" required>
                             <strong>Autorização comercial obrigatória:</strong> Declaro possuir autorização específica para comercializar esta obra na loja (permissão de venda separada da permissão de publicação gratuita). <strong style="color:#8b2635;">(Obrigatório)</strong>
@@ -987,7 +987,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <input type="hidden" name="csrf_token" value="<?= $csrf ?>">
                     <input type="hidden" name="acao" value="pausar">
                     <div>
-                        <button class="botao-adicionar-livro" type="submit">Pausar venda / Despublicar</button>
+                        <button class="botao-adicionar-livro" type="submit"><?= folivro_pagamentos_ativos() ? 'Pausar venda / Despublicar' : 'Despublicar obra' ?></button>
                     </div>
                 </form>
             <?php endif; ?>
@@ -998,7 +998,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                 <div class="card-interacao">
                     <h3>Registro de declarações e termos aceitos nesta obra</h3>
                     <?php if (!$termosObra): ?>
-                        <p>Nenhuma declaração de publicação ou comercialização registrada ainda para esta obra.</p>
+                        <p>Nenhuma declaração de publicação<?= folivro_pagamentos_ativos() ? ' ou comercialização' : '' ?> registrada ainda para esta obra.</p>
                     <?php else: ?>
                         <ul>
                             <?php foreach ($termosObra as $to): ?>

@@ -52,8 +52,8 @@ function folivro_database(): PDO
     }
 
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes', '019_gepeto_obras_completas_e_capas')")->fetchColumn();
-        if ($appliedCount === 19) {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes', '019_gepeto_obras_completas_e_capas', '020_apoie_criador_e_postagem_imediata')")->fetchColumn();
+        if ($appliedCount === 20) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -656,7 +656,7 @@ function folivro_database(): PDO
             $modoInicial = strtolower((string) (getenv('PAYMENT_MODE') ?: 'simulated')) === 'real' ? 'real' : 'simulated';
             $insCfg = $pdo->prepare('INSERT IGNORE INTO sistema_config (chave, valor) VALUES (?, ?)');
             $insCfg->execute(['payment_mode', $modoInicial]);
-            $insCfg->execute(['aprovacao_automatica_obras', '0']);
+            $insCfg->execute(['aprovacao_automatica_obras', '1']);
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('015_sistema_config')");
         }
 
@@ -704,6 +704,26 @@ function folivro_database(): PDO
             require_once __DIR__ . '/../database/seeds/019_seed_gepeto_obras.php';
             folivro_seed_gepeto_obras($pdo);
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('019_gepeto_obras_completas_e_capas')");
+        }
+
+        // Migração 020: Campos opcionais de "Apoie o criador" (link externo + chave Pix) e postagem imediata habilitada por padrão.
+        $mig20 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '020_apoie_criador_e_postagem_imediata' LIMIT 1")->fetchColumn();
+        if (!$mig20) {
+            $uCols20 = $pdo->query('SHOW COLUMNS FROM usuario')->fetchAll(PDO::FETCH_COLUMN, 0);
+            if (!in_array('link_apoio_usuario', $uCols20, true)) {
+                $pdo->exec('ALTER TABLE usuario ADD COLUMN link_apoio_usuario VARCHAR(255) NULL DEFAULT NULL AFTER biografia_usuario');
+            }
+            if (!in_array('chave_pix_usuario', $uCols20, true)) {
+                $pdo->exec('ALTER TABLE usuario ADD COLUMN chave_pix_usuario VARCHAR(140) NULL DEFAULT NULL AFTER link_apoio_usuario');
+            }
+            if (!in_array('mensagem_apoio_usuario', $uCols20, true)) {
+                $pdo->exec('ALTER TABLE usuario ADD COLUMN mensagem_apoio_usuario VARCHAR(200) NULL DEFAULT NULL AFTER chave_pix_usuario');
+            }
+
+            // Habilita a publicação imediata de obras por padrão
+            $pdo->exec("INSERT INTO sistema_config (chave, valor) VALUES ('aprovacao_automatica_obras', '1') ON DUPLICATE KEY UPDATE valor = '1'");
+
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('020_apoie_criador_e_postagem_imediata')");
         }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.

@@ -38,7 +38,9 @@ if ($produto && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $textoRes = (string) ($_POST['resenha_resenha'] ?? '');
             $resRev = folivro_loja_salvar_resenha($pdo, $uid, $id, $nota, $tituloRes, $textoRes);
             if ($resRev['ok']) {
-                $sucesso = 'Sua avaliação foi publicada com o selo de compra verificada!';
+                $sucesso = folivro_pagamentos_ativos()
+                    ? 'Sua avaliação foi publicada com o selo de compra verificada!'
+                    : 'Sua avaliação foi publicada com sucesso!';
             } else {
                 $erro = (string) ($resRev['erro'] ?? 'Não foi possível salvar sua avaliação.');
             }
@@ -204,6 +206,22 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <?php if ($idLivroLink > 0): ?>
                             <a class="filtro-pilula" href="livro.php?id=<?= $idLivroLink ?>">Ver ficha crítica completa</a>
                         <?php endif; ?>
+                        <?php
+                        $apoioAutorLoja = null;
+                        if (!empty($produto['id_autor'])) {
+                            $stApLoja = $pdo->prepare('SELECT nome_usuario, link_apoio_usuario, chave_pix_usuario, mensagem_apoio_usuario FROM usuario WHERE id_usuario = ? LIMIT 1');
+                            $stApLoja->execute([(int) $produto['id_autor']]);
+                            $apoioAutorLoja = $stApLoja->fetch(PDO::FETCH_ASSOC) ?: null;
+                        }
+                        if ($apoioAutorLoja && (!empty($apoioAutorLoja['link_apoio_usuario']) || !empty($apoioAutorLoja['chave_pix_usuario']))):
+                        ?>
+                            <button type="button" class="btn-apoie-criador js-abrir-apoie-criador">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span>Apoie o criador</span>
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </section>
@@ -316,7 +334,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <button type="submit" class="botao-adicionar-livro">Publicar avaliação</button>
                     </form>
                 <?php elseif (!$ehAutor): ?>
-                    <p><small>Adquira esta obra para publicar uma avaliação com selo de compra verificada.</small></p>
+                    <p><small><?= folivro_pagamentos_ativos() ? 'Adquira esta obra para publicar uma avaliação com selo de compra verificada.' : 'Adicione esta obra à sua biblioteca para publicar uma avaliação.' ?></small></p>
                 <?php endif; ?>
 
                 <?php if (!$resenhas): ?>
@@ -327,7 +345,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
                                 <strong><?= folivro_escape($r['nome_usuario']) ?></strong>
                                 <span aria-label="Nota <?= (int) $r['nota_resenha'] ?> de 5"><?= str_repeat('★', (int) ($r['nota_resenha'] ?? 0)) ?></span>
-                                <?php if ((int) ($r['compra_verificada_resenha'] ?? 0) === 1): ?>
+                                <?php if (folivro_pagamentos_ativos() && (int) ($r['compra_verificada_resenha'] ?? 0) === 1): ?>
                                     <span class="selo-compra-verificada">Compra verificada</span>
                                 <?php endif; ?>
                                 <small><?= date('d/m/Y', strtotime((string) $r['data_avaliacao_resenha'])) ?></small>
@@ -342,5 +360,14 @@ $csrf = folivro_escape(folivro_csrf_token());
             </section>
         <?php endif; ?>
     </main>
+    <?php
+    if (!empty($apoioAutorLoja)) {
+        $apoioAutorNome = (string) ($apoioAutorLoja['nome_usuario'] ?? '');
+        $apoioAutorLink = (string) ($apoioAutorLoja['link_apoio_usuario'] ?? '');
+        $apoioAutorPix  = (string) ($apoioAutorLoja['chave_pix_usuario'] ?? '');
+        $apoioAutorMsg  = (string) ($apoioAutorLoja['mensagem_apoio_usuario'] ?? '');
+        require __DIR__ . '/includes/apoie-criador-modal.php';
+    }
+    ?>
 </body>
 </html>

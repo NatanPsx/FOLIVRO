@@ -181,9 +181,9 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
                             <?php endif; ?>
 
                             <p style="font-size:0.9rem; color:var(--texto-secundario);">
-                                <?= (int) $w['capitulos'] ?> cap. · <?= ($w['modalidade_distribuicao'] ?? '') === 'gratuita' ? 'Gratuita' : 'R$ ' . number_format((float) $w['preco_dos_livros_autor'], 2, ',', '.') ?>
+                                <?= (int) $w['capitulos'] ?> cap. · <?= (!folivro_pagamentos_ativos() || ($w['modalidade_distribuicao'] ?? '') === 'gratuita') ? 'Gratuita' : 'R$ ' . number_format((float) $w['preco_dos_livros_autor'], 2, ',', '.') ?>
                                 <br>
-                                <?= (int) $w['visualizacoes_historias'] ?> leitura(s) · <strong><?= (int) $w['total_vendas'] ?></strong> venda(s) (R$ <?= number_format((float) $w['receita_autor'], 2, ',', '.') ?>)
+                                <?= (int) $w['visualizacoes_historias'] ?> leitura(s)<?php if (folivro_pagamentos_ativos()): ?> · <strong><?= (int) $w['total_vendas'] ?></strong> venda(s) (R$ <?= number_format((float) $w['receita_autor'], 2, ',', '.') ?>)<?php endif; ?>
                             </p>
 
                             <div class="rodape-card-leitura" style="display:flex; flex-direction:column; gap:6px;">
@@ -191,7 +191,7 @@ $pubImediata = ($aprovAutoGlobal || !empty($qualificacaoPainelAutor['qualificado
                                 <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; font-size:0.88rem;">
                                     <a href="obra.php?id=<?= (int) $w['id_autor_dos_livros'] ?>">Ler capítulos</a>
                                     <?php if (!empty($w['id_produto_loja']) && $ehPublicada): ?>
-                                        <a href="loja-obra.php?id=<?= (int) $w['id_produto_loja'] ?>">Ver na loja &rarr;</a>
+                                        <a href="loja-obra.php?id=<?= (int) $w['id_produto_loja'] ?>"><?= folivro_pagamentos_ativos() ? 'Ver na loja &rarr;' : 'Ver obra publicada &rarr;' ?></a>
                                     <?php endif; ?>
                                 </div>
                             </div>

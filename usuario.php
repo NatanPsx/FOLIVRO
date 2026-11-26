@@ -36,10 +36,31 @@ if (!$ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ??
         $novoNome = trim((string) ($_POST['nome_usuario'] ?? ''));
         $novaBio  = trim((string) ($_POST['biografia_usuario'] ?? ''));
         $novaDataNasc = trim((string) ($_POST['data_nascimento_usuario'] ?? ''));
+        $atualizarApoio = isset($_POST['salvar_apoio_criador']);
+        $linkApoioVal = '';
+        $chavePixVal = '';
+        $msgApoioVal = '';
+        if ($atualizarApoio) {
+            $linkApoioRes = folivro_validar_link_apoio((string) ($_POST['link_apoio_usuario'] ?? ''));
+            $chavePixRes  = folivro_validar_chave_pix((string) ($_POST['chave_pix_usuario'] ?? ''));
+            $msgApoioVal  = trim((string) ($_POST['mensagem_apoio_usuario'] ?? ''));
+            if ($linkApoioRes === null) {
+                $msgPerfilErro = 'Informe um link de apoio válido iniciando com https:// (ex.: https://apoia.se/seuperfil).';
+            } elseif ($chavePixRes === null) {
+                $msgPerfilErro = 'Chave Pix inválida. Use chave aleatória, e-mail, telefone ou CPF/CNPJ.';
+            } elseif (mb_strlen($msgApoioVal, 'UTF-8') > 200) {
+                $msgPerfilErro = 'A mensagem de apoio deve ter no máximo 200 caracteres.';
+            } else {
+                $linkApoioVal = $linkApoioRes;
+                $chavePixVal = $chavePixRes;
+            }
+        }
         $tamNome  = mb_strlen($novoNome, 'UTF-8');
         $idadeValida = $novaDataNasc === '' ? true : (($idCalc = folivro_calcular_idade($novaDataNasc)) !== null && $idCalc >= 5 && $idCalc <= 120);
 
-        if ($tamNome < 2 || $tamNome > 120 || mb_strlen($novaBio, 'UTF-8') > 1000) {
+        if ($msgPerfilErro !== '') {
+            // Erro já definido na validação dos campos de apoio
+        } elseif ($tamNome < 2 || $tamNome > 120 || mb_strlen($novaBio, 'UTF-8') > 1000) {
             $msgPerfilErro = 'Informe um nome entre 2 e 120 caracteres e biografia de até 1.000 caracteres.';
         } elseif (!$idadeValida) {
             $msgPerfilErro = 'Informe uma data de nascimento válida.';
@@ -89,6 +110,15 @@ if (!$ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ??
                     $upd = $pdo->prepare('UPDATE usuario SET nome_usuario = ?, data_nascimento_usuario = COALESCE(?, data_nascimento_usuario), biografia_usuario = ? WHERE id_usuario = ?');
                     $upd->execute([$novoNome, $dtNascFinal, $novaBio !== '' ? $novaBio : null, $uid]);
                 }
+                if ($atualizarApoio) {
+                    $updApoio = $pdo->prepare('UPDATE usuario SET link_apoio_usuario = ?, chave_pix_usuario = ?, mensagem_apoio_usuario = ? WHERE id_usuario = ?');
+                    $updApoio->execute([
+                        $linkApoioVal !== '' ? $linkApoioVal : null,
+                        $chavePixVal !== '' ? $chavePixVal : null,
+                        $msgApoioVal !== '' ? $msgApoioVal : null,
+                        $uid,
+                    ]);
+                }
                 $_SESSION['nome_usuario'] = $novoNome;
                 if ($dtNascFinal !== null) {
                     $_SESSION['data_nascimento_usuario'] = $dtNascFinal;
@@ -123,7 +153,7 @@ if (!$ehMeuPerfil && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['acao'] ??
     }
 }
 
-$stmt = $pdo->prepare('SELECT id_usuario, nome_usuario, email_usuario, data_nascimento_usuario, biografia_usuario, foto_usuario, nivel_usuario, status_usuario, data_cadastro_usuario FROM usuario WHERE id_usuario = ?');
+$stmt = $pdo->prepare('SELECT id_usuario, nome_usuario, email_usuario, data_nascimento_usuario, biografia_usuario, link_apoio_usuario, chave_pix_usuario, mensagem_apoio_usuario, foto_usuario, nivel_usuario, status_usuario, data_cadastro_usuario FROM usuario WHERE id_usuario = ?');
 $stmt->execute([$idAlvo]);
 $user = $stmt->fetch();
 if (!$user || (!$ehMeuPerfil && ($user['status_usuario'] ?? '') !== 'ativo')) {
@@ -281,9 +311,11 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <div class="perfil-acoes-topo">
                         <?php if ($ehMeuPerfil): ?>
                             <a class="filtro-pilula" href="minha-biblioteca.php">Minha estante</a>
-                            <a class="filtro-pilula" href="minhas-compras.php">Minhas compras</a>
+                            <?php if ($pagamentosAtivosPerfil): ?>
+                                <a class="filtro-pilula" href="minhas-compras.php">Minhas compras</a>
+                            <?php endif; ?>
                             <a class="filtro-pilula" href="estatisticas.php">Metas e conquistas</a>
-                            <?php if (in_array($user['nivel_usuario'] ?? '', ['autor', 'admin'], true)): ?>
+                            <?php if ($pagamentosAtivosPerfil && in_array($user['nivel_usuario'] ?? '', ['autor', 'admin'], true)): ?>
                                 <a class="filtro-pilula" href="painel-vendas.php">Painel de vendas</a>
                             <?php endif; ?>
                         <?php else: ?>
@@ -294,6 +326,14 @@ $csrf = folivro_escape(folivro_csrf_token());
                                     <?= $jaSeguindo ? 'Seguindo ✓' : '+ Seguir' ?>
                                 </button>
                             </form>
+                            <?php if (!empty($user['link_apoio_usuario']) || !empty($user['chave_pix_usuario'])): ?>
+                                <button type="button" class="btn-apoie-criador js-abrir-apoie-criador">
+                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                    </svg>
+                                    <span>Apoie o criador</span>
+                                </button>
+                            <?php endif; ?>
                             <?php if ($estadoChatPerfil && ($estadoChatPerfil['status_conversa'] ?? 'aceita') === 'pendente'): ?>
                                 <?php if ((int) ($estadoChatPerfil['id_solicitante'] ?? 0) === $uid): ?>
                                     <span class="selo-status selo-comprado">Solicitação de mensagem pendente</span>
@@ -346,6 +386,30 @@ $csrf = folivro_escape(folivro_csrf_token());
                     <label for="foto_usuario">Foto de perfil (JPG, PNG ou WebP, máx. 2 MB)
                         <input id="foto_usuario" type="file" name="foto_usuario" accept="image/jpeg,image/png,image/webp">
                     </label>
+
+                    <div class="bloco-apoio-perfil-config" style="margin-top:12px; padding:14px; border:1px solid var(--borda-suave); border-radius:12px; background:var(--fundo-superficie-suave);">
+                        <input type="hidden" name="salvar_apoio_criador" value="1">
+                        <h3 style="margin:0 0 6px; font-size:1rem;">Apoio ao criador (opcional)</h3>
+                        <p style="margin:0 0 12px; font-size:0.86rem; color:var(--texto-secundario);">
+                            Preencha seu link de apoio ou chave Pix para exibir o botão <strong>"Apoie o criador"</strong> nas suas obras autorais. O FOLIVRO não processa pagamentos nem cobra taxas.
+                        </p>
+                        <label for="link_apoio_usuario">Link externo de apoio (Apoia.se, Catarse, Ko-fi, LivePix, Patreon...)
+                            <input id="link_apoio_usuario" name="link_apoio_usuario" type="url" maxlength="255"
+                                   placeholder="https://apoia.se/seuperfil"
+                                   value="<?= folivro_escape((string) ($user['link_apoio_usuario'] ?? '')) ?>">
+                        </label>
+                        <label for="chave_pix_usuario">Chave Pix (opcional — recomendamos chave aleatória ou e-mail profissional)
+                            <input id="chave_pix_usuario" name="chave_pix_usuario" type="text" maxlength="140"
+                                   placeholder="Ex.: 123e4567-e89b-12d3-a456-426614174000 ou autor@email.com"
+                                   value="<?= folivro_escape((string) ($user['chave_pix_usuario'] ?? '')) ?>">
+                        </label>
+                        <label for="mensagem_apoio_usuario">Mensagem curta para os leitores (até 200 caracteres)
+                            <input id="mensagem_apoio_usuario" name="mensagem_apoio_usuario" type="text" maxlength="200"
+                                   placeholder="Ex.: Curtiu a história? Seu apoio ajuda a manter novos capítulos!"
+                                   value="<?= folivro_escape((string) ($user['mensagem_apoio_usuario'] ?? '')) ?>">
+                        </label>
+                    </div>
+
                     <button class="botao-adicionar-livro" type="submit">Salvar alterações</button>
                 </form>
             </details>
@@ -478,7 +542,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                                 <div class="livro-info">
                                     <div class="linha-selos-card">
                                         <span class="selo-status selo-comprado">
-                                            <?= (int) $olp['preco_centavos'] === 0 ? 'Gratuita' : 'R$ ' . number_format(((int) $olp['preco_centavos']) / 100, 2, ',', '.') ?>
+                                            <?= (!$pagamentosAtivosPerfil || (int) $olp['preco_centavos'] === 0) ? 'Gratuita' : 'R$ ' . number_format(((int) $olp['preco_centavos']) / 100, 2, ',', '.') ?>
                                         </span>
                                         <span class="selo-classificacao-idade selo-idade-<?= folivro_escape($classifOlp) ?>" title="<?= folivro_escape(folivro_aviso_conteudo_label($classifOlp)) ?>">
                                             <?= folivro_escape(folivro_classificacao_sigla($classifOlp)) ?>
@@ -603,6 +667,16 @@ $csrf = folivro_escape(folivro_csrf_token());
             if (ev.key === 'Escape' && !modalSair.hidden) fecharModalSair();
         });
     </script>
+
+    <?php
+    if ($user) {
+        $apoioAutorNome = (string) ($user['nome_usuario'] ?? '');
+        $apoioAutorLink = (string) ($user['link_apoio_usuario'] ?? '');
+        $apoioAutorPix  = (string) ($user['chave_pix_usuario'] ?? '');
+        $apoioAutorMsg  = (string) ($user['mensagem_apoio_usuario'] ?? '');
+        require __DIR__ . '/includes/apoie-criador-modal.php';
+    }
+    ?>
 
 </body>
 

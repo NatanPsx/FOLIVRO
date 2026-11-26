@@ -205,7 +205,7 @@ $infoModo = folivro_loja_info_modo();
                                 <p><?= folivro_escape(mb_strimwidth((string) ($w['descricao_produto'] ?? ''), 0, 140, '...', 'UTF-8')) ?></p>
                                 <p class="livro-ano">
                                     <?= $totalResenhas > 0 ? '★ ' . number_format($mediaNota, 1, ',', '.') . ' (' . $totalResenhas . ')' : 'Sem avaliações ainda' ?>
-                                    · <?= (int) $w['total_vendas'] ?> aquisição(ões)
+                                    · <?= (int) $w['total_vendas'] ?> <?= folivro_pagamentos_ativos() ? 'aquisição(ões)' : 'leitor(es)' ?>
                                 </p>
 
                                 <div class="loja-acoes-card">
@@ -216,8 +216,8 @@ $infoModo = folivro_loja_info_modo();
                                         <?php $idAdlCard = (int) ($w['id_autor_dos_livros'] ?? 0); ?>
                                         <a class="botao-adicionar-livro" href="<?= $idAdlCard > 0 ? 'obra.php?id=' . $idAdlCard : 'loja-obra.php?id=' . $idProd ?>">Ler obra</a>
                                     <?php else: ?>
-                                        <a class="botao-adicionar-livro" href="loja-checkout.php?id=<?= $idProd ?>">
-                                            <?= $ehGratuita ? 'Obter grátis' : 'Comprar (' . folivro_escape(folivro_loja_formatar($precoCentavos)) . ')' ?>
+                                        <a class="botao-adicionar-livro" href="<?= folivro_pagamentos_ativos() ? 'loja-checkout.php?id=' . $idProd : 'loja-obra.php?id=' . $idProd ?>">
+                                            <?= $ehGratuita || !folivro_pagamentos_ativos() ? 'Ler grátis' : 'Comprar (' . folivro_escape(folivro_loja_formatar($precoCentavos)) . ')' ?>
                                         </a>
                                     <?php endif; ?>
                                 </div>

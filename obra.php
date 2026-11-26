@@ -15,7 +15,8 @@ $q = $pdo->prepare(
             a.declaracao_autoria, a.declaracao_comercializacao, a.motivo_bloqueio_autor,
             a.revisao_publicacao, a.justificativa_revisao,
             h.id_historias, h.titulo_historias, h.sinopse_historias, h.capa_historias, h.generos_historias, h.visualizacoes_historias,
-            h.licenca_historias, h.aviso_conteudo_historias, u.nome_usuario
+            h.licenca_historias, h.aviso_conteudo_historias, u.nome_usuario,
+            u.link_apoio_usuario, u.chave_pix_usuario, u.mensagem_apoio_usuario
        FROM autor_dos_livros a
        JOIN historias h ON h.id_historias = a.id_historias
        JOIN usuario u ON u.id_usuario = a.id_autor
@@ -485,6 +486,15 @@ $csrf = folivro_escape(folivro_csrf_token());
                         <a href="#secao-comunidade-obra" class="filtro-pilula btn-acao-compacto">
                             Comentários (<?= count($comentarios) ?>)
                         </a>
+
+                        <?php if (!empty($obra['link_apoio_usuario']) || !empty($obra['chave_pix_usuario'])): ?>
+                            <button type="button" class="btn-apoie-criador btn-acao-compacto js-abrir-apoie-criador">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span>Apoie o criador</span>
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </div>
             </header>
@@ -924,6 +934,13 @@ $csrf = folivro_escape(folivro_csrf_token());
             exibirCapituloSelecionado(capAtivo, false);
         })();
     </script>
+    <?php
+    $apoioAutorNome = (string) ($obra['nome_usuario'] ?? '');
+    $apoioAutorLink = (string) ($obra['link_apoio_usuario'] ?? '');
+    $apoioAutorPix  = (string) ($obra['chave_pix_usuario'] ?? '');
+    $apoioAutorMsg  = (string) ($obra['mensagem_apoio_usuario'] ?? '');
+    require __DIR__ . '/includes/apoie-criador-modal.php';
+    ?>
 </body>
 
 </html>

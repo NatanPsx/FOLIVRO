@@ -937,7 +937,7 @@ $csrf = folivro_escape(folivro_csrf_token());
                             <div class="mod-meta-linha">
                                 <span><strong>Origem / base legal:</strong> <?= folivro_escape(folivro_origem_obra_label($origemRev)) ?></span>
                                 <span><strong>Licença:</strong> <?= folivro_escape(folivro_licenca_label((string) ($rev['licenca_historias'] ?? 'direitos_reservados'))) ?></span>
-                                <span><strong>Modalidade:</strong> <?= $modDist === 'gratuita' ? 'Distribuição gratuita' : 'Venda simulada (R$ ' . number_format((float) $rev['preco_dos_livros_autor'], 2, ',', '.') . ')' ?></span>
+                                <span><strong>Modalidade:</strong> <?= (!folivro_pagamentos_ativos() || $modDist === 'gratuita') ? 'Distribuição gratuita' : 'Venda simulada (R$ ' . number_format((float) $rev['preco_dos_livros_autor'], 2, ',', '.') . ')' ?></span>
                             </div>
                             <?php if ($bloqueadaPorOrigem): ?>
                                 <p class="aviso-direitos" role="alert"><strong>Bloqueio normativo:</strong> Esta obra foi declarada como derivada sem autorização ou domínio público não verificado. A aprovação para publicação ou venda está bloqueada até comprovação formal de titularidade/base legal.</p>

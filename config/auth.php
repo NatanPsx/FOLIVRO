@@ -89,10 +89,10 @@ function folivro_status_label(?string $status): string
     $labels = [
         'quero_ler' => 'Quero ler', 'lendo' => 'Lendo', 'lido' => 'Lido', 'abandonado' => 'Abandonado',
         'rascunho' => 'Rascunho', 'publicada' => 'Publicada', 'publicado' => 'Publicado',
-        'despublicada' => 'Despublicada', 'a_venda' => 'À venda', 'suspenso' => 'Venda/distribuição pausada',
+        'despublicada' => 'Despublicada', 'a_venda' => 'Publicada', 'suspenso' => 'Distribuição pausada',
         'removido' => 'Removido pela moderação', 'aberta' => 'Aberta (triagem)', 'em_analise' => 'Em análise humana',
         'procedente' => 'Procedente', 'improcedente' => 'Improcedente',
-        'gratuita' => 'Publicação gratuita', 'venda_simulada' => 'Venda simulada na loja',
+        'gratuita' => 'Publicação gratuita', 'venda_simulada' => 'Publicação gratuita',
         'baixa' => 'Prioridade baixa', 'media' => 'Prioridade média', 'alta' => 'Prioridade alta (Direitos Autorais / Segurança)',
         'mensagem_chat' => 'Mensagem de chat', 'conversa_chat' => 'Conversa de chat',
         'ativa' => 'Ativa', 'apagada_pelo_autor' => 'Apagada pelo remetente',
@@ -994,10 +994,65 @@ function folivro_sistema_config_salvar(PDO $pdo, string $chave, string $valor, ?
     $st->execute([$chave, $valor, $uidAdmin]);
 }
 
-/** Verifica se a aprovação automática global de obras postadas está ativada pelo administrador. */
+/** Verifica se a aprovação automática global de obras postadas está ativada (habilitada por padrão). */
 function folivro_aprovacao_automatica_obras_ativa(PDO $pdo): bool
 {
-    return folivro_sistema_config_obter($pdo, 'aprovacao_automatica_obras', '0') === '1';
+    return folivro_sistema_config_obter($pdo, 'aprovacao_automatica_obras', '1') === '1';
+}
+
+/**
+ * Valida e normaliza o link externo de apoio ao criador (apenas HTTPS e URL válida).
+ * Retorna string sanitizada ou null se inválido.
+ */
+function folivro_validar_link_apoio(string $url): ?string
+{
+    $url = trim($url);
+    if ($url === '') {
+        return '';
+    }
+    if (strlen($url) > 255) {
+        return null;
+    }
+    if (!preg_match('/^https:\/\//i', $url)) {
+        return null;
+    }
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return null;
+    }
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    if ($host === '' || $host === 'localhost' || preg_match('/^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/', $host)) {
+        return null;
+    }
+    return $url;
+}
+
+/**
+ * Valida a chave Pix opcional do autor (chave aleatória UUID, e-mail, telefone ou CPF/CNPJ).
+ * Retorna string limpa ou null se inválida.
+ */
+function folivro_validar_chave_pix(string $chave): ?string
+{
+    $chave = trim($chave);
+    if ($chave === '') {
+        return '';
+    }
+    if (mb_strlen($chave, 'UTF-8') > 140) {
+        return null;
+    }
+    // Chave aleatória UUID (formato padrão Bacen)
+    if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $chave)) {
+        return strtolower($chave);
+    }
+    // E-mail
+    if (filter_var($chave, FILTER_VALIDATE_EMAIL)) {
+        return mb_strtolower($chave, 'UTF-8');
+    }
+    // Telefone (+5511999999999 ou 10-13 dígitos) ou CPF (11) / CNPJ (14)
+    $digitos = preg_replace('/\D+/', '', $chave) ?? '';
+    if (preg_match('/^[\+\(\)\-\.\s\/0-9]+$/', $chave) && strlen($digitos) >= 10 && strlen($digitos) <= 14) {
+        return $chave;
+    }
+    return null;
 }
 
 /**
