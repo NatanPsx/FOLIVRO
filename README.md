@@ -11,6 +11,9 @@ Plataforma acadêmica de leitura, escrita, comunidade literária, autopublicaç�
    - **Backup SQL opcional:** Caso queira importar manualmente no phpMyAdmin em outro ambiente, utilize o arquivo completo [`database/backup_completo_folivro.sql`](database/backup_completo_folivro.sql).
 
 ### Credenciais de acesso para apresentação
+- **Conta Completa de Demonstração (Autor/Leitor com estante, metas, resenhas, obras e Pix de apoio):**
+  - **E-mail:** `natan@folivro.br`
+  - **Senha:** `Natan123!`
 - **Conta Admin (com painel de moderação):**
   - **E-mail:** `admin@folivro.local`
   - **Senha:** `Admin123!`

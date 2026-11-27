@@ -52,8 +52,8 @@ function folivro_database(): PDO
     }
 
     try {
-        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes', '019_gepeto_obras_completas_e_capas', '020_apoie_criador_e_postagem_imediata')")->fetchColumn();
-        if ($appliedCount === 20) {
+        $appliedCount = (int) $pdo->query("SELECT COUNT(*) FROM _folivro_migrations WHERE version IN ('001_initial_schema', '002_openlibrary_catalog', '003_copyright_and_moderation', '004_chat_security_and_copyright', '005_editorial_review_and_chapter_hashes', '006_disable_public_default_admin', '007_portable_demo_seed', '008_seed_normal_test_user', '009_age_classification_and_birthdate', '010_add_genres_to_historias', '011_hybrid_moderation_smart_publishing', '012_seed_current_books_and_works', '013_loja_marketplace', '014_seed_loja_marketplace', '015_sistema_config', '016_sincronizar_obras_estudio_loja', '017_chat_solicitacoes', '018_chat_notificacoes', '019_gepeto_obras_completas_e_capas', '020_apoie_criador_e_postagem_imediata', '021_seed_usuario_natan')")->fetchColumn();
+        if ($appliedCount === 21) {
             return $pdo;
         }
     } catch (PDOException $e) {
@@ -724,6 +724,14 @@ function folivro_database(): PDO
             $pdo->exec("INSERT INTO sistema_config (chave, valor) VALUES ('aprovacao_automatica_obras', '1') ON DUPLICATE KEY UPDATE valor = '1'");
 
             $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('020_apoie_criador_e_postagem_imediata')");
+        }
+
+        // Migração 021: Conta completa de demonstração do Natan (natan@folivro.br / Natan123!) em qualquer dispositivo.
+        $mig21 = $pdo->query("SELECT 1 FROM _folivro_migrations WHERE version = '021_seed_usuario_natan' LIMIT 1")->fetchColumn();
+        if (!$mig21) {
+            require_once __DIR__ . '/../database/seeds/021_seed_natan.php';
+            folivro_seed_natan($pdo);
+            $pdo->exec("INSERT INTO _folivro_migrations (version) VALUES ('021_seed_usuario_natan')");
         }
     } catch (PDOException $e) {
         // Registra o motivo exato no log do PHP para facilitar o diagnóstico.
